@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot Verificador X - Simulador y Centro de Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <div class="logo">
+        <span class="x-brand">X</span>
+        <span class="logo-text">Bot Verificador</span>
+      </div>
+      <div class="status-badge">
+        <span class="pulse-indicator"></span>
+        <span class="status-label">Servicio Activo</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+
+    <!-- Panel Izquierdo: Simulador de Entrada -->
+    <section class="card glass panel-control">
+      <div class="card-header">
+        <h2>Simular Mención en X</h2>
+        <p class="subtitle">Publica un tweet mencionando al bot para activar el análisis.</p>
+      </div>
+      
+      <div class="form-group">
+        <label for="tweet-user">Usuario de X</label>
+        <div class="input-with-icon">
+          <span class="at-symbol">@</span>
+          <input type="text" id="tweet-user" value="chileno_impulsivo" placeholder="nombre_usuario">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="tweet-text">Contenido del Tweet</label>
+        <textarea id="tweet-text" rows="4" placeholder="Escribe tu consulta aquí... Ejemplo: Dicen que mañana cierran todos los bancos en Chile por quiebra 🚨"></textarea>
+      </div>
+
+      <div class="form-group inline-checkboxes">
+        <label class="toggle-switch">
+          <input type="checkbox" id="simulate-failure">
+          <span class="slider"></span>
+          <span class="toggle-label">Simular falla de red (NLP/IA)</span>
+        </label>
+      </div>
+
+      <button id="btn-submit" class="btn-primary">
+        <span>Enviar Mención a Webhook</span>
+        <div class="btn-spinner hidden"></div>
+      </button>
+
+      <div class="quick-examples">
+        <p class="section-sub">Ejemplos rápidos:</p>
+        <button class="btn-seed" data-text="Me llegó un WhatsApp que dice que mañana cierran todos los bancos del país por falta de liquidez @BotVerificadorX 🚨">Bancos (Falso)</button>
+        <button class="btn-seed" data-text="El Ministerio de Salud confirma primer caso de vacunación preventiva oficial en la región metropolitana @BotVerificadorX">Minsal (Verdadero)</button>
+        <button class="btn-seed" data-text="Dicen que habrá corte de agua general mañana en Santiago pero no sé si es oficial @BotVerificadorX">Corte Agua (Impreciso)</button>
+      </div>
+    </section>
+
+    <!-- Panel Central: Traza de Procesamiento por Capas -->
+    <section class="card glass panel-pipeline">
+      <div class="card-header">
+        <h2>Trazabilidad de la Arquitectura</h2>
+        <p class="subtitle">Monitoreo en tiempo real del procesamiento modular.</p>
+      </div>
+
+      <div class="pipeline-container">
+        <!-- Capa 1 -->
+        <div class="pipeline-step" id="step-api">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Capa de Aplicación (API Controller)</h3>
+            <p class="step-desc">Webhook captura la mención entrante, valida el payload JSON y sanitiza el texto.</p>
+            <div class="step-log hidden"></div>
+          </div>
+        </div>
+
+        <!-- Capa 2 -->
+        <div class="pipeline-step" id="step-domain">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Capa de Dominio (Service Orchestrator)</h3>
+            <p class="step-desc">Aplica reglas de clasificación semántica local e interpreta umbrales (Threshold).</p>
+            <div class="step-log hidden"></div>
+          </div>
+        </div>
+
+        <!-- Capa 3 -->
+        <div class="pipeline-step" id="step-integration">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Capa de Integración (Adapters)</h3>
+            <p class="step-desc">Consulta externa con política de timeouts (2s) y reintentos automáticos.</p>
+            <div class="step-log hidden"></div>
+          </div>
+        </div>
+
+        <!-- Capa 4 -->
+        <div class="pipeline-step" id="step-persistence">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Capa de Persistencia (PostgreSQL)</h3>
+            <p class="step-desc">Registra de forma segura la latencia, veredicto y usuario anonimizado (Base64).</p>
+            <div class="step-log hidden"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel Derecho: Simulación en la Plataforma X -->
+    <section class="card glass panel-twitter">
+      <div class="card-header">
+        <h2>Simulación en Plataforma X</h2>
+        <p class="subtitle">Hilo de Twitter y respuesta automática generada.</p>
+      </div>
+
+      <div class="twitter-container" id="twitter-feed">
+        <!-- Tarjeta de bienvenida o vacía -->
+        <div class="empty-feed" id="empty-feed-placeholder">
+          <div class="tweet-card user-tweet">
+            <div class="tweet-avatar user-avatar"></div>
+            <div class="tweet-body">
+              <div class="tweet-meta">
+                <span class="user-display">Chileno Impulsivo</span>
+                <span class="user-handle">@chileno_impulsivo</span>
+                <span class="tweet-bullet">•</span>
+                <span class="tweet-time">Ahora</span>
+              </div>
+              <p class="tweet-text-content">Escribe un tweet a la izquierda y presiona "Enviar Mención" para iniciar la simulación y ver el historial en vivo...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Métricas Generales / Observabilidad -->
+  <footer class="metrics-section">
+    <div class="glass metrics-card">
+      <div class="metrics-header">
+        <h2>Observabilidad y Auditoría (/metrics)</h2>
+        <button id="btn-refresh" class="btn-secondary">Refrescar Base de Datos</button>
+      </div>
+
+      <div class="metrics-overview">
+        <div class="metric-box">
+          <span class="metric-num" id="stat-total">0</span>
+          <span class="metric-label">Verificaciones Totales</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-num" id="stat-latency">0 ms</span>
+          <span class="metric-label">Latencia Backend</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-num" id="stat-fallback">0%</span>
+          <span class="metric-label">Tasa de Fallbacks (IA)</span>
+        </div>
+        <div class="metric-box">
+          <span class="metric-num" id="stat-db">En Memoria</span>
+          <span class="metric-label">Modo Persistencia</span>
+        </div>
+      </div>
+
+      <!-- Tabla de Logs de Persistencia -->
+      <div class="table-container">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>ID Métrica</th>
+              <th>Usuario (Anónimo)</th>
+              <th>Texto Verificado</th>
+              <th>Veredicto</th>
+              <th>Confianza</th>
+              <th>Int. Origen</th>
+              <th>Latencia</th>
+              <th>Intentos</th>
+              <th>Persistencia</th>
+            </tr>
+          </thead>
+          <tbody id="metrics-tbody">
+            <tr>
+              <td colspan="9" class="empty-table">No hay logs registrados en base de datos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

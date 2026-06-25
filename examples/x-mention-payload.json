@@ -1,0 +1,12 @@
+{
+  "tweet": {
+    "id": "1789000000000000001",
+    "text": "@Agente Dicen que manana cierran todos los bancos en Chile",
+    "author_id": "12345",
+    "in_reply_to_tweet_id": "1788999999999999999"
+  },
+  "user": {
+    "id": "12345",
+    "username": "usuario_demo"
+  }
+}

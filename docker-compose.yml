@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bot-verificador-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bot_verificador
+    volumes:
+      - ./src/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  bot-verificador:
+    build: .
+    container_name: bot-verificador-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      PORT: 3000
+      CONFIDENCE_THRESHOLD: 60
+      X_CLIENT_MODE: mock
+      X_BOT_HANDLE: Agente
+      DATABASE_URL: postgres://postgres:postgres@db:5432/bot_verificador
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: bot_verificador

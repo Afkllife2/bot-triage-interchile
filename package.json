@@ -1,0 +1,23 @@
+{
+  "name": "bot-verificador-x-prototipo",
+  "version": "0.1.0",
+  "description": "Prototipo funcional para mitigar el riesgo tecnico del MVP Bot Verificador X.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "test": "jest --runInBand --detectOpenHandles"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
