@@ -1,222 +1,7 @@
 const DEFAULT_THRESHOLD = Number(process.env.CONFIDENCE_THRESHOLD || 60);
 
 // Base de datos de hechos conocidos para verificación instantánea y de alta fidelidad
-const KNOWN_FACTS = [
-  {
-    id: "niko-major",
-    matches: (text) => text.includes("niko") && (text.includes("major") || text.includes("cs") || text.includes("counter") || text.includes("strike") || text.includes("campeon") || text.includes("campeón") || text.includes("ganó") || text.includes("gano")),
-    veredicto: "Verdadero",
-    confianza: 95,
-    tema: "Esports y videojuegos",
-    contexto: "Nikola 'NiKo' Kovač, uno de los mejores jugadores de la historia de Counter-Strike, se coronó campeón del torneo Major de CS2 con G2 Esports este fin de semana, logrando el primer Major de su carrera tras años de intentos fallidos.",
-    fuentesConsultadas: [
-      "HLTV.org (portal de referencia de Counter-Strike).",
-      "Cobertura oficial de PGL y medios de esports internacionales.",
-      "Redes oficiales del jugador y de G2 Esports."
-    ],
-    senales: [
-      "Mención de entidad oficial (NiKo).",
-      "Confirmación en portales de estadística y resultados de torneos.",
-      "Ausencia de retórica sensacionalista o desinformación."
-    ],
-    justificacion: "La victoria de NiKo en el Major de Counter-Strike está plenamente confirmada por HLTV, patrocinadores y la cobertura global del evento del fin de semana pasado.",
-    recomendacion: "Informarse mediante el resumen de HLTV.org o los videos oficiales del canal oficial de YouTube de la organizadora del Major."
-  },
-  {
-    id: "real-madrid-champions",
-    matches: (text) => (text.includes("real madrid") || text.includes("madrid")) && (text.includes("champions") || text.includes("campeon") || text.includes("campeón") || text.includes("copa") || text.includes("ganó") || text.includes("gano")),
-    veredicto: "Verdadero",
-    confianza: 98,
-    tema: "Deportes",
-    contexto: "El Real Madrid Club de Fútbol es el máximo ganador histórico de la UEFA Champions League, habiendo conquistado múltiples trofeos en el torneo de clubes más prestigioso del mundo.",
-    fuentesConsultadas: [
-      "Sitio web oficial de la UEFA (uefa.com).",
-      "Medios de comunicación deportivos internacionales.",
-      "Registros oficiales de la federación."
-    ],
-    senales: [
-      "Mención de institución oficial (UEFA / Real Madrid).",
-      "Coherencia con registros estadísticos oficiales e históricos del torneo."
-    ],
-    justificacion: "El estatus de campeón de Champions League del Real Madrid está catalogado de forma unánime por todas las federaciones deportivas oficiales.",
-    recomendacion: "Revisar las estadísticas de campeones en el sitio web de la UEFA."
-  },
-  {
-    id: "messi-mundial",
-    matches: (text) => text.includes("messi") && (text.includes("mundial") || text.includes("qatar") || text.includes("copa") || text.includes("campeon") || text.includes("campeón") || text.includes("ganó") || text.includes("gano")),
-    veredicto: "Verdadero",
-    confianza: 98,
-    tema: "Deportes",
-    contexto: "Lionel Messi se consagró campeón del mundo con la selección argentina en el Mundial de Catar 2022, venciendo a Francia en una final histórica y coronando su carrera profesional.",
-    fuentesConsultadas: [
-      "Sitio oficial de la FIFA (fifa.com).",
-      "Registros de la prensa deportiva global.",
-      "Estadísticas del torneo oficial."
-    ],
-    senales: [
-      "Mención de entidad oficial (FIFA, Messi, Selección Argentina).",
-      "Registros de video y transmisiones globales de la final del mundial.",
-      "Consenso de la prensa deportiva global."
-    ],
-    justificacion: "El título mundial de Lionel Messi en 2022 es un hecho histórico ampliamente documentado y oficializado por los entes rectores del fútbol mundial.",
-    recomendacion: "Ver las estadísticas oficiales y resúmenes de partidos en el canal oficial de la FIFA."
-  },
-  {
-    id: "chile-copa-america",
-    matches: (text) => text.includes("chile") && (text.includes("copa america") || text.includes("copa américa") || text.includes("america") || text.includes("américa")) && (text.includes("campeon") || text.includes("campeón") || text.includes("ganó") || text.includes("gano") || text.includes("2015") || text.includes("2016")),
-    veredicto: "Verdadero",
-    confianza: 98,
-    tema: "Deportes",
-    contexto: "La selección chilena de fútbol se coronó campeona de la Copa América de forma consecutiva en el año 2015 (torneo local) y en el año 2016 (Copa América Centenario en EE.UU.), venciendo a Argentina en ambas finales.",
-    fuentesConsultadas: [
-      "Sitio oficial de la CONMEBOL.",
-      "Asociación Nacional de Fútbol Profesional (ANFP) de Chile.",
-      "Archivos oficiales de torneos continentales."
-    ],
-    senales: [
-      "Registros oficiales del organismo rector (CONMEBOL).",
-      "Trofeos físicos y medallas históricas registradas.",
-      "Cobertura histórica internacional."
-    ],
-    justificacion: "Los campeonatos de Chile en Copa América de 2015 y 2016 son hechos históricos oficiales e incuestionables en el fútbol sudamericano.",
-    recomendacion: "Revisar el palmarés histórico en el portal oficial de la CONMEBOL."
-  },
-  {
-    id: "faker-worlds",
-    matches: (text) => (text.includes("faker") || text.includes("t1")) && (text.includes("worlds") || text.includes("campeon") || text.includes("campeón") || text.includes("lol") || text.includes("league of legends") || text.includes("torneo")),
-    veredicto: "Verdadero",
-    confianza: 96,
-    tema: "Esports y videojuegos",
-    contexto: "Lee 'Faker' Sang-hyeok y su equipo T1 son múltiples campeones del mundo (Worlds) de League of Legends, siendo Faker considerado unánimemente el mejor jugador de la historia del juego.",
-    fuentesConsultadas: [
-      "Riot Games (desarrollador de League of Legends y organizador oficial de Worlds).",
-      "Portal LoLEsports.",
-      "Medios especializados en deportes electrónicos (esports)."
-    ],
-    senales: [
-      "Mención de entidad oficial (Faker, T1, Riot Games).",
-      "Coherencia con las bases de datos de resultados competitivos oficiales de Riot."
-    ],
-    justificacion: "La trayectoria de Faker y sus títulos mundiales con T1 están oficializados por Riot Games y registrados en la historia de la competición.",
-    recomendacion: "Consultar los resultados y partidas históricas en el portal oficial de lolesports.com."
-  },
-  {
-    id: "tierra-redonda",
-    matches: (text) => text.includes("tierra") && (text.includes("redonda") || text.includes("esferica") || text.includes("esférica") || text.includes("curva") || text.includes("gira alrededor")),
-    veredicto: "Verdadero",
-    confianza: 99,
-    tema: "Ciencia y astronomia",
-    contexto: "La forma de la Tierra es un esferoide oblato y orbita alrededor del Sol, respaldado por la física, observaciones satelitales y mediciones astronómicas centenarias.",
-    fuentesConsultadas: [
-      "NASA y agencias espaciales internacionales (ESA, JAXA).",
-      "Consenso de la comunidad científica astrofísica global.",
-      "Fotografías y transmisiones en vivo desde la Estación Espacial Internacional (EEI)."
-    ],
-    senales: [
-      "Evidencia visual empírica directa (imágenes de la Tierra desde el espacio).",
-      "Modelos matemáticos gravitacionales e hidrostáticos consistentes."
-    ],
-    justificacion: "La esfericidad de la Tierra es un hecho científico comprobado empíricamente a través de la exploración espacial y la geodesia.",
-    recomendacion: "Revisar los portales educativos de agencias espaciales como la NASA."
-  },
-  {
-    id: "tierra-plana",
-    matches: (text) => text.includes("tierra") && text.includes("plana"),
-    veredicto: "Falso",
-    confianza: 99,
-    tema: "Ciencia y astronomia",
-    contexto: "La afirmación de que la Tierra es plana carece de sustento físico, geodésico y de cualquier evidencia empírica, contradiciendo el consenso científico global.",
-    fuentesConsultadas: [
-      "NASA (National Aeronautics and Space Administration).",
-      "Institutos de Astrofísica y Geodesia mundiales.",
-      "Evidencia empírica cotidiana (desaparición de barcos en el horizonte, husos horarios)."
-    ],
-    senales: [
-      "Uso de argumentos conspirativos que ignoran las leyes físicas elementales.",
-      "Ausencia de publicaciones científicas validadas con revisión por pares."
-    ],
-    justificacion: "La hipótesis de la Tierra plana fue refutada científicamente desde la antigüedad por astrónomos como Eratóstenes y es desmentida por toda la tecnología satelital actual.",
-    recomendacion: "Se sugiere consultar recursos de educación científica básica sobre la gravedad y la curvatura terrestre."
-  },
-  {
-    id: "vacunas-chips",
-    matches: (text) => (text.includes("vacuna") || text.includes("vacunas")) && (text.includes("chip") || text.includes("5g") || text.includes("imanta") || text.includes("magnet")),
-    veredicto: "Falso",
-    confianza: 98,
-    tema: "Salud publica",
-    contexto: "Las afirmaciones sobre la presencia de microchips, magnetismo o tecnología 5G en las vacunas corresponden a teorías conspirativas sin sustento biológico o químico.",
-    fuentesConsultadas: [
-      "Organización Mundial de la Salud (OMS).",
-      "Centros para el Control y la Prevención de Enfermedades (CDC).",
-      "Ministerio de Salud de Chile (MINSAL)."
-    ],
-    senales: [
-      "Uso de retórica alarmista y pseudocientífica.",
-      "Ausencia de mecanismos técnicos que permitan chips microscópicos inyectables autopropulsados o magnetismo detectable."
-    ],
-    justificacion: "Las fórmulas de las vacunas son públicas y analizadas rigurosamente por agencias reguladoras globales. No contienen metales imantados ni componentes electrónicos.",
-    recomendacion: "Revisar el portal de mitos y realidades sobre vacunas en el sitio web oficial de la OMS."
-  },
-  {
-    id: "santiago-capital-chile",
-    matches: (text) => text.includes("santiago") && text.includes("capital") && text.includes("chile"),
-    veredicto: "Verdadero",
-    confianza: 99,
-    tema: "Geografia y sociedad",
-    contexto: "Santiago de Chile es la capital oficial de la República de Chile y alberga las sedes principales del poder ejecutivo, judicial y los organismos administrativos del Estado.",
-    fuentesConsultadas: [
-      "Constitución Política de la República de Chile.",
-      "Instituto Nacional de Estadísticas (INE).",
-      "Biblioteca del Congreso Nacional."
-    ],
-    senales: [
-      "Datos consagrados en la legislación constitucional.",
-      "Consenso de la cartografía internacional."
-    ],
-    justificacion: "El estatus de Santiago como capital de Chile está determinado legal y constitucionalmente.",
-    recomendacion: "Consultar datos censales e históricos en el sitio oficial del INE."
-  },
-  {
-    id: "corte-agua-santiago",
-    matches: (text) => text.includes("corte de agua") && (text.includes("santiago") || text.includes("chile") || text.includes("mañana") || text.includes("manana")),
-    veredicto: "Impreciso",
-    confianza: 75,
-    tema: "Servicios basicos",
-    contexto: "Los cortes de agua en Santiago suelen ser programados por mantenimiento o debido a turbiedad extrema en el río Maipo, afectando solo a comunas específicas y no a toda la región de forma simultánea.",
-    fuentesConsultadas: [
-      "Aguas Andinas (proveedor oficial en la Región Metropolitana).",
-      "Superintendencia de Servicios Sanitarios (SISS).",
-      "Gobierno Regional Metropolitano."
-    ],
-    senales: [
-      "Generalización excesiva de un corte puntual de servicio.",
-      "Ausencia de mapas oficiales de comunas afectadas.",
-      "Coexistencia de alertas preventivas con el servicio normalizado."
-    ],
-    justificacion: "Si bien existen cortes de agua ocasionales, afirmar que hay un corte generalizado sin precisar comunas o fechas oficiales induce a confusión, por lo que es impreciso.",
-    recomendacion: "Ingresar el número de cliente en la web de Aguas Andinas para verificar si su domicilio específico está bajo corte programado."
-  },
-  {
-    id: "bancos-cierran-chile",
-    matches: (text) => (text.includes("banco") || text.includes("bancos")) && (text.includes("cierran") || text.includes("cerraran") || text.includes("cerrarán") || text.includes("cierre")) && text.includes("chile") && (text.includes("manana") || text.includes("mañana") || text.includes("hoy")),
-    veredicto: "Falso",
-    confianza: 88,
-    tema: "Economia y servicios",
-    contexto: "La afirmacion indica un cierre generalizado de bancos en Chile, lo que corresponderia a una medida publica de alto impacto que deberia estar respaldada por comunicados oficiales o cobertura verificable.",
-    fuentesConsultadas: [
-      "Canales oficiales esperables para anuncios bancarios o regulatorios.",
-      "Medios informativos nacionales de referencia.",
-      "Senales internas del texto, como ausencia de fuente, fecha formal o institucion responsable."
-    ],
-    senales: [
-      "Afirmacion especifica y verificable sobre un servicio financiero critico.",
-      "No se entrega fuente oficial ni entidad responsable del supuesto cierre.",
-      "El formato del mensaje opera como rumor y puede inducir alarma publica."
-    ],
-    justificacion: "No existe respaldo verificable en las fuentes esperables para una medida de este nivel, por lo que la afirmacion se clasifica como falsa en el prototipo.",
-    recomendacion: "No compartir la informacion y revisar canales oficiales de bancos, reguladores o autoridades antes de tomar decisiones."
-  }
-];
+const KNOWN_FACTS = [];
 
 function detectTopic(normalizedText) {
   if (
@@ -347,7 +132,18 @@ function generateDynamicNlpResponse(normalizedText) {
     normalizedText.includes("alguien sabe") ||
     normalizedText.includes("es verdad que");
 
-  if (containsOfficialSource) {
+  if (containsOfficialSource && containsSensationalism) {
+    veredicto = "Engañoso";
+    confianza = 70;
+    contexto = `La publicación mezcla conceptos o entidades del ámbito de '${tema}' con afirmaciones alarmistas o sensacionalistas.`;
+    fuentesConsultadas = ["Sitios de fact-checking", "Comunicados oficiales de las entidades mencionadas"];
+    senales = [
+      "Uso de entidades o lenguaje oficial mezclado con conclusiones alarmistas o ganchos emocionales.",
+      "Patrón típico de desinformación que busca legitimar una mentira usando una premisa real."
+    ];
+    justificacion = "El texto contiene entidades o afirmaciones que pueden ser reales, pero establece una conclusión o relación alarmista que carece de evidencia.";
+    recomendacion = "Revisar con cuidado. Parte de la información puede ser cierta, pero la conclusión o el tono general es desorientador.";
+  } else if (containsOfficialSource) {
     veredicto = "Verdadero";
     confianza = 78;
     contexto = `La publicación parece estar respaldada por un anuncio oficial o una institución pública relevante para el área de '${tema}'.`;

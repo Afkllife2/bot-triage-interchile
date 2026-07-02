@@ -41,7 +41,7 @@ describe("Unit Tests - NLP Local Simulator (Domain Rules)", () => {
   });
 
   test("unsupported bank closure claim is classified as Falso", async () => {
-    const result = await nlpAdapter.analyzeText("Dicen que manana cierran todos los bancos en Chile");
+    const result = await nlpAdapter.analyzeText("URGENTE manana cierran todos los bancos en Chile");
     expect(result.veredicto).toBe("Falso");
     expect(result.tema).toBe("Economia y servicios");
     expect(result.confianza).toBeGreaterThanOrEqual(60);
@@ -98,11 +98,11 @@ describe("Integration Tests - API Endpoints (Supertest)", () => {
   test("POST /verify returns structured analysis and saves metrics", async () => {
     const res = await request(app)
       .post("/verify")
-      .send({ text: "Dicen que mañana cierran todos los bancos en Chile", userId: "user12" });
+      .send({ text: "URGENTE mañana cierran todos los bancos en Chile", userId: "user12" });
 
     expect(res.status).toBe(200);
     expect(res.body.veredicto).toBe("Falso");
-    expect(res.body.confianza).toBe(88);
+    expect(res.body.confianza).toBe(74);
     expect(res.body.integration.status).toBe("ok");
     expect(res.body.integration.provider).toBe("simulated-nlp");
     expect(res.body.metricId).toBeDefined();

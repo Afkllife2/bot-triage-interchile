@@ -1,8 +1,8 @@
-﻿const { analyzeWithSimulatedNlp } = require("../nlpSimulator");
+const { analyzeWithSimulatedNlp } = require("../nlpSimulator");
 
 function getMaxRetries() { return parseInt(process.env.NLP_MAX_RETRIES || "2", 10); }
 function getTimeoutMs() { return parseInt(process.env.NLP_TIMEOUT_MS || "2000", 10); }
-const VALID_VERDICTS = new Set(["Verdadero", "Falso", "Impreciso"]);
+const VALID_VERDICTS = new Set(["Verdadero", "Falso", "Impreciso", "Engañoso"]);
 
 function withIntegrationMetadata(analysis, metadata) {
   return {
@@ -40,7 +40,7 @@ function classifyError(error) {
     msg.includes("invalida") ||
     msg.includes("invalido") ||
     msg.includes("vacia") ||
-    msg.includes("vacÃ­a") ||
+    msg.includes("vacía") ||
     msg.includes("estructurada")
   ) {
     return "invalid_provider_response";
@@ -130,33 +130,35 @@ async function queryGeminiApi(query, searchResults) {
 
   const contextText = searchResults.length > 0 
     ? searchResults.map((r, i) => `[Fuente ${i+1}]: ${r.title}\nURL: ${r.url}\nResumen: ${r.snippet}`).join('\n\n')
-    : "No se encontraron resultados de bÃºsqueda relevantes en internet.";
+    : "No se encontraron resultados de búsqueda relevantes en internet.";
 
   const currentDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-  const systemInstruction = `Eres el motor de IA/NLP de 'Bot Verificador X', un bot diseÃ±ado para verificar la veracidad de publicaciones y tuits.
-La fecha actual del sistema es: ${currentDate}. Por favor, evalÃºa todos los eventos, afirmaciones y datos temporales teniendo en cuenta que nos encontramos en esta fecha actual (junio de 2026). El Mundial de la FIFA 2026 y otros eventos de mediados de 2026 estÃ¡n ocurriendo EN ESTE MOMENTO.
-Tu tarea es analizar la afirmaciÃ³n del usuario utilizando el contexto de bÃºsqueda web proporcionado.
+  const systemInstruction = `Eres el motor de IA/NLP de 'Bot Verificador X', un bot diseñado para verificar la veracidad de publicaciones y tuits.
+La fecha actual del sistema es: ${currentDate}. Por favor, evalúa todos los eventos, afirmaciones y datos temporales teniendo en cuenta que nos encontramos en esta fecha actual (junio de 2026). El Mundial de la FIFA 2026 y otros eventos de mediados de 2026 están ocurriendo EN ESTE MOMENTO.
+IMPORTANTE CONTEXTO GEOGRÁFICO: Este bot está diseñado principalmente para ciudadanos chilenos. A menos que el tuit especifique expresamente otro país, debes asumir SIEMPRE que el usuario es de Chile. Por lo tanto, si el tuit habla de "el gobierno", "el presidente", "las autoridades" o "nuestro país", se refiere indefectiblemente al Gobierno de Chile y al Presidente de Chile.
+Tu tarea es analizar la afirmación del usuario utilizando el contexto de búsqueda web proporcionado.
 Debes responder estrictamente en formato JSON utilizando el esquema requerido, sin bloques markdown ni texto explicativo adicional.
 Esquema de respuesta JSON:
 {
-  "veredicto": "Verdadero" | "Falso" | "Impreciso",
-  "confianza": nÃºmero entero entre 0 y 100,
-  "tema": "Tema detectado (ej. Deportes, Esports, PolÃ­tica, Salud, Ciencia)",
+  "veredicto": "Verdadero" | "Falso" | "Impreciso" | "Engañoso",
+  "confianza": número entero entre 0 y 100,
+  "tema": "Tema detectado (ej. Deportes, Esports, Política, Salud, Ciencia)",
   "contexto": "Breve resumen objetivo del hecho real basado en las fuentes.",
   "fuentesConsultadas": ["Nombre de fuente 1 (ej. HLTV.org)", "Nombre de fuente 2"],
-  "senales": ["SeÃ±al de veracidad o falsedad detectada en el anÃ¡lisis de redes"],
-  "justificacion": "ExplicaciÃ³n clara de por quÃ© se asignÃ³ el veredicto.",
-  "recomendacion": "Consejo prÃ¡ctico para el usuario respecto a la informaciÃ³n."
+  "senales": ["Señal de veracidad o falsedad detectada en el análisis de redes"],
+  "justificacion": "Explicación clara de por qué se asignó el veredicto.",
+  "recomendacion": "Consejo práctico para el usuario respecto a la información."
 }
 
 Considera:
-- Si el tuit del usuario afirma que algo ocurriÃ³ pero las fuentes demuestran que ocurriÃ³, el veredicto es 'Verdadero'.
-- Si el tuit afirma que algo ocurriÃ³ pero las fuentes demuestran que NO ocurriÃ³ (o viceversa), el veredicto es 'Falso'.
-- Si el tuit contiene negaciones directas sobre hechos reales (ej. 'NiKo nunca ha ganado un major', cuando sÃ­ lo ganÃ³), debes verificar la veracidad de la negaciÃ³n y clasificarla de forma correcta (en ese caso serÃ­a Falso).
-- Si la informaciÃ³n es contradictoria, desactualizada o insuficiente para concluir, el veredicto es 'Impreciso'.
-- Justifica de manera neutral en espaÃ±ol chileno/neutro.`;
+- Si el tuit del usuario afirma que algo ocurrió pero las fuentes demuestran que ocurrió, el veredicto es 'Verdadero'.
+- Si el tuit afirma que algo ocurrió pero las fuentes demuestran que NO ocurrió (o viceversa), el veredicto es 'Falso'.
+- Si el tuit mezcla hechos reales con conclusiones falsas, descontextualizadas o alarmistas (ej. 'Kast es presidente y por eso caerá un meteorito'), el veredicto es 'Engañoso'.
+- Si el tuit contiene negaciones directas sobre hechos reales (ej. 'NiKo nunca ha ganado un major', cuando sí lo ganó), debes verificar la veracidad de la negación y clasificarla de forma correcta (en ese caso sería Falso).
+- Si la información es contradictoria, desactualizada o insuficiente para concluir, el veredicto es 'Impreciso'.
+- Justifica de manera neutral en español chileno/neutro.`;
 
-  const promptText = `Contexto de bÃºsqueda web para validar:\n${contextText}\n\nAfirmaciÃ³n del tuit a verificar:\n"${query}"`;
+  const promptText = `Contexto de búsqueda web para validar:\n${contextText}\n\nAfirmación del tuit a verificar:\n"${query}"`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -176,7 +178,7 @@ Considera:
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini API retornÃ³ cÃ³digo ${response.status}`);
+    throw new Error(`Gemini API retornó código ${response.status}`);
   }
 
   const data = await response.json();
@@ -189,7 +191,7 @@ Considera:
 }
 
 async function analyzeText(cleanText, simulateFailure = false) {
-  // 1. Si no hay proveedor externo y no estamos forzando una falla, vemos si coincide con un hecho conocido de demostraciÃ³n
+  // 1. Si no hay proveedor externo y no estamos forzando una falla, vemos si coincide con un hecho conocido de demostración
   if (!process.env.NLP_PROVIDER_URL && !simulateFailure) {
     const localResult = analyzeWithSimulatedNlp(cleanText);
     if (localResult.isDemoFact) {
@@ -202,7 +204,7 @@ async function analyzeText(cleanText, simulateFailure = false) {
     }
   }
 
-  // 2. Si es una consulta general, no hay clave externa de proveedor y hay Gemini API, usamos RAG y bÃºsqueda en tiempo real
+  // 2. Si es una consulta general, no hay clave externa de proveedor y hay Gemini API, usamos RAG y búsqueda en tiempo real
   if (!process.env.NLP_PROVIDER_URL && process.env.GEMINI_API_KEY && !simulateFailure) {
     try {
       const searchQuery = cleanText.replace(/@\w+/g, "").replace(/\s+/g, " ").trim();
@@ -213,7 +215,7 @@ async function analyzeText(cleanText, simulateFailure = false) {
       const data = await queryGeminiApi(searchQuery, searchResults);
       validateProviderResponse(data);
       
-      console.log(`[RAG] AnÃ¡lisis completado con Ã©xito por Gemini API. Veredicto: ${data.veredicto}`);
+      console.log(`[RAG] Análisis completado con éxito por Gemini API. Veredicto: ${data.veredicto}`);
       return withIntegrationMetadata({
         veredicto: data.veredicto,
         confianza: data.confianza,
@@ -221,7 +223,7 @@ async function analyzeText(cleanText, simulateFailure = false) {
         contexto: data.contexto || "Sin contexto adicional.",
         fuentesConsultadas: data.fuentesConsultadas || [],
         senales: data.senales || [],
-        justificacion: data.justificacion || "Procesado por motor de IA con bÃºsqueda en tiempo real.",
+        justificacion: data.justificacion || "Procesado por motor de IA con búsqueda en tiempo real.",
         recomendacion: data.recomendacion || "Verificar en canales oficiales."
       }, {
         provider: "gemini-api",
@@ -230,22 +232,22 @@ async function analyzeText(cleanText, simulateFailure = false) {
         fallbackApplied: false
       });
     } catch (err) {
-      console.warn(`[RAG] Fallo en la integraciÃ³n con Gemini API. Cayendo al simulador local. Error: ${err.message}`);
+      console.warn(`[RAG] Fallo en la integración con Gemini API. Cayendo al simulador local. Error: ${err.message}`);
     }
   }
 
-  // 3. Si no hay proveedor externo ni Gemini API (o fallÃ³/no coincidiÃ³ con demo), corremos el simulador de reglas locales
+  // 3. Si no hay proveedor externo ni Gemini API, o si se simuló una falla de red, corremos el motor lingüístico local (Fallback)
   const providerUrl = process.env.NLP_PROVIDER_URL;
-  if (!providerUrl && !simulateFailure) {
+  if (!providerUrl || simulateFailure) {
     return withIntegrationMetadata(analyzeWithSimulatedNlp(cleanText), {
       provider: "simulated-nlp",
-      status: "ok",
+      status: simulateFailure ? "fallback_local" : "ok",
       attempts: 1,
-      fallbackApplied: false
+      fallbackApplied: simulateFailure
     });
   }
 
-  // 3. Flujo con Mock NLP de integraciÃ³n externa (usado en tests unitarios y de stress)
+  // 3. Flujo con Mock NLP de integración externa (usado en tests unitarios y de stress)
   const finalProviderUrl = providerUrl || "https://nlp-engine-mock.local/analyze";
   let attempt = 0;
   const maxRetries = getMaxRetries();
