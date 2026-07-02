@@ -89,7 +89,7 @@ async function queryGeminiApi(query) {
 La fecha actual del sistema es: ${currentDate}. Por favor, evalúa todos los eventos, afirmaciones y datos temporales teniendo en cuenta que nos encontramos en esta fecha actual (junio de 2026). El Mundial de la FIFA 2026 y otros eventos de mediados de 2026 están ocurriendo EN ESTE MOMENTO.
 IMPORTANTE CONTEXTO GEOGRÁFICO: Este bot está diseñado principalmente para ciudadanos chilenos. A menos que el tuit especifique expresamente otro país, debes asumir SIEMPRE que el usuario es de Chile. Por lo tanto, si el tuit habla de "el gobierno", "el presidente", "las autoridades" o "nuestro país", se refiere indefectiblemente al Gobierno de Chile y al Presidente de Chile.
 Tu tarea es analizar la afirmación del usuario utilizando tu herramienta nativa de Google Search para obtener el contexto de búsqueda web en tiempo real.
-Debes responder estrictamente en formato JSON utilizando el esquema requerido, sin bloques markdown ni texto explicativo adicional.
+Debes responder estrictamente en formato JSON utilizando el esquema requerido. IMPORTANTE: NO uses backticks (\`\`\`) ni bloques markdown de código. Devuelve SOLO el texto JSON crudo.
 Esquema de respuesta JSON:
 {
   "veredicto": "Verdadero" | "Falso" | "Impreciso" | "Engañoso",
@@ -128,15 +128,13 @@ Considera:
       }],
       tools: [{
         googleSearch: {}
-      }],
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
+      }]
     })
   });
 
   if (!response.ok) {
-    throw new Error(`Gemini API retornó código ${response.status}`);
+    const errBody = await response.text();
+    throw new Error(`Gemini API retornó código ${response.status}: ${errBody}`);
   }
 
   const data = await response.json();
@@ -145,7 +143,10 @@ Considera:
     throw new Error("No se obtuvo respuesta de texto de Gemini API.");
   }
 
-  return JSON.parse(textResponse);
+  // Limpiar posibles backticks de markdown (```json ... ```) si la IA ignora la instrucción
+  const cleanJsonText = textResponse.replace(/^```json/im, '').replace(/```$/m, '').trim();
+
+  return JSON.parse(cleanJsonText);
 }
 
 async function analyzeText(cleanText, simulateFailure = false) {
