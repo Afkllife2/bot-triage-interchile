@@ -29,6 +29,12 @@ function validateProviderResponse(data) {
   if (typeof data.confianza !== "number" || data.confianza < 0 || data.confianza > 100) {
     throw new Error("Respuesta de NLP con confianza invalida.");
   }
+  if (typeof data.certeza !== "number" || data.certeza < 0 || data.certeza > 100) {
+    throw new Error("Respuesta de NLP con certeza invalida.");
+  }
+  if (!data.desglose || typeof data.desglose !== "string") {
+    throw new Error("Respuesta de NLP con desglose invalido.");
+  }
 }
 
 function classifyError(error) {
@@ -54,6 +60,8 @@ function buildSafeFallback(error, attempts) {
   return withIntegrationMetadata({
     veredicto: "Impreciso",
     confianza: 50,
+    certeza: 0,
+    desglose: "No fue posible analizar la afirmación debido a un fallo técnico.",
     tema: "Error de integracion",
     contexto: "El servicio de verificacion experimento problemas de comunicacion o contrato con el motor de IA/NLP.",
     fuentesConsultadas: [],
@@ -142,6 +150,8 @@ Esquema de respuesta JSON:
 {
   "veredicto": "Verdadero" | "Falso" | "Impreciso" | "Engañoso",
   "confianza": número entero entre 0 y 100,
+  "certeza": número entero entre 0 y 100 (qué porcentaje del tuit es información real y comprobada),
+  "desglose": "Breve explicación de qué partes de la afirmación son verdad y qué partes son falsas o engañosas.",
   "tema": "Tema detectado (ej. Deportes, Esports, Política, Salud, Ciencia)",
   "contexto": "Breve resumen objetivo del hecho real basado en las fuentes.",
   "fuentesConsultadas": ["Nombre de fuente 1 (ej. HLTV.org)", "Nombre de fuente 2"],
@@ -219,6 +229,8 @@ async function analyzeText(cleanText, simulateFailure = false) {
       return withIntegrationMetadata({
         veredicto: data.veredicto,
         confianza: data.confianza,
+        certeza: data.certeza,
+        desglose: data.desglose || "Desglose no disponible.",
         tema: data.tema || "General",
         contexto: data.contexto || "Sin contexto adicional.",
         fuentesConsultadas: data.fuentesConsultadas || [],
@@ -281,6 +293,8 @@ async function analyzeText(cleanText, simulateFailure = false) {
       return withIntegrationMetadata({
         veredicto: data.veredicto,
         confianza: data.confianza,
+        certeza: data.certeza,
+        desglose: data.desglose || "Desglose no disponible.",
         tema: data.tema || "General",
         contexto: data.contexto || "Sin contexto adicional.",
         fuentesConsultadas: data.fuentesConsultadas || [],

@@ -101,6 +101,8 @@ function generateDynamicNlpResponse(normalizedText) {
   // Valores base dinámicos
   let veredicto = "Impreciso";
   let confianza = 65; // Valor por defecto superior al umbral para evitar ser forzado a Impreciso (60)
+  let certeza = 0;
+  let desglose = "No hay suficiente información para determinar qué partes son ciertas.";
   let contexto = `La publicación realiza afirmaciones sobre un tema clasificado bajo '${tema}'.`;
   let justificacion = "El procesamiento semántico identificó elementos de interés público, pero no detecta datos oficiales suficientes en el mensaje analizado.";
   let recomendacion = "Se recomienda verificar de forma directa la información en medios oficiales y agencias informativas reconocidas.";
@@ -135,6 +137,8 @@ function generateDynamicNlpResponse(normalizedText) {
   if (containsOfficialSource && containsSensationalism) {
     veredicto = "Engañoso";
     confianza = 70;
+    certeza = 50;
+    desglose = "La afirmación utiliza una entidad real mezclada con conclusiones alarmistas o falsas.";
     contexto = `La publicación mezcla conceptos o entidades del ámbito de '${tema}' con afirmaciones alarmistas o sensacionalistas.`;
     fuentesConsultadas = ["Sitios de fact-checking", "Comunicados oficiales de las entidades mencionadas"];
     senales = [
@@ -146,6 +150,8 @@ function generateDynamicNlpResponse(normalizedText) {
   } else if (containsOfficialSource) {
     veredicto = "Verdadero";
     confianza = 78;
+    certeza = 100;
+    desglose = "Toda la información concuerda con lo reportado por fuentes oficiales.";
     contexto = `La publicación parece estar respaldada por un anuncio oficial o una institución pública relevante para el área de '${tema}'.`;
     fuentesConsultadas = ["Declaraciones oficiales emitidas", "Medios informativos formales"];
     senales = [
@@ -158,6 +164,8 @@ function generateDynamicNlpResponse(normalizedText) {
   } else if (containsSensationalism) {
     veredicto = "Falso";
     confianza = 74;
+    certeza = 0;
+    desglose = "La información carece de base real y utiliza ganchos emocionales falsos.";
     contexto = "La publicación utiliza recursos retóricos típicos de la desinformación viral que busca provocar una reacción inmediata.";
     fuentesConsultadas = ["Sitios verificadores de fact-checking", "Comunicados desmintiendo el rumor"];
     senales = [
@@ -170,6 +178,8 @@ function generateDynamicNlpResponse(normalizedText) {
   } else if (containsInformalRumor) {
     veredicto = "Impreciso";
     confianza = 45; // Inferior al umbral de 60, forzando veredicto impreciso controlado
+    certeza = 30;
+    desglose = "Es un rumor, no se puede validar ni desmentir por completo.";
     contexto = "La afirmación se presenta como un rumor, comentario informal o consulta general sin atribución.";
     fuentesConsultadas = ["Redes sociales", "Foros de discusión informales"];
     senales = [
@@ -184,6 +194,8 @@ function generateDynamicNlpResponse(normalizedText) {
     if (tema === "Esports y videojuegos") {
       veredicto = "Verdadero";
       confianza = 82;
+      certeza = 100;
+      desglose = "El evento o logro deportivo es completamente real.";
       contexto = "La publicación trata sobre un logro competitivo o evento en el sector de deportes electrónicos.";
       fuentesConsultadas = ["Portales informativos de esports especializados", "Estadísticas de ligas y torneos oficiales"];
       justificacion = "El procesamiento de datos confirma concordancia semántica con resultados de torneos competitivos del sector.";
@@ -191,6 +203,8 @@ function generateDynamicNlpResponse(normalizedText) {
     } else if (tema === "Deportes") {
       veredicto = "Verdadero";
       confianza = 85;
+      certeza = 100;
+      desglose = "Los datos deportivos concuerdan 100% con los registros oficiales.";
       contexto = "La publicación hace referencia a un resultado, club o atleta del ámbito deportivo.";
       fuentesConsultadas = ["Medios periodísticos deportivos", "Fichas de estadísticas federativas oficiales"];
       justificacion = "Las afirmaciones sobre competiciones deportivas oficiales gozan de amplia cobertura y validación objetiva en tiempo real.";
@@ -198,6 +212,8 @@ function generateDynamicNlpResponse(normalizedText) {
     } else if (tema === "Ciencia y astronomia") {
       veredicto = "Verdadero";
       confianza = 80;
+      certeza = 100;
+      desglose = "Se trata de un hecho científico comprobado en su totalidad.";
       contexto = "La afirmación hace referencia a hechos científicos establecidos o descubrimientos astronómicos.";
       fuentesConsultadas = ["Revistas de divulgación científica", "Organizaciones y academias de ciencia oficiales"];
       justificacion = "Se detecta coherencia semántica con el corpus de conocimiento científico establecido y consensuado.";
@@ -208,6 +224,8 @@ function generateDynamicNlpResponse(normalizedText) {
   return {
     veredicto,
     confianza,
+    certeza,
+    desglose,
     tema,
     contexto,
     fuentesConsultadas,
@@ -282,6 +300,8 @@ function handleFactNegation(fact, normalizedText) {
   return {
     ...fact,
     veredicto: newVerdict,
+    certeza: newVerdict === "Verdadero" ? 100 : (newVerdict === "Falso" ? 0 : 50),
+    desglose: "Derivado por asociación directa a un hecho conocido.",
     contexto: newContext,
     justificacion: newJustification
   };
@@ -301,6 +321,8 @@ function analyzeWithSimulatedNlp(cleanText, threshold = DEFAULT_THRESHOLD) {
       isDemoFact: true,
       veredicto: processedFact.veredicto,
       confianza: processedFact.confianza,
+      certeza: processedFact.certeza || (processedFact.veredicto === "Verdadero" ? 100 : 0),
+      desglose: processedFact.desglose || "Hecho conocido en la base de datos.",
       tema: processedFact.tema,
       contexto: processedFact.contexto,
       fuentesConsultadas: processedFact.fuentesConsultadas,

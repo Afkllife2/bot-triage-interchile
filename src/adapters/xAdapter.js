@@ -1,10 +1,12 @@
-﻿const mode = process.env.X_CLIENT_MODE || "mock";
+const mode = process.env.X_CLIENT_MODE || "mock";
 const botHandle = process.env.X_BOT_HANDLE || "Agente";
 
 function buildReplyText(analysis) {
   return [
     `@${botHandle} veredicto: ${analysis.veredicto}`,
     `Confianza: ${analysis.confianza}%`,
+    `Certeza: ${analysis.certeza}%`,
+    `Desglose: ${analysis.desglose}`,
     `Contexto: ${analysis.contexto}`,
     `Justificacion: ${analysis.justificacion}`,
     `Recomendacion: ${analysis.recomendacion}`

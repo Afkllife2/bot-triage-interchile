@@ -280,13 +280,14 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="verdict-banner">
             <span class="verdict-title">Veredicto:</span>
             <span class="verdict-badge ${ver}">${analysis.veredicto.toUpperCase()}</span>
-            <span class="confidence-val">${analysis.confianza}% confianza</span>
+            <span class="confidence-val">${analysis.confianza}% confianza | ${analysis.certeza || 0}% certeza</span>
           </div>
 
           <!-- Contenido de Respuesta -->
           <p class="tweet-text-content">En respuesta a tu consulta sobre "${analysis.tema}": El veredicto es ${analysis.veredicto.toUpperCase()} (${analysis.confianza}% confianza). Justificación: ${analysis.justificacion}</p>
           
           <div class="verification-details">
+            <p><strong>Desglose:</strong> <span>${analysis.desglose || 'Desglose no disponible'}</span></p>
             <p><strong>Contexto:</strong> <span>${analysis.contexto}</span></p>
             <p><strong>Recomendación:</strong> <span>${analysis.recomendacion}</span></p>
           </div>
@@ -339,6 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <td title="${m.text}">${truncatedText}</td>
             <td><span class="table-verdict ${labelVerdict}">${m.veredicto}</span></td>
             <td class="monospace">${m.confianza}%</td>
+            <td class="monospace">${m.certeza !== undefined ? m.certeza + '%' : 'N/A'}</td>
             <td>${m.source}</td>
             <td class="monospace">${m.latency_ms} ms</td>
             <td class="monospace">${m.attempts}</td>
@@ -352,7 +354,7 @@ document.addEventListener("DOMContentLoaded", () => {
         statDb.textContent = "Sin registros";
         metricsTbody.innerHTML = `
           <tr>
-            <td colspan="9" class="empty-table">No hay logs registrados en base de datos.</td>
+            <td colspan="10" class="empty-table">No hay logs registrados en base de datos.</td>
           </tr>
         `;
       }
