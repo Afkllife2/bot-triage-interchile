@@ -79,72 +79,16 @@ function buildSafeFallback(error, attempts) {
     fallbackApplied: true
   });
 }
-async function searchWeb(query) {
-  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-    if (!response.ok) {
-      console.warn(`DuckDuckGo returned status ${response.status}`);
-      return [];
-    }
-    const html = await response.text();
-    const results = [];
-    const titleRegex = /<a class="result__url" href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g;
-    const snippetRegex = /<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-    
-    let titleMatch;
-    let snippetMatch;
-    const titles = [];
-    const urls = [];
-    
-    while ((titleMatch = titleRegex.exec(html)) !== null) {
-      let rawUrl = titleMatch[1];
-      if (rawUrl.includes("uddg=")) {
-        const parts = rawUrl.split("uddg=");
-        if (parts[1]) {
-          rawUrl = decodeURIComponent(parts[1].split("&")[0]);
-        }
-      }
-      urls.push(rawUrl);
-      titles.push(titleMatch[2].replace(/<[^>]*>/g, '').trim());
-    }
-    
-    const snippets = [];
-    while ((snippetMatch = snippetRegex.exec(html)) !== null) {
-      snippets.push(snippetMatch[1].replace(/<[^>]*>/g, '').trim());
-    }
-    
-    for (let i = 0; i < Math.min(titles.length, snippets.length, 5); i++) {
-      results.push({
-        title: titles[i],
-        snippet: snippets[i],
-        url: urls[i]
-      });
-    }
-    return results;
-  } catch (error) {
-    console.warn('Error fetching or parsing search results:', error.message);
-    return [];
-  }
-}
 
-async function queryGeminiApi(query, searchResults) {
+async function queryGeminiApi(query) {
   const apiKey = process.env.GEMINI_API_KEY;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-  const contextText = searchResults.length > 0 
-    ? searchResults.map((r, i) => `[Fuente ${i+1}]: ${r.title}\nURL: ${r.url}\nResumen: ${r.snippet}`).join('\n\n')
-    : "No se encontraron resultados de búsqueda relevantes en internet.";
 
   const currentDate = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
   const systemInstruction = `Eres el motor de IA/NLP de 'Bot Verificador X', un bot diseñado para verificar la veracidad de publicaciones y tuits.
 La fecha actual del sistema es: ${currentDate}. Por favor, evalúa todos los eventos, afirmaciones y datos temporales teniendo en cuenta que nos encontramos en esta fecha actual (junio de 2026). El Mundial de la FIFA 2026 y otros eventos de mediados de 2026 están ocurriendo EN ESTE MOMENTO.
 IMPORTANTE CONTEXTO GEOGRÁFICO: Este bot está diseñado principalmente para ciudadanos chilenos. A menos que el tuit especifique expresamente otro país, debes asumir SIEMPRE que el usuario es de Chile. Por lo tanto, si el tuit habla de "el gobierno", "el presidente", "las autoridades" o "nuestro país", se refiere indefectiblemente al Gobierno de Chile y al Presidente de Chile.
-Tu tarea es analizar la afirmación del usuario utilizando el contexto de búsqueda web proporcionado.
+Tu tarea es analizar la afirmación del usuario utilizando tu herramienta nativa de Google Search para obtener el contexto de búsqueda web en tiempo real.
 Debes responder estrictamente en formato JSON utilizando el esquema requerido, sin bloques markdown ni texto explicativo adicional.
 Esquema de respuesta JSON:
 {
@@ -161,6 +105,7 @@ Esquema de respuesta JSON:
 }
 
 Considera:
+- Utiliza la herramienta de Google Search internamente para fundamentar el contexto.
 - Si el tuit del usuario afirma que algo ocurrió pero las fuentes demuestran que ocurrió, el veredicto es 'Verdadero'.
 - Si el tuit afirma que algo ocurrió pero las fuentes demuestran que NO ocurrió (o viceversa), el veredicto es 'Falso'.
 - Si el tuit mezcla hechos reales con conclusiones falsas, descontextualizadas o alarmistas (ej. 'Kast es presidente y por eso caerá un meteorito'), el veredicto es 'Engañoso'.
@@ -168,7 +113,7 @@ Considera:
 - Si la información es contradictoria, desactualizada o insuficiente para concluir, el veredicto es 'Impreciso'.
 - Justifica de manera neutral en español chileno/neutro.`;
 
-  const promptText = `Contexto de búsqueda web para validar:\n${contextText}\n\nAfirmación del tuit a verificar:\n"${query}"`;
+  const promptText = `Afirmación del tuit a verificar:\n"${query}"`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -180,6 +125,9 @@ Considera:
         parts: [{
           text: `${systemInstruction}\n\n${promptText}`
         }]
+      }],
+      tools: [{
+        googleSearch: {}
       }],
       generationConfig: {
         responseMimeType: "application/json"
@@ -219,10 +167,8 @@ async function analyzeText(cleanText, simulateFailure = false) {
     try {
       const searchQuery = cleanText.replace(/@\w+/g, "").replace(/\s+/g, " ").trim();
       console.log(`[RAG] Buscando fuentes en vivo para: "${searchQuery}"...`);
-      const searchResults = await searchWeb(searchQuery);
-      console.log(`[RAG] Encontradas ${searchResults.length} fuentes. Consultando Gemini API...`);
-      
-      const data = await queryGeminiApi(searchQuery, searchResults);
+      console.log(`[RAG] Delegando búsqueda en tiempo real a la herramienta nativa de Google Search de Gemini API...`);
+      const data = await queryGeminiApi(searchQuery);
       validateProviderResponse(data);
       
       console.log(`[RAG] Análisis completado con éxito por Gemini API. Veredicto: ${data.veredicto}`);
