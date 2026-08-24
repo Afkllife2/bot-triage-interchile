@@ -1,0 +1,23 @@
+IssueType,Summary,Description,Epic Name,Epic Link,Story Points
+Epic,INT-EPIC-01: Triage y Levantamiento (Intake),Agrupa todas las historias de captura de información inicial del cliente.,INT-EPIC-01,,
+Epic,INT-EPIC-02: Infraestructura y Supabase,Configuración del backend y base de datos relacional.,INT-EPIC-02,,
+Epic,INT-EPIC-03: Inteligencia Artificial (Gemini),Implementación del LLM para extracción de datos.,INT-EPIC-03,,
+Epic,INT-EPIC-04: Integración de Mensajería,Conexión con el canal final (WhatsApp/Telegram).,INT-EPIC-04,,
+Story,[INT-HU-01] Clasificación de Motivo,"Como cliente, quiero indicar el motivo de mi contacto (falla, mantención, cotización) para ser derivado correctamente.
+Criterios de Aceptación:
+- Dado que el usuario inicia el chat, Cuando envía un mensaje, Entonces el sistema identifica la intención.",,INT-EPIC-01,3
+Story,[INT-HU-02] Diagnóstico Dinámico,"Como cliente con equipo averiado, quiero que el bot me haga preguntas técnicas y pida fotos.
+Criterios de Aceptación:
+- Dado un reporte de falla, Cuando el bot responde, Entonces solicita si enciende, modelo y fotos.",,INT-EPIC-01,5
+Story,[INT-HU-03] Priorización Automática,"Como sistema, quiero clasificar la urgencia del caso.
+Criterios de Aceptación:
+- Dado un caso comercial sin clima, Cuando el bot evalúa, Entonces le asigna prioridad urgente.",,INT-EPIC-01,3
+Story,[INT-HU-04] Ficha de Consolidación,"Como técnico, quiero recibir un resumen estructurado en Supabase.
+Criterios de Aceptación:
+- Dado que termina el intake, Cuando se guarda en BD, Entonces la ficha contiene metadatos y fotos.",,INT-EPIC-02,5
+Story,[INT-HU-05] Borrador de Cotización,"Como cliente, quiero un borrador de presupuesto generado por la IA.
+Criterios de Aceptación:
+- Dado un servicio estandar, Cuando el bot procesa, Entonces genera una pre-cotización pausada para humano.",,INT-EPIC-03,8
+Story,[INT-HU-06] Derivación a Humano,"Como cliente corporativo, quiero derivación inmediata a un agente real.
+Criterios de Aceptación:
+- Dado un proyecto grande, Cuando se detecta, Entonces el bot pausa IA y notifica a ejecutivo.",,INT-EPIC-04,3
