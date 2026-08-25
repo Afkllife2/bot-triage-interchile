@@ -27,6 +27,14 @@ Este documento registra cronológicamente cada avance, decisión, conexión y l�
     - `MATRIZ_RIESGOS_V1.md` (INT-TASK-05).
     - `MATRIZ_TRAZABILIDAD.md` (INT-TASK-06).
 
+**✅ Resumen Humano: Tareas del Backlog Completadas Oficialmente (Sprint 1)**
+*Nota para el informe final: Este fue el día donde armamos toda la "columna vertebral" del proyecto antes de escribir código.*
+1. **[INT-TASK-01] Configurar Entorno y Git:** La completamos limpiando la carpeta de archivos viejos y conectando todo a un repositorio nuevo y limpio en GitHub para no tener conflictos.
+2. **[INT-TASK-02] Diagrama de Arquitectura:** La completamos dibujando un diagrama en texto (Mermaid) que explica que usaremos Node.js, WhatsApp, Gemini y Supabase.
+3. **[INT-TASK-03] Modelo de Datos (Supabase):** La completamos entrando a la base de datos en la nube y creando las tablas principales (`clientes`, `casos_triage`) que guardarán la información.
+4. **[INT-TASK-04], [INT-TASK-05], [INT-TASK-06] (Documentación):** Las completamos redactando las tres matrices exigidas por la rúbrica de la universidad (Pruebas, Riesgos y Trazabilidad) dejándolas guardadas como documentos Markdown en el repositorio.
+5. **[INT-HU-04] Generación de Ficha (Avance):** Aunque es una historia de código, completamos toda la parte de infraestructura creando la base de datos real.
+
 ---
 
 ## 📅 Martes 25 de Agosto de 2026
