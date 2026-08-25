@@ -41,3 +41,14 @@ Para asegurar este puntaje, cada HU en Jira debe tener explícitamente:
 
 ## 8. Gestión de riesgos e impedimentos (7 pts)
 - **Documentación Creada:** Ayer nos adelantamos y creamos la [docs/MATRIZ_RIESGOS_V1.md](file:///c:/Users/count/Documents/New%20project/bot-verificador-x-prototipo/docs/MATRIZ_RIESGOS_V1.md). Ese documento cumple al 100% con "identificar, analizar probabilidad/impacto y definir estrategia de mitigación". Presenta ese documento y los 7 puntos son tuyos.
+
+## 9. Plan de pruebas, resultados y trazabilidad (9 pts)
+- **Documentación Creada:** Se generó el documento [docs/TRAZABILIDAD_PRUEBAS.md](file:///c:/Users/count/Documents/New%20project/bot-verificador-x-prototipo/docs/TRAZABILIDAD_PRUEBAS.md) que vincula explícitamente el ciclo: `HU -> CA -> Prueba -> Resultado -> Evidencia`. 
+- **Acción Pendiente:** Una vez que programemos el bot y hagamos las pruebas, debes rellenar las columnas "Resultado" y "Evidencia" en ese documento (ej. poniendo un link a una captura de pantalla del código funcionando).
+
+## 10. Sprint Review y validación del incremento (7 pts)
+- **Rol del Estudiante:** En tu reunión de cierre de Sprint con la profesora (o Product Owner), debes mostrar el bot funcionando (el incremento desplegado). 
+- **Acción en Jira:** Debes registrar el *feedback* que te den en esa reunión. Si te piden un cambio o encuentran un error, debes crear un ticket nuevo en Jira dejando constancia de que fue un hallazgo de la "Sprint Review".
+
+## 11. Gestión del cambio y refinamiento (?? pts)
+- **Mecanismo implementado:** Cualquier defecto o cambio que salga de las pruebas o de la Review debe documentarse en Jira creando un ticket de tipo **"Bug"** o **"Task"**, vinculado a la Historia de Usuario original. Esto demuestra que analizas sistemáticamente los cambios y dejas trazabilidad.
