@@ -46,6 +46,13 @@ Este documento registra cronológicamente cada avance, decisión, conexión y l�
   - Se analizó exhaustivamente la rúbrica de 12 puntos entregada por la profesora.
   - Se generó el documento `RUBRICA_SPRINT_1_EVIDENCIA.md` mapeando nuestra estrategia para asegurar la calificación "Excelente" (7.0).
   - Se crearon documentos adicionales exigidos por la rúbrica: `DISENO_4_MAS_1.md` (Arquitectura de Kruchten) y `TRAZABILIDAD_PRUEBAS.md`.
+- **[16:50 PM] Reestructuración del Backlog Anual (De Tareas a HUs):**
+  - Se tomó la decisión estratégica de erradicar el formato de "Tareas Académicas" (`INT-TASK`) y transformarlas en **Historias de Usuario (HU-07 a HU-12)** con Criterios de Aceptación, adaptándonos al estándar exigido por la universidad.
+  - Se planificó el Backlog futuro del año (`HU-13` a `HU-17`) abarcando Dashboard, Cotizaciones PDF y Recordatorios Automáticos, logrando un total de **17 Historias de Usuario**.
+- **[17:35 PM] Re-balanceo del Scope (Sprint 1):**
+  - Tras analizar los requerimientos detallados del stakeholder (Empresa partner), se determinó que el MVP del Hito 1 debe enfocarse 100% en el **Intake Básico** (captura de datos iniciales) y no en diagnósticos complejos de IA ni presupuestos.
+  - Se movieron las historias de Diagnóstico (`HU-02`), Cotización (`HU-05`) y Handoff (`HU-06`) al Backlog futuro (Sprint 2/3).
+  - El Sprint 1 quedó compuesto por 9 historias: 3 de desarrollo (`HU-01`, `HU-03`, `HU-04`) y 6 académicas, logrando una carga de trabajo realista y altamente justificable ante la comisión evaluadora. Se agregó la integración con Kronos como `HU-18` a futuro.
 - **[Reunión con Stakeholders - Empresa Partner]:**
   - Reunión sostenida con la empresa del amigo para levantamiento de requerimientos y contexto del negocio.
   - *[NOTA PENDIENTE: Ingresar aquí los detalles, acuerdos y requerimientos extraídos de la reunión].*
