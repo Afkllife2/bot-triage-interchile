@@ -50,5 +50,14 @@ Para asegurar este puntaje, cada HU en Jira debe tener explícitamente:
 - **Rol del Estudiante:** En tu reunión de cierre de Sprint con la profesora (o Product Owner), debes mostrar el bot funcionando (el incremento desplegado). 
 - **Acción en Jira:** Debes registrar el *feedback* que te den en esa reunión. Si te piden un cambio o encuentran un error, debes crear un ticket nuevo en Jira dejando constancia de que fue un hallazgo de la "Sprint Review".
 
-## 11. Gestión del cambio y refinamiento (?? pts)
-- **Mecanismo implementado:** Cualquier defecto o cambio que salga de las pruebas o de la Review debe documentarse en Jira creando un ticket de tipo **"Bug"** o **"Task"**, vinculado a la Historia de Usuario original. Esto demuestra que analizas sistemáticamente los cambios y dejas trazabilidad.
+## 11. Gestión del cambio y refinamiento del Product Backlog (10 pts)
+- **Mecanismo implementado:** La rúbrica exige la trazabilidad exacta: `hallazgo -> análisis -> decisión -> cambio -> elemento del backlog`. 
+- **Acción en Jira:** Cuando encuentres un error o pidas un cambio, no modifiques el código en silencio. Debes:
+  1. Crear un ticket tipo "Bug" (El hallazgo).
+  2. Escribir en los comentarios del ticket por qué falló (Análisis) y qué haremos (Decisión).
+  3. Hacer el commit en GitHub (El cambio).
+  4. Vincular el Bug a la HU original (Elemento del backlog).
+
+## 12. Retrospectiva individual, cierre y mejora continua (7 pts)
+- **Documento Final:** Al final de este Sprint, deberás redactar un documento breve (yo te ayudaré) analizando qué salió bien y qué salió mal (ej. "Tuvimos problemas con Git al inicio pero lo solucionamos automatizando scripts"). 
+- **Cierre en Jira:** Darle al botón "Completar Sprint" en Jira, dejando documentado cuáles HU quedaron "Done" y si alguna pasó al Sprint 2.
