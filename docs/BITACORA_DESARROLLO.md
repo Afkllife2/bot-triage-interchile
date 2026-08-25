@@ -55,7 +55,14 @@ Este documento registra cronológicamente cada avance, decisión, conexión y l�
   - El Sprint 1 quedó compuesto por 9 historias: 3 de desarrollo (`HU-01`, `HU-03`, `HU-04`) y 6 académicas, logrando una carga de trabajo realista y altamente justificable ante la comisión evaluadora. Se agregó la integración con Kronos como `HU-18` a futuro.
 - **[Reunión con Stakeholders - Empresa Partner]:**
   - Reunión sostenida con la empresa del amigo para levantamiento de requerimientos y contexto del negocio.
-  - *[NOTA PENDIENTE: Ingresar aquí los detalles, acuerdos y requerimientos extraídos de la reunión].*
+  - Se obtuvo acceso al código legacy y base de datos del sistema Kronos (antiguo ERP de la empresa).
+  - Requisito clave definido: *El bot no debe solo chatear, debe terminar cada conversación entregando una ficha estructurada con los datos del cliente, equipo, motivo y urgencia.*
+- **[18:00 PM] Implementación del Motor de Inteligencia Artificial (Cerebro del Bot):**
+  - Se desarrolló el módulo `src/brain.js` implementando `@google/genai` con el modelo de última generación `gemini-2.5-flash`.
+  - Se aplicó ingeniería de prompts (System Instructions) para transformar mensajes no estructurados en objetos JSON estrictos (`responseSchema`).
+  - **Mapeo Kronos:** La estructura del JSON se diseñó replicando exactamente los campos de las tablas SQL descubiertas en Kronos (`clients`, `branch_offices`, `equipment`, `applications`).
+  - Pruebas unitarias locales ejecutadas exitosamente, logrando extraer comuna, tipo de falla y asignar automáticamente "Alta/Urgente" a locales comerciales.
+  - *Esto da por completadas las historias de usuario **[INT-HU-01]** y **[INT-HU-04]** a nivel de lógica de negocio pura.*
   
 ---
 *Nota: Este documento debe actualizarse diariamente al finalizar la jornada de programación o al realizar integraciones clave.*
