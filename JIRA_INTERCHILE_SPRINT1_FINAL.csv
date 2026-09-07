@@ -1,0 +1,53 @@
+Summary,Description,Issue Type,Priority
+[INT-HU-01] Clasificación de Motivo,"Como cliente, quiero indicar el motivo de mi contacto (falla, mantención, cotización) para ser derivado correctamente.
+
+Criterios de Aceptación:
+- Dado que el usuario inicia el chat, Cuando envía un mensaje, Entonces el sistema identifica la intención.",Story,High
+[INT-HU-02] Diagnóstico Dinámico,"Como cliente con equipo averiado, quiero que el bot me haga preguntas técnicas y pida fotos.
+
+Criterios de Aceptación:
+- Dado un reporte de falla, Cuando el bot responde, Entonces solicita si enciende, modelo y fotos.",Story,High
+[INT-HU-03] Priorización Automática,"Como sistema, quiero clasificar la urgencia del caso.
+
+Criterios de Aceptación:
+- Dado un caso comercial sin clima, Cuando el bot evalúa, Entonces le asigna prioridad urgente.",Story,High
+[INT-HU-04] Ficha de Consolidación,"Como técnico, quiero recibir un resumen estructurado en Supabase.
+
+Criterios de Aceptación:
+- Dado que termina el intake, Cuando se guarda en BD, Entonces la ficha contiene metadatos y fotos.",Story,High
+[INT-HU-05] Borrador de Cotización,"Como cliente, quiero un borrador de presupuesto generado por la IA.
+
+Criterios de Aceptación:
+- Dado un servicio estandar, Cuando el bot procesa, Entonces genera una pre-cotización pausada para humano.",Story,High
+[INT-HU-06] Derivación a Humano,"Como cliente corporativo, quiero derivación inmediata a un agente real.
+
+Criterios de Aceptación:
+- Dado un proyecto grande, Cuando se detecta, Entonces el bot pausa IA y notifica a ejecutivo.",Story,High
+[INT-HU-07] Plan de Pruebas Funcionales,"Como evaluador/metodólogo, quiero un plan de pruebas para validar objetivamente los flujos del software.
+
+Criterios de Aceptación:
+- Dado el inicio del desarrollo, Cuando se define el QA, Entonces existe el archivo documentado PLAN_DE_PRUEBAS_V1.md.",Story,High
+[INT-HU-08] Matriz de Gestión de Riesgos,"Como Product Owner, quiero identificar riesgos técnicos y operacionales con sus respectivas mitigaciones.
+
+Criterios de Aceptación:
+- Dado el análisis del proyecto, Cuando se levantan impedimentos, Entonces se genera el archivo MATRIZ_RIESGOS_V1.md.",Story,High
+[INT-HU-09] Matriz de Trazabilidad Metodológica,"Como auditor ágil, quiero asegurar que cada requerimiento tenga un entregable y prueba asociada.
+
+Criterios de Aceptación:
+- Dado el backlog levantado, Cuando se audita el Sprint, Entonces se documenta la relación cruzada en MATRIZ_TRAZABILIDAD.md.",Story,High
+[INT-HU-10] Alineación y Análisis de Rúbrica de Evaluación,"Como estudiante, quiero alinear explícitamente los entregables del software con la rúbrica de evaluación de la comisión.
+
+Criterios de Aceptación:
+- Dada la rúbrica entregada por la profesora, Cuando se mapean las evidencias, Entonces se genera el archivo RUBRICA_SPRINT_1_EVIDENCIA.md.",Story,High
+[INT-HU-11] Diseño Arquitectónico y Vistas 4+1,"Como arquitecto de software, quiero documentar el diseño técnico, vistas lógicas y físicas del sistema.
+
+Criterios de Aceptación:
+- Dado el diseño del ecosistema Node+Gemini+Supabase, Cuando se modela, Entonces se genera el documento oficial DISENO_4_MAS_1.md.",Story,High
+[INT-HU-12] Seguimiento y Trazabilidad de Pruebas,"Como QA, quiero registrar formalmente el resultado del ciclo de pruebas asociado a los Criterios de Aceptación.
+
+Criterios de Aceptación:
+- Dado el plan de pruebas, Cuando se ejecutan, Entonces los resultados y hallazgos quedan en TRAZABILIDAD_PRUEBAS.md.",Story,High
+[HU-NEW] Mensajería Outbound (Gestión de Cambio),"Como usuario, quiero recibir confirmación por WhatsApp tras reportar mi falla.
+
+Criterios de Aceptación:
+- Dado que el sistema procesa el caso en BD, Cuando termina, Entonces envía respuesta automática vía WhatsApp.",Story,High

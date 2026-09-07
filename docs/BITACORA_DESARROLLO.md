@@ -66,3 +66,54 @@ Este documento registra cronológicamente cada avance, decisión, conexión y l�
   
 ---
 *Nota: Este documento debe actualizarse diariamente al finalizar la jornada de programación o al realizar integraciones clave.*
+
+## 📅 Domingo 30 de Agosto de 2026
+
+**Horario de trabajo:** Tarde
+**Áreas trabajadas:** Infraestructura de Red, Webhooks de Meta, Integración Completa.
+
+- **[14:00 PM - 16:00 PM] Implementación de Webhooks y Conexión con Meta:**
+  - Se configuró la API de WhatsApp Cloud en Meta for Developers.
+  - Se levantó un túnel seguro usando `cloudflared` para exponer el servidor Node.js local al internet público y permitir que Meta se comunique con nosotros.
+  - Se programó la ruta `GET /webhooks/meta` para la verificación oficial de Meta.
+  - Se programó la ruta `POST /webhooks/meta` con encriptación de grado militar (HMAC-SHA256) para asegurar que los mensajes entrantes provienen realmente de Facebook y evitar hackeos.
+- **[16:30 PM] Integración End-to-End (Celular -> BD):**
+  - Se conectó todo el flujo: el mensaje sale de WhatsApp, llega al túnel de Cloudflare, entra a Node.js, es enviado a Gemini AI (`brain.js`) para extraer la ficha, y finalmente se guarda exitosamente en Supabase (`db.js`).
+  - Se destrabó un bug de Facebook forzando la suscripción del número de prueba mediante la Graph API (`POST /subscribed_apps`).
+
+---
+
+## 📅 Viernes 4 de Septiembre de 2026
+
+**Horario de trabajo:** Tarde
+**Áreas trabajadas:** Mensajería Outbound (Respuestas por WhatsApp), Cierre del Sprint 1.
+
+- **[14:50 PM] Implementación de Respuestas de IA (Outbound):**
+  - Se modificó el esquema de Gemini en `src/brain.js` agregando el campo `respuesta_cliente` para que la IA redacte un texto empático y comercial basado en la prioridad del caso.
+  - Se creó un nuevo módulo `src/whatsapp.js` dedicado a comunicarse con la API de Facebook para enviar mensajes de texto de vuelta al cliente.
+  - Se integró el envío del mensaje en `src/server.js`, gatillándose inmediatamente después de guardar el caso en la base de datos.
+- **[15:15 PM] Troubleshooting y Tokens:**
+  - Se resolvió un error de "Token Expirado" (OAuthException 190) actualizando el Token Temporal.
+  - Se resolvió un error de permisos (GraphMethodException 100) corrigiendo un typo en el Phone Number ID (`0069`).
+- **[15:30 PM] Verificación Exitosa y Cierre Oficial del Sprint 1:**
+  - Se ejecutó la prueba final en vivo. El bot recibió un reporte de emergencia (Cassette botando agua), la IA lo clasificó, lo guardó en la base de datos y le respondió al cliente por WhatsApp de forma automática en menos de 5 segundos.
+  - Se generaron los artefactos de Cierre (`walkthrough.md`) para preparar la demostración a los profesores.
+
+---
+
+## 📅 Domingo 6 de Septiembre de 2026
+
+**Horario de trabajo:** Noche
+**Áreas trabajadas:** Documentación del Informe Oficial, Corrección de Backlog Jira, Preparación Sprint 2.
+
+- **[20:00 PM - 21:30 PM] Redacción del Informe Oficial (Sprint 1):**
+  - Se estructuró el archivo `INFORME_AVANCE_SPRINT_1.md` cumpliendo con el formato de 13 secciones de la rúbrica oficial de tesis.
+  - Se detalló el pivoteo estratégico y la evolución del problema desde el "Bot Verificador X" hacia el "Bot Triage InterChile".
+  - Se consolidaron los Criterios de Aceptación con justificación explícita ("Dado que... Cuando... Entonces...").
+- **[21:40 PM - 22:20 PM] Limpieza y Sincronización del Jira Oficial (`AAI`):**
+  - Se detectó un desajuste entre las historias metodológicas del informe y las del proyecto real de Jira.
+  - Tras un error de automatización (donde se intentaron inyectar historias nuevas y se borró parte del Sprint 2), se realizó una auditoría completa del tablero ticket por ticket (AAI-1 al AAI-60).
+  - Se revirtió el daño, eliminando las historias alucinadas y **se actualizaron vía API los títulos y descripciones de las incidencias reales (AAI-5 a AAI-33)** para que todas contengan sus Criterios de Aceptación exactos, quedando el tablero 100% alineado con el Informe.
+- **[22:25 PM] Planificación del Sprint 2:**
+  - Tras el escaneo, se corrigió el documento para reflejar las 3 historias reales que vienen para el próximo Sprint: Generación Automática de Cotizaciones en PDF (INT-HU-13), Dashboard Web (INT-HU-14) y Migración a WhatsApp Oficial (INT-HU-15).
+  - Se generó un archivo `DOCUMENTACION_HOY.md` para dejar constancia de los cambios en Jira y comprometerse a validar siempre antes de automatizar.

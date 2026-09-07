@@ -47,6 +47,10 @@ const responseSchema = {
         tiene_fotos: {
             type: SchemaType.BOOLEAN,
             description: "True si el cliente menciona que tiene fotos, mandó fotos o enviará videos. False en caso contrario."
+        },
+        respuesta_cliente: {
+            type: SchemaType.STRING,
+            description: "Una respuesta comercial, empática y breve para enviar de vuelta al cliente por WhatsApp. Si es prioridad Alta/Urgente, indícale que el equipo de emergencias ha sido alertado. Si es Normal, indícale que un ejecutivo lo contactará pronto."
         }
     },
     required: [
@@ -56,7 +60,8 @@ const responseSchema = {
         "equipo_tipo",
         "sintoma_observacion",
         "prioridad",
-        "tiene_fotos"
+        "tiene_fotos",
+        "respuesta_cliente"
     ]
 };
 
@@ -70,7 +75,7 @@ async function extraerFichaTriage(mensajeCliente) {
             responseMimeType: "application/json",
             responseSchema: responseSchema,
         },
-        systemInstruction: "Eres un asistente de triage comercial y técnico para InterChile, una empresa de climatización y aire acondicionado. Tu único trabajo es leer el mensaje del cliente y extraer la información clave para llenar una ficha estructurada compatible con el sistema Kronos. Nunca inventes datos; si el cliente no menciona algo, déjalo vacío o usa tus mejores capacidades de inferencia para la prioridad y tipo de solicitud."
+        systemInstruction: "Eres un asistente de triage comercial y técnico para InterChile, una empresa de climatización y aire acondicionado. Tu trabajo es leer el mensaje del cliente, extraer la información clave para llenar la ficha, y redactar una respuesta breve y profesional (respuesta_cliente) para enviársela de vuelta por WhatsApp según la prioridad del caso."
     });
 
     try {
