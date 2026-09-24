@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control — Bot Triage InterChile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #1f2d45;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59,130,246,0.15);
+      --green: #10b981;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --purple: #8b5cf6;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --text-sub: #94a3b8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .logo h1 { font-size: 1rem; font-weight: 600; }
+    .logo span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--green);
+    }
+    .status-dot::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    button:hover { background: #2563eb; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    /* MAIN */
+    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .stat-card.total .stat-value { color: var(--accent); }
+    .stat-card.alta .stat-value { color: var(--red); }
+    .stat-card.humano .stat-value { color: var(--orange); }
+    .stat-card.normal .stat-value { color: var(--green); }
+
+    /* ALERT BANNER */
+    #alert-banner {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 0.9rem 1.25rem;
+      margin-bottom: 1.5rem;
+      color: #fca5a5;
+      font-size: 0.875rem;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    #alert-banner.visible { display: flex; animation: slideIn 0.3s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* FILTERS */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: none;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    /* TABLE */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 0.9rem 1.25rem;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr { transition: background 0.15s; }
+    tr:hover td { background: var(--surface2); }
+
+    /* Alta row highlight */
+    tr.alta-row td { background: rgba(239,68,68,0.05); }
+    tr.alta-row:hover td { background: rgba(239,68,68,0.1); }
+
+    /* Humano row highlight */
+    tr.humano-row td { background: rgba(245,158,11,0.05); }
+    tr.humano-row:hover td { background: rgba(245,158,11,0.1); }
+
+    /* BADGES */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      gap: 0.3rem;
+    }
+    .badge-alta   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-normal { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-humano { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-derivado { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+
+    /* EMPTY / LOADING */
+    .empty-state {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.9rem; }
+
+    #loading {
+      display: none;
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    #loading.visible { display: block; }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* timestamp */
+    #last-update { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    <div>
+      <h1>Bot Triage InterChile</h1>
+      <span>Panel de Control — Administración</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot">Sistema activo</div>
+    <button id="btn-refresh" onclick="cargarTickets()">↻ Actualizar</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ALERT BANNER -->
+  <div id="alert-banner">
+    🚨 <strong id="alert-count">0</strong> ticket(s) requieren atención humana urgente
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <span class="stat-label">Total tickets</span>
+      <span class="stat-value" id="stat-total">—</span>
+    </div>
+    <div class="stat-card alta">
+      <span class="stat-label">Prioridad Alta</span>
+      <span class="stat-value" id="stat-alta">—</span>
+    </div>
+    <div class="stat-card humano">
+      <span class="stat-label">Requieren Humano</span>
+      <span class="stat-value" id="stat-humano">—</span>
+    </div>
+    <div class="stat-card normal">
+      <span class="stat-label">Prioridad Normal</span>
+      <span class="stat-value" id="stat-normal">—</span>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <span class="section-title">Tickets de Triage</span>
+    <div class="filters">
+      <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="filtrar('alta', this)">🔴 Prioridad Alta</button>
+      <button class="filter-btn" onclick="filtrar('humano', this)">🟡 Requieren Humano</button>
+      <button class="filter-btn" onclick="filtrar('normal', this)">🟢 Normal</button>
+    </div>
+    <span id="last-update"></span>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div id="loading" class="visible">
+      <div class="spinner"></div>
+      <p>Cargando tickets...</p>
+    </div>
+    <table id="tabla" style="display:none">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Teléfono</th>
+          <th>Cliente</th>
+          <th>Equipo</th>
+          <th>Síntoma</th>
+          <th>Prioridad</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty" class="empty-state" style="display:none">
+      <div class="icon">📭</div>
+      <p>No hay tickets que coincidan con el filtro</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let todosLosTickets = [];
+  let filtroActual = 'todos';
+
+  async function cargarTickets() {
+    document.getElementById('loading').classList.add('visible');
+    document.getElementById('tabla').style.display = 'none';
+    document.getElementById('empty').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/tickets');
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      todosLosTickets = json.data;
+      actualizarEstadisticas(todosLosTickets);
+      renderTabla(todosLosTickets);
+      document.getElementById('last-update').textContent =
+        'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+    } catch (err) {
+      console.error('Error cargando tickets:', err);
+      document.getElementById('loading').classList.remove('visible');
+      document.getElementById('empty').style.display = 'block';
+    }
+  }
+
+  function actualizarEstadisticas(tickets) {
+    const total  = tickets.length;
+    const alta   = tickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente')).length;
+    const humano = tickets.filter(t => t.requiere_humano).length;
+    const normal = tickets.filter(t => !(t.prioridad_sugerida || '').toLowerCase().includes('alta') && !(t.prioridad_sugerida || '').toLowerCase().includes('urgente')).length;
+
+    document.getElementById('stat-total').textContent  = total;
+    document.getElementById('stat-alta').textContent   = alta;
+    document.getElementById('stat-humano').textContent = humano;
+    document.getElementById('stat-normal').textContent = normal;
+
+    // Alert banner
+    const banner = document.getElementById('alert-banner');
+    if (humano > 0) {
+      document.getElementById('alert-count').textContent = humano;
+      banner.classList.add('visible');
+    } else {
+      banner.classList.remove('visible');
+    }
+  }
+
+  function filtrar(tipo, btn) {
+    filtroActual = tipo;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    let filtrados = todosLosTickets;
+    if (tipo === 'alta')   filtrados = todosLosTickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente'));
+    if (tipo === 'humano') filtrados = todosLosTickets.filter(t => t.requiere_humano);
+    if (tipo === 'normal') filtrados = todosLosTickets.filter(t => !(t.prioridad_sugerida || '').toLowerCase().includes('alta') && !(t.prioridad_sugerida || '').toLowerCase().includes('urgente'));
+
+    renderTabla(filtrados);
+  }
+
+  function renderTabla(tickets) {
+    document.getElementById('loading').classList.remove('visible');
+
+    if (tickets.length === 0) {
+      document.getElementById('tabla').style.display = 'none';
+      document.getElementById('empty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('empty').style.display = 'none';
+    document.getElementById('tabla').style.display = 'table';
+
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+
+    tickets.forEach((t, i) => {
+      const esAlta   = (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente');
+      const esHumano = t.requiere_humano;
+
+      const fila = document.createElement('tr');
+      if (esHumano) fila.classList.add('humano-row');
+      else if (esAlta) fila.classList.add('alta-row');
+
+      const fecha = t.created_at
+        ? new Date(t.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : '—';
+
+      const prioridadBadge = esAlta
+        ? `<span class="badge badge-alta">🔴 Alta</span>`
+        : `<span class="badge badge-normal">🟢 Normal</span>`;
+
+      let estadoBadge;
+      if (esHumano)       estadoBadge = `<span class="badge badge-humano">🟡 Requiere Humano</span>`;
+      else if (t.estado === 'derivado') estadoBadge = `<span class="badge badge-derivado">↗ Derivado</span>`;
+      else                estadoBadge = `<span class="badge badge-normal">✅ En proceso</span>`;
+
+      fila.innerHTML = `
+        <td style="color:var(--text-muted);font-size:0.8rem">${t.id}</td>
+        <td style="color:var(--text-sub);font-size:0.8rem">${fecha}</td>
+        <td style="font-family:monospace;font-size:0.8rem">${t.telefono || '—'}</td>
+        <td>${t.nombre_completo || '<span style="color:var(--text-muted)">Sin nombre</span>'}</td>
+        <td>${[t.equipo_tipo, t.equipo_marca].filter(Boolean).join(' · ') || '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td style="max-width:280px;color:var(--text-sub)">${t.sintoma_observacion || t.motivo_principal || '—'}</td>
+        <td>${prioridadBadge}</td>
+        <td>${estadoBadge}</td>
+      `;
+      tbody.appendChild(fila);
+    });
+  }
+
+  // Carga inicial
+  cargarTickets();
+</script>
+</body>
+</html>

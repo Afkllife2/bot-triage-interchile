@@ -80,6 +80,41 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
   }
 }
 
+/**
+ * Obtiene los últimos tickets de triage para el Dashboard de administración
+ */
+async function getTicketsDashboard(limite = 50) {
+  const client = await pool.connect();
+  try {
+    const query = `
+      SELECT 
+        ct.id,
+        ct.created_at,
+        cl.telefono,
+        cl.nombre_completo,
+        ct.equipo_tipo,
+        ct.equipo_marca,
+        ct.sintoma_observacion,
+        ct.motivo_principal,
+        ct.prioridad_sugerida,
+        ct.estado,
+        ct.requiere_humano
+      FROM casos_triage ct
+      LEFT JOIN clientes cl ON ct.cliente_id = cl.id
+      ORDER BY ct.created_at DESC
+      LIMIT $1
+    `;
+    const result = await client.query(query, [limite]);
+    return result.rows;
+  } catch (error) {
+    console.error('❌ Error obteniendo tickets para dashboard:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
-  guardarCasoTriage
+  guardarCasoTriage,
+  getTicketsDashboard
 };

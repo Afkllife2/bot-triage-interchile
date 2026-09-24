@@ -38,7 +38,7 @@ const responseSchema = {
         },
         prioridad: {
             type: SchemaType.STRING,
-            description: "Prioridad calculada. Si es un local comercial/empresa o un equipo crítico detenido, es 'Alta/Urgente'. Si es residencial o mantención, es 'Normal'."
+            description: "Prioridad calculada. Si es un reclamo de interrupción de servicio crítico (ej. sin aire acondicionado en sucursal con clientes), es 'Alta'. Si es mensaje de consulta general o mantención preventiva, es 'Media' o 'Baja'."
         },
         disponibilidad_cliente: {
             type: SchemaType.STRING,
@@ -50,7 +50,7 @@ const responseSchema = {
         },
         respuesta_cliente: {
             type: SchemaType.STRING,
-            description: "Una respuesta comercial, empática y breve para enviar de vuelta al cliente por WhatsApp. Si es prioridad Alta/Urgente, indícale que el equipo de emergencias ha sido alertado. Si es Normal, indícale que un ejecutivo lo contactará pronto."
+            description: "Una respuesta comercial, empática y breve para enviar de vuelta al cliente por WhatsApp. REGLA DE AMBIGÜEDAD (Caso Negativo): Si el mensaje no contiene palabras clave de urgencia ni contexto claro, DEBES responder solicitando más información al cliente en vez de asumir una prioridad errónea. Solo si está claro y es prioridad 'Alta', indícale que el equipo de emergencias ha sido alertado. Si es 'Media' o 'Baja', indícale que un ejecutivo lo contactará."
         }
     },
     required: [
@@ -75,7 +75,7 @@ async function extraerFichaTriage(mensajeCliente) {
             responseMimeType: "application/json",
             responseSchema: responseSchema,
         },
-        systemInstruction: "Eres un asistente de triage comercial y técnico para InterChile, una empresa de climatización y aire acondicionado. Tu trabajo es leer el mensaje del cliente, extraer la información clave para llenar la ficha, y redactar una respuesta breve y profesional (respuesta_cliente) para enviársela de vuelta por WhatsApp según la prioridad del caso."
+        systemInstruction: "Eres un asistente de triage comercial y técnico para InterChile, una empresa de climatización y aire acondicionado. Tu trabajo es leer el mensaje del cliente, extraer la información clave para llenar la ficha, y redactar una respuesta breve y profesional (respuesta_cliente) para enviársela de vuelta por WhatsApp según la prioridad del caso. MUY IMPORTANTE: Si el mensaje es vago o no menciona claramente qué equipo de climatización tiene, no asumas la urgencia ni alertes a emergencias; pídele primero que aclare los detalles (aplica manejo de ambigüedad)."
     });
 
     try {

@@ -16,3 +16,8 @@ scripts/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Archivos con posibles secretos o datos temporales
+summary.txt
+cloudflared_output*.txt
+token_test*.txt

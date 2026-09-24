@@ -1,11 +1,15 @@
 const express = require('express');
 const crypto = require('crypto');
+const path = require('path');
 const { extraerFichaTriage } = require('./brain');
-const { guardarCasoTriage } = require('./db');
+const { guardarCasoTriage, getTicketsDashboard } = require('./db');
 const { enviarMensajeWhatsApp } = require('./whatsapp');
 require('dotenv').config();
 
 const app = express();
+
+// Servir archivos estáticos del Dashboard (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Middleware global para registrar TODO lo que entra
 app.use((req, res, next) => {
@@ -106,8 +110,31 @@ app.post('/webhooks/meta', async (req, res) => {
   }
 });
 
+/**
+ * 3. GET /api/tickets
+ * API REST que devuelve los últimos tickets en JSON para el Dashboard.
+ */
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const tickets = await getTicketsDashboard(50);
+    res.status(200).json({ ok: true, data: tickets });
+  } catch (error) {
+    console.error('❌ Error en /api/tickets:', error);
+    res.status(500).json({ ok: false, error: 'Error al obtener tickets' });
+  }
+});
+
+/**
+ * 4. GET /dashboard
+ * Sirve el Panel de Control web para administradores.
+ */
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
+});
+
 // Arrancar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor Webhook corriendo en el puerto ${PORT}`);
+  console.log(`📊 Dashboard disponible en: http://localhost:${PORT}/dashboard`);
   console.log('Esperando conexiones de Meta (WhatsApp)...');
 });
