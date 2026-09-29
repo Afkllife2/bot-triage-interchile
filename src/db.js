@@ -26,6 +26,14 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
 
     if (resCliente.rows.length > 0) {
       clientId = resCliente.rows[0].id;
+      // Actualizar nombre si la IA lo extrajo y el campo estaba vacío
+      if (ficha.cliente_nombre) {
+        await client.query(
+          `UPDATE clientes SET nombre_completo = $1, comuna = COALESCE(NULLIF($2,''), comuna)
+           WHERE id = $3 AND (nombre_completo IS NULL OR nombre_completo = '')`,
+          [ficha.cliente_nombre, ficha.sucursal_comuna || '', clientId]
+        );
+      }
     } else {
       // Insertar nuevo cliente
       const insertCliente = await client.query(
@@ -96,9 +104,7 @@ async function getTicketsDashboard(limite = 50) {
         ct.equipo_marca,
         ct.sintoma_observacion,
         ct.motivo_principal,
-        ct.prioridad_sugerida,
-        ct.estado,
-        ct.requiere_humano
+        ct.prioridad_sugerida
       FROM casos_triage ct
       LEFT JOIN clientes cl ON ct.cliente_id = cl.id
       ORDER BY ct.created_at DESC

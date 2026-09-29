@@ -87,7 +87,7 @@ app.post('/webhooks/meta', async (req, res) => {
 
       // C. Conexión con el Cerebro IA (Generar Ficha)
       if (textoCliente) {
-        const fichaEstructurada = await extraerFichaTriage(textoCliente);
+        const fichaEstructurada = await extraerFichaTriage(textoCliente, telefonoCliente);
         
         // D. Guardar Ficha en Base de Datos Supabase (Tabla Casos Triage)
         if (fichaEstructurada) {
