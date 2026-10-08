@@ -52,17 +52,22 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
     // 2. Insertar el caso de triage
     const queryCaso = `
       INSERT INTO casos_triage (
-        cliente_id, 
-        motivo_principal, 
-        equipo_tipo, 
-        equipo_marca, 
-        sintoma_observacion, 
-        prioridad_sugerida, 
-        disponibilidad_cliente, 
-        tiene_fotos
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+        cliente_id,
+        motivo_principal,
+        equipo_tipo,
+        equipo_marca,
+        sintoma_observacion,
+        prioridad_sugerida,
+        disponibilidad_cliente,
+        tiene_fotos,
+        requiere_humano,
+        estado
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
     `;
-    
+
+    // HU-06: Estado derivado si requiere humano
+    const estadoCaso = ficha.requiere_derivacion ? 'derivado' : 'en_proceso';
+
     const valuesCaso = [
       clientId,
       ficha.tipo_solicitud,
@@ -71,7 +76,9 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
       ficha.sintoma_observacion || null,
       ficha.prioridad || 'Normal',
       ficha.disponibilidad_cliente || null,
-      ficha.tiene_fotos || false
+      ficha.tiene_fotos || false,
+      ficha.requiere_derivacion || false,  // HU-06
+      estadoCaso                           // HU-06
     ];
 
     const resCaso = await client.query(queryCaso, valuesCaso);
@@ -95,7 +102,7 @@ async function getTicketsDashboard(limite = 50) {
   const client = await pool.connect();
   try {
     const query = `
-      SELECT 
+      SELECT
         ct.id,
         ct.created_at,
         cl.telefono,
@@ -104,7 +111,9 @@ async function getTicketsDashboard(limite = 50) {
         ct.equipo_marca,
         ct.sintoma_observacion,
         ct.motivo_principal,
-        ct.prioridad_sugerida
+        ct.prioridad_sugerida,
+        ct.requiere_humano,
+        ct.estado
       FROM casos_triage ct
       LEFT JOIN clientes cl ON ct.cliente_id = cl.id
       ORDER BY ct.created_at DESC

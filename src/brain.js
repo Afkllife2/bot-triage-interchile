@@ -6,7 +6,9 @@ const { z } = require('zod');
 // ==========================================
 // 🧠 MOTOR IA — NÚCLEO DEL SISTEMA
 // Refactorizado con LangChain (Sprint 2)
-// Implementa: Arnés de Memoria Conversacional
+// HU-02: Arnés de Memoria Conversacional
+// HU-06: Detección de Derivación a Humano
+// HU-20: Sugerencia de Botones Interactivos
 // ==========================================
 
 // --- ESQUEMA DE SALIDA ESTRUCTURADA (Zod) ---
@@ -31,19 +33,31 @@ const FichaTriage = z.object({
     .describe("La marca del equipo (Ej: Samsung, LG, Anwo). Si no la sabe, dejar vacío."),
   sintoma_observacion: z
     .string()
-    .describe("Resumen breve del problema o motivo. Ej: 'No enfría', 'Hace ruido', 'Necesito limpiar filtros'."),
+    .describe("Resumen breve del problema o motivo."),
   prioridad: z
     .enum(['Alta', 'Media', 'Baja', 'Normal'])
     .describe("Prioridad calculada. Alta si hay interrupción crítica de servicio. Normal/Baja para consultas generales."),
   disponibilidad_cliente: z
     .string()
-    .describe("Disponibilidad de horario que indica el cliente para la visita. Si no la dice, dejar vacío."),
+    .describe("Disponibilidad de horario que indica el cliente. Si no la dice, dejar vacío."),
   tiene_fotos: z
     .boolean()
-    .describe("True si el cliente menciona que tiene fotos, mandó fotos o enviará videos."),
+    .describe("True si el cliente menciona que tiene fotos o videos."),
+
+  // HU-06: Derivación a Humano
+  requiere_derivacion: z
+    .boolean()
+    .describe("True si el cliente pide explícitamente hablar con una persona, ejecutivo, o humano. También true si está muy frustrado o el problema es demasiado complejo para resolver por chat."),
+
+  // HU-20: Botones interactivos (máx 3 opciones)
+  opciones_botones: z
+    .array(z.string().max(20))
+    .max(3)
+    .describe("Lista de hasta 3 opciones cortas para presentar como botones clickeables en WhatsApp. Usar SOLO cuando el cliente necesita elegir entre opciones claras (ej: tipo de equipo, nivel de urgencia). Dejar vacío si no aplica."),
+
   respuesta_cliente: z
     .string()
-    .describe("Una respuesta comercial, empática y breve para enviar de vuelta al cliente por WhatsApp. Si falta información clave (equipo, síntoma, ubicación), preguntar por ella en vez de asumir urgencia."),
+    .describe("Respuesta comercial, empática y breve para enviar al cliente. Si requiere_derivacion es true, confirmar que un ejecutivo lo contactará y despedirse. Si hay opciones_botones, redactar el texto que acompaña a los botones."),
 });
 
 // --- PROMPT DEL SISTEMA ---
@@ -51,24 +65,22 @@ const SYSTEM_PROMPT = `Eres un asistente de triage comercial y técnico para Int
 
 Tu trabajo en cada turno:
 1. RECORDAR todo lo que el cliente ya te dijo en mensajes anteriores de esta conversación.
-2. EXTRAER cualquier información nueva que proporcione ahora (nombre, equipo, falla, ubicación, disponibilidad).
+2. EXTRAER cualquier información nueva que proporcione ahora.
 3. COMPLETAR la ficha con los datos acumulados entre todos los mensajes.
-4. REDACTAR una respuesta (respuesta_cliente) breve, empática y profesional para enviar al cliente.
+4. REDACTAR una respuesta (respuesta_cliente) breve, empática y profesional.
 
 REGLAS IMPORTANTES:
 - Si el cliente ya dio su nombre antes, NO volver a preguntarlo.
 - Si ya dio el equipo, NO volver a preguntarlo.
-- Solo marcar prioridad 'Alta' si hay interrupción crítica de servicio (sucursal sin climatización, con clientes afectados).
-- Si el mensaje es vago o informal (ej: "hola", "buenos días"), responder saludando y pidiendo el motivo de contacto.
-- Si falta información clave para el triage (tipo de equipo, síntoma específico, ubicación), pedirla amablemente.
+- Solo marcar prioridad 'Alta' si hay interrupción crítica de servicio.
+- Si el cliente pide hablar con una persona o ejecutivo (palabras como "quiero hablar con alguien", "necesito un humano", "me comunicas con alguien"), marcar requiere_derivacion: true y despedirte confirmando que un ejecutivo lo contactará.
+- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 3, máx 20 caracteres cada una). Ejemplo: si no sabe el tipo de equipo, ofrecer ["Split", "Cassette", "Otro"].
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
-// --- 🛡️ ARNÉS DE MEMORIA CONVERSACIONAL ---
-// Almacena el historial de conversación por número de teléfono.
-// Expira automáticamente tras 60 minutos de inactividad.
+// --- 🛡️ ARNÉS DE MEMORIA CONVERSACIONAL (HU-02) ---
 const conversaciones = new Map();
 const TIEMPO_EXPIRACION_MS = 60 * 60 * 1000; // 60 minutos
-const MAX_MENSAJES_HISTORIAL = 10; // Últimos 5 turnos (human + AI)
+const MAX_MENSAJES_HISTORIAL = 10; // últimos 5 turnos
 
 // --- INICIALIZACIÓN DEL MODELO LANGCHAIN ---
 const llm = new ChatGoogleGenerativeAI({
@@ -77,17 +89,14 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0,
 });
 
-// Modelo con salida estructurada (Arnés de Salida)
 const llmEstructurado = llm.withStructuredOutput(FichaTriage);
 
 /**
  * Obtiene o crea el contexto de conversación para un teléfono dado.
- * Limpia conversaciones inactivas automáticamente.
  */
 function obtenerContexto(telefono) {
   const ahora = Date.now();
 
-  // Limpiar conversaciones expiradas (mantenimiento)
   for (const [tel, ctx] of conversaciones.entries()) {
     if (ahora - ctx.ultimaActividad > TIEMPO_EXPIRACION_MS) {
       conversaciones.delete(tel);
@@ -95,12 +104,8 @@ function obtenerContexto(telefono) {
     }
   }
 
-  // Crear nueva conversación si no existe o expiró
   if (!conversaciones.has(telefono)) {
-    conversaciones.set(telefono, {
-      mensajes: [],
-      ultimaActividad: ahora,
-    });
+    conversaciones.set(telefono, { mensajes: [], ultimaActividad: ahora });
     console.log(`🆕 Nueva conversación iniciada para: ${telefono}`);
   }
 
@@ -111,40 +116,40 @@ function obtenerContexto(telefono) {
 
 /**
  * Función principal del Motor IA.
- * Procesa el mensaje del cliente con memoria conversacional usando LangChain.
- * @param {string} mensajeCliente - Texto del mensaje recibido de WhatsApp
+ * @param {string} mensajeCliente - Texto del mensaje recibido
  * @param {string} telefono - Número de teléfono del cliente
  * @returns {Object} Ficha estructurada con respuesta_cliente
  */
 async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   console.log(`\n🤖 [LangChain] Procesando mensaje de ${telefono}: "${mensajeCliente}"\n`);
 
-  // 1. Obtener historial de conversación (Arnés de Memoria)
   const ctx = obtenerContexto(telefono);
-  const turnosAnteriores = ctx.mensajes.length / 2;
-  console.log(`💬 Historial: ${turnosAnteriores} turno(s) anteriores en memoria`);
+  console.log(`💬 Historial: ${ctx.mensajes.length / 2} turno(s) anteriores en memoria`);
 
-  // 2. Construir la cadena de mensajes con historial completo
   const mensajes = [
     new SystemMessage(SYSTEM_PROMPT),
-    ...ctx.mensajes,                         // Historial previo
-    new HumanMessage(mensajeCliente),        // Mensaje actual
+    ...ctx.mensajes,
+    new HumanMessage(mensajeCliente),
   ];
 
   try {
-    // 3. Invocar LangChain con Gemini (salida estructurada)
     const ficha = await llmEstructurado.invoke(mensajes);
 
     console.log('✅ Ficha Estructurada Extraída (Lista para Kronos):');
     console.dir(ficha, { depth: null, colors: true });
 
-    // 4. Actualizar historial de conversación
-    ctx.mensajes.push(new HumanMessage(mensajeCliente));
-    ctx.mensajes.push(new AIMessage(ficha.respuesta_cliente));
+    // Si el cliente fue derivado, limpiar su historial (conversación cerrada)
+    if (ficha.requiere_derivacion) {
+      console.log(`🔀 Cliente derivado a humano. Limpiando historial de ${telefono}.`);
+      conversaciones.delete(telefono);
+    } else {
+      // Actualizar historial solo si no fue derivado
+      ctx.mensajes.push(new HumanMessage(mensajeCliente));
+      ctx.mensajes.push(new AIMessage(ficha.respuesta_cliente));
 
-    // Limitar historial a los últimos MAX_MENSAJES_HISTORIAL mensajes
-    if (ctx.mensajes.length > MAX_MENSAJES_HISTORIAL) {
-      ctx.mensajes = ctx.mensajes.slice(-MAX_MENSAJES_HISTORIAL);
+      if (ctx.mensajes.length > MAX_MENSAJES_HISTORIAL) {
+        ctx.mensajes = ctx.mensajes.slice(-MAX_MENSAJES_HISTORIAL);
+      }
     }
 
     return ficha;
@@ -152,7 +157,7 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   } catch (error) {
     console.error('❌ Error al comunicarse con LangChain/Gemini:', error.message);
 
-    // Arnés de Respaldo: respuesta genérica si falla la IA
+    // Arnés de Respaldo
     return {
       tipo_solicitud: 'Otra Consulta',
       cliente_nombre: '',
@@ -164,6 +169,8 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
       prioridad: 'Normal',
       disponibilidad_cliente: '',
       tiene_fotos: false,
+      requiere_derivacion: false,
+      opciones_botones: [],
       respuesta_cliente: 'Gracias por contactarnos. En este momento estamos experimentando dificultades técnicas. Un ejecutivo se comunicará con usted a la brevedad. Disculpe los inconvenientes.',
     };
   }
@@ -175,32 +182,6 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
 function limpiarHistorial(telefono) {
   conversaciones.delete(telefono);
   console.log(`🧹 Historial limpiado para: ${telefono}`);
-}
-
-// ==========================================
-// ZONA DE PRUEBAS (Simulador multi-turno)
-// ==========================================
-async function correrPruebas() {
-  const telefonoPrueba = '+56912345678';
-
-  console.log('\n=== PRUEBA MULTI-TURNO CON MEMORIA ===\n');
-
-  // Turno 1: Saludo sin contexto
-  await extraerFichaTriage('hola buen día', telefonoPrueba);
-
-  // Turno 2: Da su nombre y ubicación
-  await extraerFichaTriage('me llamo Roberto, llamo de la sucursal de Viña del Mar', telefonoPrueba);
-
-  // Turno 3: Describe el problema (sin repetir nombre/ubicación)
-  await extraerFichaTriage('tenemos un split Samsung que no enfría, hace un ruido raro', telefonoPrueba);
-
-  // Turno 4: Agrega urgencia
-  await extraerFichaTriage('es urgente, estamos con clientes en el local', telefonoPrueba);
-}
-
-// Ejecutar si se corre directamente desde la consola
-if (require.main === module) {
-  correrPruebas();
 }
 
 module.exports = { extraerFichaTriage, limpiarHistorial };

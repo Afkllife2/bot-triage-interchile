@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const path = require('path');
 const { extraerFichaTriage } = require('./brain');
 const { guardarCasoTriage, getTicketsDashboard } = require('./db');
-const { enviarMensajeWhatsApp } = require('./whatsapp');
+const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('./whatsapp');
 require('dotenv').config();
 
 const app = express();
@@ -81,23 +81,49 @@ app.post('/webhooks/meta', async (req, res) => {
       const contact = payload.entry[0].changes[0].value.contacts[0];
       
       const telefonoCliente = contact.wa_id;
-      const textoCliente = waMessage.text ? waMessage.text.body : '';
 
-      console.log(`\n🗣️ Nuevo mensaje de [${telefonoCliente}]: "${textoCliente}"`);
+      // HU-20: detectar si el cliente presionó un botón interactivo
+      let textoCliente = '';
+      if (waMessage.type === 'interactive' && waMessage.interactive?.button_reply) {
+        // Cliente presionó un botón — usamos el título como texto
+        textoCliente = waMessage.interactive.button_reply.title;
+        console.log(`\n🔘 Botón presionado por [${telefonoCliente}]: "${textoCliente}"`);
+      } else if (waMessage.text) {
+        textoCliente = waMessage.text.body;
+        console.log(`\n🗣️ Nuevo mensaje de [${telefonoCliente}]: "${textoCliente}"`);
+      }
 
       // C. Conexión con el Cerebro IA (Generar Ficha)
       if (textoCliente) {
         const fichaEstructurada = await extraerFichaTriage(textoCliente, telefonoCliente);
-        
-        // D. Guardar Ficha en Base de Datos Supabase (Tabla Casos Triage)
+
+        // D. Guardar Ficha en Base de Datos Supabase
         if (fichaEstructurada) {
-           await guardarCasoTriage(fichaEstructurada, telefonoCliente);
-           
-           // E. Enviar respuesta automática por WhatsApp al cliente
-           if (fichaEstructurada.respuesta_cliente) {
-               console.log(`\n💬 Respondiendo al cliente: "${fichaEstructurada.respuesta_cliente}"`);
-               await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
-           }
+          await guardarCasoTriage(fichaEstructurada, telefonoCliente);
+
+          // E. Enviar respuesta al cliente
+          if (fichaEstructurada.respuesta_cliente) {
+
+            // HU-06: Si fue derivado, solo enviar texto de despedida (sin botones)
+            if (fichaEstructurada.requiere_derivacion) {
+              console.log(`\n🔀 [HU-06] Derivando a humano. Enviando mensaje de cierre.`);
+              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
+
+            // HU-20: Si hay opciones de botones, enviar mensaje interactivo
+            } else if (fichaEstructurada.opciones_botones && fichaEstructurada.opciones_botones.length > 0) {
+              console.log(`\n🔘 [HU-20] Enviando botones interactivos: ${fichaEstructurada.opciones_botones.join(', ')}`);
+              await enviarMensajeConBotones(
+                telefonoCliente,
+                fichaEstructurada.respuesta_cliente,
+                fichaEstructurada.opciones_botones
+              );
+
+            // Normal: solo texto
+            } else {
+              console.log(`\n💬 Respondiendo al cliente: "${fichaEstructurada.respuesta_cliente}"`);
+              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
+            }
+          }
         }
       }
     }

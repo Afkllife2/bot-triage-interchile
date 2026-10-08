@@ -49,4 +49,65 @@ async function enviarMensajeWhatsApp(telefonoDestino, texto) {
     }
 }
 
-module.exports = { enviarMensajeWhatsApp };
+/**
+ * HU-20: Envia un mensaje con botones interactivos (reply buttons) a un cliente.
+ * Máximo 3 botones, máximo 20 caracteres por botón.
+ * @param {string} telefonoDestino Número de teléfono con código de país
+ * @param {string} textoEncabezado Texto que aparece arriba de los botones
+ * @param {string[]} opciones Array de strings (máx 3) para los botones
+ */
+async function enviarMensajeConBotones(telefonoDestino, textoEncabezado, opciones) {
+    if (!META_ACCESS_TOKEN) {
+        console.error('❌ Error: No hay META_ACCESS_TOKEN en el archivo .env');
+        return;
+    }
+
+    // Truncar a máx 3 botones y 20 caracteres cada uno (límite de WhatsApp)
+    const botones = opciones.slice(0, 3).map((opcion, index) => ({
+        type: 'reply',
+        reply: {
+            id: `btn_${index}_${opcion.toLowerCase().replace(/\s+/g, '_')}`,
+            title: opcion.slice(0, 20)
+        }
+    }));
+
+    const url = `https://graph.facebook.com/v25.0/${WABA_ID}/messages`;
+
+    const payload = {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: telefonoDestino,
+        type: 'interactive',
+        interactive: {
+            type: 'button',
+            body: { text: textoEncabezado },
+            action: { buttons: botones }
+        }
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log(`✅ Mensaje con botones enviado a [${telefonoDestino}]: ${opciones.join(' | ')}`);
+        } else {
+            console.error('❌ Error al enviar botones WhatsApp:', data);
+            // Fallback: enviar como texto plano si falla
+            const opcionesTexto = opciones.map((o, i) => `${i + 1}. ${o}`).join('\n');
+            await enviarMensajeWhatsApp(telefonoDestino, `${textoEncabezado}\n\n${opcionesTexto}`);
+        }
+    } catch (error) {
+        console.error('❌ Excepción al enviar botones WhatsApp:', error);
+    }
+}
+
+module.exports = { enviarMensajeWhatsApp, enviarMensajeConBotones };
