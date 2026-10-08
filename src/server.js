@@ -4,6 +4,7 @@ const path = require('path');
 const { extraerFichaTriage } = require('./brain');
 const { guardarCasoTriage, getTicketsDashboard } = require('./db');
 const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('./whatsapp');
+const { aplicarArnes } = require('./arneses'); // HU-21
 require('dotenv').config();
 
 const app = express();
@@ -95,9 +96,12 @@ app.post('/webhooks/meta', async (req, res) => {
 
       // C. Conexión con el Cerebro IA (Generar Ficha)
       if (textoCliente) {
-        const fichaEstructurada = await extraerFichaTriage(textoCliente, telefonoCliente);
+        const fichaIA = await extraerFichaTriage(textoCliente, telefonoCliente);
 
-        // D. Guardar Ficha en Base de Datos Supabase
+        // D. HU-21 CA-1: Arnés intercepta ANTES de guardar o enviar al cliente
+        const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
+
+        // E. Guardar Ficha en Base de Datos Supabase
         if (fichaEstructurada) {
           await guardarCasoTriage(fichaEstructurada, telefonoCliente);
 
