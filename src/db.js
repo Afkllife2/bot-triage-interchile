@@ -1,20 +1,46 @@
 const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
+
+// ============================================================
+// 🛡️ HU-16 CA-2: Logger de errores a archivo local
+// ============================================================
+const LOG_PATH = path.join(__dirname, '..', 'logs', 'error.log');
+
+function logError(context, error) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    context,
+    message: error.message,
+    stack: error.stack,
+  };
+  const line = JSON.stringify(entry) + '\n';
+  // Escribir al archivo de forma asíncrona sin bloquear
+  fs.mkdirSync(path.dirname(LOG_PATH), { recursive: true });
+  fs.appendFile(LOG_PATH, line, (err) => {
+    if (err) console.error('⚠️ No se pudo escribir en error.log:', err.message);
+  });
+  console.error(`❌ [${context}]`, error.message);
+}
 
 // Configuración del Pool de PostgreSQL conectado a Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false },
+  // HU-16 CA-3: timeout de conexión a BD
+  connectionTimeoutMillis: 8000,
+  idleTimeoutMillis: 30000,
 });
 
 /**
- * Guarda una ficha de Triage generada por la IA en la base de datos Supabase
+ * Guarda una ficha de Triage generada por la IA en la base de datos Supabase.
+ * HU-16 CA-2: Si falla, loguea a error.log y retorna null (no lanza excepción).
  */
 async function guardarCasoTriage(ficha, telefonoCliente) {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
 
     // 1. Verificar si el cliente existe, si no, insertarlo
@@ -26,7 +52,6 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
 
     if (resCliente.rows.length > 0) {
       clientId = resCliente.rows[0].id;
-      // Actualizar nombre si la IA lo extrajo y el campo estaba vacío
       if (ficha.cliente_nombre) {
         await client.query(
           `UPDATE clientes SET nombre_completo = $1, comuna = COALESCE(NULLIF($2,''), comuna)
@@ -35,7 +60,6 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
         );
       }
     } else {
-      // Insertar nuevo cliente
       const insertCliente = await client.query(
         'INSERT INTO clientes (telefono, nombre_completo, empresa, comuna, direccion) VALUES ($1, $2, $3, $4, $5) RETURNING id',
         [
@@ -43,7 +67,7 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
           ficha.cliente_nombre || null,
           ficha.tipo_solicitud === 'Proyecto Comercial' ? ficha.cliente_nombre : null,
           ficha.sucursal_comuna || null,
-          ficha.sucursal_direccion || null
+          ficha.sucursal_direccion || null,
         ]
       );
       clientId = insertCliente.rows[0].id;
@@ -77,30 +101,34 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
       ficha.prioridad || 'Normal',
       ficha.disponibilidad_cliente || null,
       ficha.tiene_fotos || false,
-      ficha.requiere_derivacion || false,  // HU-06
-      estadoCaso                           // HU-06
+      ficha.requiere_derivacion || false,
+      estadoCaso,
     ];
 
     const resCaso = await client.query(queryCaso, valuesCaso);
     await client.query('COMMIT');
-    
+
     console.log(`✅ Caso guardado en DB exitosamente. ID: ${resCaso.rows[0].id}`);
     return resCaso.rows[0].id;
+
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('❌ Error al guardar en DB:', error);
-    throw error;
+    // HU-16 CA-2: Rollback + log local, NO relanzar la excepción
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    logError('db.guardarCasoTriage', error);
+    return null; // El servidor seguirá respondiendo al cliente igualmente
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
 /**
- * Obtiene los últimos tickets de triage para el Dashboard de administración
+ * Obtiene los últimos tickets de triage para el Dashboard de administración.
+ * HU-16 CA-2: Si falla, loguea y retorna array vacío.
  */
 async function getTicketsDashboard(limite = 50) {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     const query = `
       SELECT
         ct.id,
@@ -122,14 +150,11 @@ async function getTicketsDashboard(limite = 50) {
     const result = await client.query(query, [limite]);
     return result.rows;
   } catch (error) {
-    console.error('❌ Error obteniendo tickets para dashboard:', error);
-    throw error;
+    logError('db.getTicketsDashboard', error);
+    return []; // Dashboard muestra tabla vacía en vez de crashear
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 
-module.exports = {
-  guardarCasoTriage,
-  getTicketsDashboard
-};
+module.exports = { guardarCasoTriage, getTicketsDashboard };

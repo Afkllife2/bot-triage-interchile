@@ -158,6 +158,31 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
 });
 
+/**
+ * HU-16 CA-4: Manejador global de errores de Express.
+ * Captura cualquier excepción no controlada y evita que el servidor crashee.
+ * Meta siempre recibe HTTP 200 en el webhook, el error queda logueado.
+ */
+app.use((err, req, res, next) => {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    message: err.message,
+    stack: err.stack,
+  };
+  console.error('🛑 [HU-16 CA-4] Error global capturado:', entry);
+
+  // Si ya se envio una respuesta, dejar que Express maneje el cierre
+  if (res.headersSent) return next(err);
+
+  // WhatsApp requiere 200 incluso si hubo error interno
+  if (req.path === '/webhooks/meta') {
+    return res.status(200).send('EVENT_RECEIVED');
+  }
+  res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+});
+
 // Arrancar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor Webhook corriendo en el puerto ${PORT}`);

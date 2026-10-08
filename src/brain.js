@@ -8,8 +8,17 @@ const { z } = require('zod');
 // Refactorizado con LangChain (Sprint 2)
 // HU-02: Arnés de Memoria Conversacional
 // HU-06: Detección de Derivación a Humano
+// HU-16: Manejo de Errores y Timeouts
 // HU-20: Sugerencia de Botones Interactivos
 // ==========================================
+
+// HU-16 CA-3: Timeout helper (8 segundos para APIs externas)
+function conTimeout(promesa, ms = 8000) {
+  const reloj = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout: la operación superó ${ms}ms`)), ms)
+  );
+  return Promise.race([promesa, reloj]);
+}
 
 // --- ESQUEMA DE SALIDA ESTRUCTURADA (Zod) ---
 const FichaTriage = z.object({
@@ -82,6 +91,10 @@ const conversaciones = new Map();
 const TIEMPO_EXPIRACION_MS = 60 * 60 * 1000; // 60 minutos
 const MAX_MENSAJES_HISTORIAL = 10; // últimos 5 turnos
 
+// HU-06 CA-3: Registro de clientes ya derivados (silencio post-escalada)
+const clientesDerivados = new Set();
+const MENSAJE_ESTATICO_DERIVADO = 'Tu caso ya fue escalado a nuestro equipo. Un ejecutivo de InterChile se pondrá en contacto contigo a la brevedad. ¡Gracias por tu paciencia! 🙏';
+
 // --- INICIALIZACIÓN DEL MODELO LANGCHAIN ---
 const llm = new ChatGoogleGenerativeAI({
   model: 'gemini-2.5-flash',
@@ -123,6 +136,19 @@ function obtenerContexto(telefono) {
 async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   console.log(`\n🤖 [LangChain] Procesando mensaje de ${telefono}: "${mensajeCliente}"\n`);
 
+  // HU-06 CA-3: Si el cliente ya fue derivado, responder con mensaje estático y no llamar a la IA
+  if (clientesDerivados.has(telefono)) {
+    console.log(`🔇 [HU-06 CA-3] Cliente ${telefono} ya derivado. Respondiendo con mensaje estático.`);
+    return {
+      tipo_solicitud: 'Otra Consulta',
+      cliente_nombre: '', sucursal_comuna: '', sucursal_direccion: '',
+      equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Mensaje post-derivación',
+      prioridad: 'Normal', disponibilidad_cliente: '', tiene_fotos: false,
+      requiere_derivacion: false, opciones_botones: [],
+      respuesta_cliente: MENSAJE_ESTATICO_DERIVADO,
+    };
+  }
+
   const ctx = obtenerContexto(telefono);
   console.log(`💬 Historial: ${ctx.mensajes.length / 2} turno(s) anteriores en memoria`);
 
@@ -133,14 +159,16 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   ];
 
   try {
-    const ficha = await llmEstructurado.invoke(mensajes);
+    // HU-16 CA-3: Timeout de 8 segundos a la llamada de Gemini
+    const ficha = await conTimeout(llmEstructurado.invoke(mensajes), 8000);
 
     console.log('✅ Ficha Estructurada Extraída (Lista para Kronos):');
     console.dir(ficha, { depth: null, colors: true });
 
-    // Si el cliente fue derivado, limpiar su historial (conversación cerrada)
+    // HU-06 CA-3: Si fue derivado, registrarlo en Set de silencio + limpiar historial
     if (ficha.requiere_derivacion) {
-      console.log(`🔀 Cliente derivado a humano. Limpiando historial de ${telefono}.`);
+      console.log(`🔀 Cliente derivado a humano. Silenciando futuros mensajes de: ${telefono}.`);
+      clientesDerivados.add(telefono);
       conversaciones.delete(telefono);
     } else {
       // Actualizar historial solo si no fue derivado
@@ -155,23 +183,21 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
     return ficha;
 
   } catch (error) {
-    console.error('❌ Error al comunicarse con LangChain/Gemini:', error.message);
+    // HU-16 CA-1: Error de Gemini o Timeout → respuesta de disculpa, NUNCA lanzar excepción
+    const esTimeout = error.message && error.message.startsWith('Timeout');
+    console.error(`❌ [HU-16] ${esTimeout ? 'TIMEOUT' : 'ERROR'} Gemini/LangChain:`, error.message);
 
-    // Arnés de Respaldo
     return {
       tipo_solicitud: 'Otra Consulta',
-      cliente_nombre: '',
-      sucursal_comuna: '',
-      sucursal_direccion: '',
-      equipo_tipo: '',
-      equipo_marca: '',
-      sintoma_observacion: 'Error de procesamiento',
-      prioridad: 'Normal',
-      disponibilidad_cliente: '',
-      tiene_fotos: false,
-      requiere_derivacion: false,
-      opciones_botones: [],
-      respuesta_cliente: 'Gracias por contactarnos. En este momento estamos experimentando dificultades técnicas. Un ejecutivo se comunicará con usted a la brevedad. Disculpe los inconvenientes.',
+      cliente_nombre: '', sucursal_comuna: '', sucursal_direccion: '',
+      equipo_tipo: '', equipo_marca: '',
+      sintoma_observacion: esTimeout ? 'Timeout de procesamiento' : 'Error de procesamiento',
+      prioridad: 'Normal', disponibilidad_cliente: '', tiene_fotos: false,
+      requiere_derivacion: false, opciones_botones: [],
+      // HU-16 CA-1: Mensaje empático, no técnico
+      respuesta_cliente: esTimeout
+        ? 'Estamos experimentando alta demanda en este momento. Por favor, reintenta en unos minutos. ¡Te pedimos disculpas! 🙏'
+        : 'Gracias por contactarnos. Estamos experimentando dificultades técnicas temporales. Un ejecutivo se comunicará contigo a la brevedad. Disculpe los inconvenientes.',
     };
   }
 }

@@ -28,14 +28,20 @@ async function enviarMensajeWhatsApp(telefonoDestino, texto) {
     };
 
     try {
+        // HU-16 CA-3: Timeout de 8 segundos para la API de Meta
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
         });
+        clearTimeout(timer);
 
         const data = await response.json();
 
@@ -45,7 +51,11 @@ async function enviarMensajeWhatsApp(telefonoDestino, texto) {
             console.error('❌ Error al enviar mensaje de WhatsApp:', data);
         }
     } catch (error) {
-        console.error('❌ Excepción al intentar enviar WhatsApp:', error);
+        if (error.name === 'AbortError') {
+            console.error('❌ [HU-16 CA-3] Timeout al enviar mensaje de texto a WhatsApp (>8s)');
+        } else {
+            console.error('❌ Excepción al intentar enviar WhatsApp:', error);
+        }
     }
 }
 
@@ -86,14 +96,20 @@ async function enviarMensajeConBotones(telefonoDestino, textoEncabezado, opcione
     };
 
     try {
+        // HU-16 CA-3: Timeout de 8 segundos para la API de Meta
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
         });
+        clearTimeout(timer);
 
         const data = await response.json();
 
@@ -106,7 +122,11 @@ async function enviarMensajeConBotones(telefonoDestino, textoEncabezado, opcione
             await enviarMensajeWhatsApp(telefonoDestino, `${textoEncabezado}\n\n${opcionesTexto}`);
         }
     } catch (error) {
-        console.error('❌ Excepción al enviar botones WhatsApp:', error);
+        if (error.name === 'AbortError') {
+            console.error('❌ [HU-16 CA-3] Timeout al enviar botones WhatsApp (>8s)');
+        } else {
+            console.error('❌ Excepción al enviar botones WhatsApp:', error);
+        }
     }
 }
 
