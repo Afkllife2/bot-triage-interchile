@@ -29,49 +29,49 @@
 
 ```mermaid
 flowchart TD
-    A([👤 Cliente envía mensaje\npor WhatsApp]) --> B
+    A(["👤 Cliente envía mensaje\npor WhatsApp"]) --> B
 
-    B{¿Existe historial\nde esta conversación?}
+    B{"¿Existe historial\nde esta conversación?"}
 
-    B -- No\nPrimer mensaje --> C[Crear nueva sesión\nde conversación]
-    B -- Sí\nMensaje de seguimiento --> D[Recuperar historial\nde turnos anteriores]
+    B -- "No: Primer mensaje" --> C["Crear nueva sesión\nde conversación"]
+    B -- "Sí: Mensaje de seguimiento" --> D["Recuperar historial\nde turnos anteriores"]
 
     C --> E
     D --> E
 
-    E[LangChain construye el\ncontexto completo:\nSistema + Historial + Mensaje actual]
+    E["LangChain construye el contexto completo:\nSistema + Historial + Mensaje actual"]
 
-    E --> F[Gemini procesa con\nmemoria acumulada]
+    E --> F["Gemini procesa con\nmemoria acumulada"]
 
-    F --> G{¿Tiene información\nsuficiente para el triage?}
+    F --> G{"¿Tiene información\nsuficiente para el triage?"}
 
-    G -- No, falta información clave\nEquipo / Síntoma / Ubicación --> H{¿Ya se preguntó\nesto antes?}
+    G -- "No, falta información clave\n(Equipo / Síntoma / Ubicación)" --> H{"¿Ya se preguntó\nesto antes?"}
 
-    H -- Sí, el cliente ya lo respondió --> I[⚠️ NO repetir la pregunta\nPreguntar por otro dato faltante]
-    H -- No, aún no se ha preguntado --> J[Formular pregunta específica\npara obtener el dato faltante]
+    H -- "Sí, el cliente ya lo respondió" --> I["⚠️ NO repetir la pregunta\nPreguntar por otro dato faltante"]
+    H -- "No, aún no se ha preguntado" --> J["Formular pregunta específica\npara obtener el dato faltante"]
 
     I --> K
     J --> K
 
-    G -- Sí, datos completos --> L[Generar ficha de triage completa:\n• Tipo de solicitud\n• Nombre cliente\n• Equipo y marca\n• Síntoma\n• Prioridad\n• Disponibilidad]
+    G -- "Sí, datos completos" --> L["Generar ficha de triage completa:\n• Tipo de solicitud\n• Nombre cliente\n• Equipo y marca\n• Síntoma y Prioridad"]
 
-    L --> M[Guardar ticket\nen Supabase]
+    L --> M["Guardar ticket\nen Supabase"]
 
-    K --> N[Generar respuesta\nempática al cliente]
+    K --> N["Generar respuesta\nempática al cliente"]
     M --> N
 
-    N --> O[Agregar turno al historial\nde memoria en RAM]
+    N --> O["Agregar turno al historial\nde memoria en RAM"]
 
-    O --> P{¿Historial supera\n10 mensajes?}
+    O --> P{"¿Historial supera\n10 mensajes?"}
 
-    P -- Sí --> Q[Recortar: conservar\nsolo los últimos 10 mensajes\n5 turnos completos]
-    P -- No --> R
+    P -- "Sí" --> Q["Recortar: conservar\nsolo los últimos 10 mensajes\n(5 turnos completos)"]
+    P -- "No" --> R
 
-    Q --> R([📤 Enviar respuesta\nal cliente por WhatsApp])
+    Q --> R(["📤 Enviar respuesta\nal cliente por WhatsApp"])
 
-    R --> S{¿Cliente responde\nnuevo mensaje?}
-    S -- Sí, dentro de 60 min --> B
-    S -- No responde en 60+ min --> T[🗑️ Sesión expirada\nMemoria eliminada]
+    R --> S{"¿Cliente responde\nnuevo mensaje?"}
+    S -- "Sí, dentro de 60 min" --> B
+    S -- "No responde en 60+ min" --> T["🗑️ Sesión expirada\nMemoria eliminada"]
 ```
 
 ---

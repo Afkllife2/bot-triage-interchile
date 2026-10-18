@@ -30,54 +30,54 @@
 
 ```mermaid
 flowchart TD
-    A([👨‍💼 Administrador\nabre el Dashboard\nen el navegador]) --> B
+    A(["👨‍💼 Administrador abre el Dashboard\nen el navegador"]) --> B
 
-    B[Navegador solicita\nGET /dashboard]
+    B["Navegador solicita\nGET /dashboard"]
 
-    B --> C[Servidor entrega\nla página HTML del panel]
+    B --> C["Servidor entrega\nla página HTML del panel"]
 
-    C --> D[JavaScript del navegador\nsolicita GET /api/tickets\na Supabase vía servidor]
+    C --> D["JavaScript del navegador\nsolicita GET /api/tickets\na Supabase vía servidor"]
 
-    D --> E[(🗄️ Supabase\nTabla: casos_triage)]
+    D --> E[("🗄️ Supabase\nTabla: casos_triage")]
 
-    E --> F[Retorna lista de\ntodos los tickets\nordenados por fecha DESC]
+    E --> F["Retorna lista de todos los tickets\nordenados por fecha DESC"]
 
-    F --> G[Dashboard renderiza\nla tabla de tickets]
+    F --> G["Dashboard renderiza\nla tabla de tickets"]
 
-    G --> H{¿El ticket tiene\nprioridad Alta?}
+    G --> H{"¿El ticket tiene\nprioridad Alta?"}
 
-    H -- Sí --> I[🔴 Fila resaltada\nen color rojo]
-    H -- No --> J[🟢 Fila normal]
+    H -- "Sí" --> I["🔴 Fila resaltada\nen color rojo"]
+    H -- "No" --> J["🟢 Fila normal"]
 
     I --> K
     J --> K
 
-    K[Tabla completa visible\ncon columnas:\n📅 Fecha | 📞 Teléfono | 👤 Cliente\n🔧 Equipo | 🩺 Síntoma | ⚡ Prioridad | 📋 Estado]
+    K["Tabla completa visible con columnas:\nFecha | Teléfono | Cliente | Equipo | Síntoma | Prioridad | Estado"]
 
-    K --> L{¿Administrador\naplicó un filtro?}
+    K --> L{"¿Administrador\naplicó un filtro?"}
 
-    L -- Filtro: Prioridad Alta --> M[Muestra solo tickets\ncon prioridad = Alta]
-    L -- Filtro: Requieren Humano --> N[Muestra solo tickets\ncon requiere_humano = true]
-    L -- Filtro: Normal --> O[Muestra solo tickets\ncon prioridad = Normal]
-    L -- Sin filtro: Todos --> P[Muestra todos\nlos tickets]
+    L -- "Filtro: Prioridad Alta" --> M["Muestra solo tickets\ncon prioridad = Alta"]
+    L -- "Filtro: Requieren Humano" --> N["Muestra solo tickets\ncon requiere_humano = true"]
+    L -- "Filtro: Normal" --> O["Muestra solo tickets\ncon prioridad = Normal"]
+    L -- "Sin filtro: Todos" --> P["Muestra todos\nlos tickets"]
 
     M --> Q
     N --> Q
     O --> Q
     P --> Q
 
-    Q[Vista filtrada actualizada\ninstantáneamente en pantalla]
+    Q["Vista filtrada actualizada\ninstantáneamente en pantalla"]
 
-    Q --> R{¿Llega un mensaje\nnuevo por WhatsApp\nal bot?}
+    Q --> R{"¿Llega un mensaje nuevo\npor WhatsApp al bot?"}
 
-    R -- Sí --> S[Bot procesa el mensaje\ny guarda ticket en Supabase]
+    R -- "Sí" --> S["Bot procesa el mensaje\ny guarda ticket en Supabase"]
 
-    S --> T{¿Administrador\npresiona Actualizar?}
+    S --> T{"¿Administrador\npresiona Actualizar?"}
 
-    T -- Sí --> D
-    T -- No, espera actualización\nauto cada 30 seg --> D
+    T -- "Sí" --> D
+    T -- "No, espera actualización\nauto cada 30 seg" --> D
 
-    R -- No --> U([⏳ Dashboard en\nestado de espera])
+    R -- "No" --> U(["⏳ Dashboard en\nestado de espera"])
 ```
 
 ---

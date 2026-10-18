@@ -83,12 +83,16 @@ app.post('/webhooks/meta', async (req, res) => {
       
       const telefonoCliente = contact.wa_id;
 
-      // HU-20: detectar si el cliente presionó un botón interactivo
+      // HU-20: detectar si el cliente presionó un botón interactivo o seleccionó una opción de lista
       let textoCliente = '';
-      if (waMessage.type === 'interactive' && waMessage.interactive?.button_reply) {
-        // Cliente presionó un botón — usamos el título como texto
-        textoCliente = waMessage.interactive.button_reply.title;
-        console.log(`\n🔘 Botón presionado por [${telefonoCliente}]: "${textoCliente}"`);
+      if (waMessage.type === 'interactive') {
+        if (waMessage.interactive?.button_reply) {
+          textoCliente = waMessage.interactive.button_reply.title;
+          console.log(`\n🔘 Botón presionado por [${telefonoCliente}]: "${textoCliente}"`);
+        } else if (waMessage.interactive?.list_reply) {
+          textoCliente = waMessage.interactive.list_reply.title;
+          console.log(`\n📋 Opción de lista seleccionada por [${telefonoCliente}]: "${textoCliente}"`);
+        }
       } else if (waMessage.text) {
         textoCliente = waMessage.text.body;
         console.log(`\n🗣️ Nuevo mensaje de [${telefonoCliente}]: "${textoCliente}"`);
