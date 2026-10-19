@@ -54,9 +54,23 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
       clientId = resCliente.rows[0].id;
       if (ficha.cliente_nombre) {
         await client.query(
-          `UPDATE clientes SET nombre_completo = $1, comuna = COALESCE(NULLIF($2,''), comuna)
-           WHERE id = $3 AND (nombre_completo IS NULL OR nombre_completo = '')`,
-          [ficha.cliente_nombre, ficha.sucursal_comuna || '', clientId]
+          `UPDATE clientes SET nombre_completo = $1
+           WHERE id = $2 AND (nombre_completo IS NULL OR nombre_completo = '')`,
+          [ficha.cliente_nombre, clientId]
+        );
+      }
+      if (ficha.sucursal_comuna) {
+        await client.query(
+          `UPDATE clientes SET comuna = $1
+           WHERE id = $2 AND (comuna IS NULL OR comuna = '')`,
+          [ficha.sucursal_comuna, clientId]
+        );
+      }
+      if (ficha.tipo_solicitud === 'Proyecto Comercial' && ficha.cliente_nombre) {
+        await client.query(
+          `UPDATE clientes SET empresa = $1
+           WHERE id = $2 AND (empresa IS NULL OR empresa = '')`,
+          [ficha.cliente_nombre, clientId]
         );
       }
     } else {
