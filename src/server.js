@@ -191,9 +191,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, error: 'Error interno del servidor' });
 });
 
-// Arrancar el servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor Webhook corriendo en el puerto ${PORT}`);
-  console.log(`📊 Dashboard disponible en: http://localhost:${PORT}/dashboard`);
-  console.log('Esperando conexiones de Meta (WhatsApp)...');
-});
+// Arrancar el servidor (solo si se ejecuta directamente; los tests de integración importan `app`)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor Webhook corriendo en el puerto ${PORT}`);
+    console.log(`📊 Dashboard disponible en: http://localhost:${PORT}/dashboard`);
+    console.log('Esperando conexiones de Meta (WhatsApp)...');
+  });
+}
+
+module.exports = app;

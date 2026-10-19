@@ -51,3 +51,30 @@
 | HU-20 Botones y Listas WhatsApp | 3 | 3 | 0 | 0 |
 | HU-16 / TSK-02 Infraestructura y Errores | 5 | 5 | 0 | 0 |
 | **TOTAL** | **24** | **24** | **0** | **0** |
+
+
+---
+
+## Pruebas de Integración Automatizadas (agregado 19-10-2026)
+
+Archivo: `test/integracion.test.js` · Herramientas: Jest + supertest · Ejecuta las rutas reales de Express, `arneses.js` y `kronos.js`; simula solo Gemini, Supabase y Meta.
+
+| ID | CA / HU | Qué verifica | Estado |
+|---|---|---|---|
+| CI-01 | Seguridad | GET de verificación con token correcto devuelve el *challenge* | ✅ PASS |
+| CI-02 | Seguridad | GET con token incorrecto → 403 | ✅ PASS |
+| CI-03 | Seguridad | POST sin firma → 401 y la IA no se invoca | ✅ PASS |
+| CI-04 | Seguridad | POST con firma inválida → 403 y la IA no se invoca | ✅ PASS |
+| CI-05 | HU-02 | Texto → IA (con texto y teléfono) → BD → respuesta de texto | ✅ PASS |
+| CI-06 | HU-20 CA-2 | `button_reply` llega a la IA como texto | ✅ PASS |
+| CI-07 | HU-20 CA-2 | `list_reply` (Arriendo) llega a la IA como texto | ✅ PASS |
+| CI-08 | HU-20 CA-1 | Opciones de la IA se envían como mensaje interactivo | ✅ PASS |
+| CI-09 | HU-06 | Derivación: solo texto, sin botones, contacto de Benjamín, caso persistido | ✅ PASS |
+| CI-10 | Pipeline | Estados de entrega (sin mensajes) → 200 sin invocar la IA | ✅ PASS |
+| CI-11 | HU-21 | Marca inventada se corrige **antes** de guardar en BD | ✅ PASS |
+| CI-12 | HU-21 | Marca válida pasa sin modificarse | ✅ PASS |
+| CI-13 | HU-14 | `/api/tickets` devuelve los tickets | ✅ PASS |
+| CI-14 | HU-16 | `/api/tickets` responde 500 controlado ante fallo de datos | ✅ PASS |
+| CI-15 | HU-14 | `/dashboard` sirve HTML | ✅ PASS |
+
+**Limitación declarada:** estas pruebas no llaman a Supabase ni a Meta reales; esa integración se validó de forma manual end-to-end (EV-01 a EV-13).
