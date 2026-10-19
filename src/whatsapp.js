@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
-const WABA_ID = '1264670910070069'; // Phone Number ID we extracted earlier
+const WABA_ID = process.env.META_PHONE_NUMBER_ID;
 
 /**
  * Envia un mensaje de texto plano a un cliente vía WhatsApp Cloud API.
@@ -72,28 +72,58 @@ async function enviarMensajeConBotones(telefonoDestino, textoEncabezado, opcione
         return;
     }
 
-    // Truncar a máx 3 botones y 20 caracteres cada uno (límite de WhatsApp)
-    const botones = opciones.slice(0, 3).map((opcion, index) => ({
-        type: 'reply',
-        reply: {
-            id: `btn_${index}_${opcion.toLowerCase().replace(/\s+/g, '_')}`,
-            title: opcion.slice(0, 20)
-        }
-    }));
+    let payload;
+
+    if (opciones.length <= 3) {
+        // Enviar como Botones de Respuesta (máx 3)
+        const botones = opciones.map((opcion, index) => ({
+            type: 'reply',
+            reply: {
+                id: `btn_${index}_${opcion.toLowerCase().replace(/\s+/g, '_')}`,
+                title: opcion.slice(0, 20)
+            }
+        }));
+
+        payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: telefonoDestino,
+            type: 'interactive',
+            interactive: {
+                type: 'button',
+                body: { text: textoEncabezado },
+                action: { buttons: botones }
+            }
+        };
+    } else {
+        // Enviar como Mensaje de Lista (máx 10)
+        const rows = opciones.slice(0, 10).map((opcion, index) => ({
+            id: `row_${index}_${opcion.toLowerCase().replace(/\s+/g, '_')}`,
+            title: opcion.slice(0, 24)
+        }));
+
+        payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: telefonoDestino,
+            type: 'interactive',
+            interactive: {
+                type: 'list',
+                body: { text: textoEncabezado },
+                action: {
+                    button: 'Ver opciones',
+                    sections: [
+                        {
+                            title: 'Selecciona una opción',
+                            rows: rows
+                        }
+                    ]
+                }
+            }
+        };
+    }
 
     const url = `https://graph.facebook.com/v25.0/${WABA_ID}/messages`;
-
-    const payload = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: telefonoDestino,
-        type: 'interactive',
-        interactive: {
-            type: 'button',
-            body: { text: textoEncabezado },
-            action: { buttons: botones }
-        }
-    };
 
     try {
         // HU-16 CA-3: Timeout de 8 segundos para la API de Meta

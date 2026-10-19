@@ -14,16 +14,17 @@ const { z } = require('zod');
 
 // HU-16 CA-3: Timeout helper (8 segundos para APIs externas)
 function conTimeout(promesa, ms = 8000) {
-  const reloj = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`Timeout: la operación superó ${ms}ms`)), ms)
-  );
-  return Promise.race([promesa, reloj]);
+  let timer;
+  const reloj = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timeout: la operación superó ${ms}ms`)), ms);
+  });
+  return Promise.race([promesa, reloj]).finally(() => clearTimeout(timer));
 }
 
 // --- ESQUEMA DE SALIDA ESTRUCTURADA (Zod) ---
 const FichaTriage = z.object({
   tipo_solicitud: z
-    .enum(['Falla Técnica', 'Mantención', 'Instalación', 'Cotización', 'Proyecto Comercial', 'Otra Consulta'])
+    .enum(['Falla Técnica', 'Mantención', 'Instalación', 'Cotización', 'Proyecto Comercial', 'Arriendo', 'Otra Consulta'])
     .describe("El tipo principal de solicitud del cliente."),
   cliente_nombre: z
     .string()
@@ -58,11 +59,11 @@ const FichaTriage = z.object({
     .boolean()
     .describe("True si el cliente pide explícitamente hablar con una persona, ejecutivo, o humano. También true si está muy frustrado o el problema es demasiado complejo para resolver por chat."),
 
-  // HU-20: Botones interactivos (máx 3 opciones)
+  // HU-20: Botones interactivos (máx 10 opciones)
   opciones_botones: z
-    .array(z.string().max(20))
-    .max(3)
-    .describe("Lista de hasta 3 opciones cortas para presentar como botones clickeables en WhatsApp. Usar SOLO cuando el cliente necesita elegir entre opciones claras (ej: tipo de equipo, nivel de urgencia). Dejar vacío si no aplica."),
+    .array(z.string().max(24))
+    .max(10)
+    .describe("Lista de opciones cortas para presentar como botones o lista en WhatsApp. Usar SOLO cuando el cliente necesita elegir entre opciones claras. Dejar vacío si no aplica."),
 
   respuesta_cliente: z
     .string()
@@ -70,7 +71,7 @@ const FichaTriage = z.object({
 });
 
 // --- PROMPT DEL SISTEMA ---
-const SYSTEM_PROMPT = `Eres un asistente de triage comercial y técnico para InterChile, empresa de climatización y aire acondicionado.
+const SYSTEM_PROMPT = `Eres un asistente de triage comercial y técnico para InterChile, empresa de climatización y aire acondicionado. Ofrecemos proyectos, instalación, mantención, reparación y arriendo de equipos.
 
 Tu trabajo en cada turno:
 1. RECORDAR todo lo que el cliente ya te dijo en mensajes anteriores de esta conversación.
@@ -82,8 +83,8 @@ REGLAS IMPORTANTES:
 - Si el cliente ya dio su nombre antes, NO volver a preguntarlo.
 - Si ya dio el equipo, NO volver a preguntarlo.
 - Solo marcar prioridad 'Alta' si hay interrupción crítica de servicio.
-- Si el cliente pide hablar con una persona o ejecutivo (palabras como "quiero hablar con alguien", "necesito un humano", "me comunicas con alguien"), marcar requiere_derivacion: true y despedirte confirmando que un ejecutivo lo contactará.
-- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 3, máx 20 caracteres cada una). Ejemplo: si no sabe el tipo de equipo, ofrecer ["Split", "Cassette", "Otro"].
+- Si el cliente pide hablar con un ejecutivo, o si ya recogiste suficientes datos y debes derivarlo, marcar requiere_derivacion: true y despedirte indicándole EXPRESAMENTE que se contacte con Benjamín (Benjamin@interchileclima.cl / +569 9440 2632).
+- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Cotización", "Arriendo"].
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
 // --- 🛡️ ARNÉS DE MEMORIA CONVERSACIONAL (HU-02) ---
@@ -93,7 +94,7 @@ const MAX_MENSAJES_HISTORIAL = 10; // últimos 5 turnos
 
 // HU-06 CA-3: Registro de clientes ya derivados (silencio post-escalada)
 const clientesDerivados = new Set();
-const MENSAJE_ESTATICO_DERIVADO = 'Tu caso ya fue escalado a nuestro equipo. Un ejecutivo de InterChile se pondrá en contacto contigo a la brevedad. ¡Gracias por tu paciencia! 🙏';
+const MENSAJE_ESTATICO_DERIVADO = 'Tu caso ya fue escalado a nuestro equipo. Por favor contacta directamente a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632. ¡Gracias! 🙏';
 
 // --- INICIALIZACIÓN DEL MODELO LANGCHAIN ---
 const llm = new ChatGoogleGenerativeAI({
