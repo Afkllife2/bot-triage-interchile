@@ -30,6 +30,12 @@ const PORT = process.env.PORT || 3000;
 const META_VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
 const META_APP_SECRET = process.env.META_APP_SECRET;
 
+// Endpoint de verificación de salud para Render / monitoreo en la nube
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
+
+// Redirigir la raíz al Dashboard
+app.get('/', (req, res) => res.redirect('/dashboard'));
+
 /**
  * 1. GET /webhooks/meta
  * Equivalente a verify_meta_webhook en el código de Aerandir.
