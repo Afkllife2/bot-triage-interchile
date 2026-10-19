@@ -98,7 +98,7 @@ const MENSAJE_ESTATICO_DERIVADO = 'Tu caso ya fue escalado a nuestro equipo. Por
 
 // --- INICIALIZACIÓN DEL MODELO LANGCHAIN ---
 const llm = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.5-flash',
+  model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   apiKey: process.env.GEMINI_API_KEY,
   temperature: 0,
 });
