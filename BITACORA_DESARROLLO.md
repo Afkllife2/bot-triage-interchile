@@ -73,3 +73,30 @@ Esta bitácora consolida el registro de desarrollo técnico, metodológico e int
 
 ---
 *Fin de Bitácora Sprint 1. El entorno de desarrollo (Node.js) se encuentra estable y documentado, coincidiendo al 100% con los registros y transiciones de estado en Jira.*
+
+
+---
+
+# Bitácora de Desarrollo - Sprint 2 (Septiembre - Octubre 2026)
+
+## 29 de Septiembre: Memoria Conversacional Multi-turno y Dashboard Web
+- **Actividades Técnicas:**
+  - Refactorización de `src/brain.js` con `@langchain/google-genai` y `withStructuredOutput` (Zod) para implementar memoria conversacional por teléfono (hasta 10 mensajes, expiración 60 min).
+  - Construcción de `public/dashboard.html` y endpoint `GET /api/tickets` en `src/server.js` conectado a Supabase en tiempo real.
+- **Historias de Usuario (Resueltas):** `[INT-HU-02]`, `[INT-HU-14]`.
+- **Ramas de Git asociadas:** `feat/HU-02-memoria-conversacional`, `AAI-34-INT-HU-14-Dashboard-Web-para-Administradores-de-InterChile`.
+
+## 8 de Octubre: Derivación a Humano, Botones Interactivos, Manejo de Errores y Arneses Kronos
+- **Actividades Técnicas:**
+  - Implementación de derivación a ejecutivo humano (`HU-06`) con silencio post-escalada (`clientesDerivados`) y reflejo en el Dashboard.
+  - Implementación de botones interactivos en WhatsApp (`HU-20`) en `src/whatsapp.js` y `src/server.js`.
+  - Implementación de Timeouts de 8s (`HU-16`), logger local `logs/error.log` y manejador global Express.
+  - Creación del módulo `src/arneses.js` y `src/kronos.js` (`HU-18` / `HU-21`) con suite de tests unitarios en `test/arneses.test.js`.
+- **Ramas de Git asociadas:** `feat/HU-06-y-HU-20-derivacion-botones`, `feat/HU-16-y-TSK-02-manejo-errores-infraestructura`, `feat/HU-18-y-HU-21-arneses-kronos`.
+
+## 9 al 18 de Octubre: Número Oficial de Producción (+56 9 7235 2751), Feedback de Stakeholder y Cierre Sprint 2
+- **Actividades Técnicas y Metodológicas:**
+  - Registro y verificación del número comercial oficial de InterChile (`+56 9 7235 2751`) en Meta Cloud API y documentación en `docs/TOKEN_RENOVACION.md`.
+  - Incorporación del feedback del dueño de InterChile (Benjamín): adición del servicio de **Arriendo** (soportando Menús de Lista Interactiva `list_reply` en WhatsApp) y entrega explícita del contacto `Benjamin@interchileclima.cl` / `+569 9440 2632` al derivar.
+  - Generación y carga en Jira de los 5 diagramas de flujo Mermaid y PNG ("Regla de Oro"), capturas de evidencia real (`docs/EVIDENCIAS_SPRINT2.md`), Plan de Pruebas (24/24 PASS) y Matriz de Trazabilidad.
+- **Ramas de Git asociadas:** `docs/INT-TSK-01-y-TSK-02-token-produccion`, `feat/HU-06-y-HU-20-derivacion-botones`, `main`.
