@@ -12,8 +12,8 @@ const { z } = require('zod');
 // HU-20: Sugerencia de Botones Interactivos
 // ==========================================
 
-// HU-16 CA-3: Timeout helper (8 segundos para APIs externas)
-function conTimeout(promesa, ms = 8000) {
+// HU-16 CA-3: Timeout helper (12 segundos para APIs externas en la nube, dentro del límite de 15s de Meta)
+function conTimeout(promesa, ms = 12000) {
   let timer;
   const reloj = new Promise((_, reject) => {
     timer = setTimeout(() => reject(new Error(`Timeout: la operación superó ${ms}ms`)), ms);
@@ -160,8 +160,9 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   ];
 
   try {
-    // HU-16 CA-3: Timeout de 8 segundos a la llamada de Gemini
-    const ficha = await conTimeout(llmEstructurado.invoke(mensajes), 8000);
+    // HU-16 CA-3: Timeout de 12 segundos a la llamada de Gemini (configurable vía env)
+    const timeoutMs = parseInt(process.env.GEMINI_TIMEOUT_MS, 10) || 12000;
+    const ficha = await conTimeout(llmEstructurado.invoke(mensajes), timeoutMs);
 
     console.log('✅ Ficha Estructurada Extraída (Lista para Kronos):');
     console.dir(ficha, { depth: null, colors: true });
