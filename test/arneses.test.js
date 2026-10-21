@@ -36,6 +36,16 @@ const FICHA_MARCA_ALUCINADA = {
   equipo_marca: 'CoolBreeze Pro X9000', // Marca inventada
 };
 
+const FICHA_MODELO_ALUCINADO = {
+  ...FICHA_VALIDA,
+  equipo_marca: 'Samsung SuperFrio X99', // Marca real pero modelo inventado
+};
+
+const FICHA_MARCA_Y_MODELO_VALIDOS = {
+  ...FICHA_VALIDA,
+  equipo_marca: 'Samsung WindFree', // Marca y modelo reales
+};
+
 const FICHA_TIPO_ALUCINADO = {
   ...FICHA_VALIDA,
   equipo_tipo: 'TurboFlex Ultra Inverter XR', // Tipo inventado
@@ -61,6 +71,12 @@ describe('Arnés HU-21 — Fichas válidas', () => {
 
   test('CA-3: Ficha con marca y tipo válidos retorna { valido: true }', async () => {
     const resultado = await validarFichaConKronos(FICHA_VALIDA);
+    expect(resultado.valido).toBe(true);
+    expect(resultado.motivo).toBeNull();
+  });
+
+  test('CA-3: Ficha con marca y modelo válidos ("Samsung WindFree") retorna { valido: true }', async () => {
+    const resultado = await validarFichaConKronos(FICHA_MARCA_Y_MODELO_VALIDOS);
     expect(resultado.valido).toBe(true);
     expect(resultado.motivo).toBeNull();
   });
@@ -105,6 +121,14 @@ describe('Arnés HU-21 — Detección de alucinaciones', () => {
     expect(resultado.fichaCorregida.equipo_marca).toBe('[dato por confirmar]');
     // La ficha original NO debe ser mutada
     expect(FICHA_MARCA_ALUCINADA.equipo_marca).toBe('CoolBreeze Pro X9000');
+  });
+
+  test('CA-2/CA-3: Marca real con modelo inventado ("Samsung SuperFrio X99") es reemplazada por "[dato por confirmar]"', async () => {
+    const resultado = await validarFichaConKronos(FICHA_MODELO_ALUCINADO);
+
+    expect(resultado.valido).toBe(false);
+    expect(resultado.motivo).toBe('marca_no_encontrada');
+    expect(resultado.fichaCorregida.equipo_marca).toBe('[dato por confirmar]');
   });
 
   test('CA-3: Tipo de equipo inventado → retorna { valido: false, motivo: "tipo_equipo_no_encontrado" }', async () => {

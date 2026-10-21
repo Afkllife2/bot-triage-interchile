@@ -111,11 +111,13 @@ app.post('/webhooks/meta', async (req, res) => {
         // D. HU-21 CA-1: Arnés intercepta ANTES de guardar o enviar al cliente
         const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
 
-        // E. Guardar Ficha en Base de Datos Supabase
+        // E. Guardar Ficha en Base de Datos Supabase (salvo comandos /reset o silencio post-derivación)
         if (fichaEstructurada) {
-          await guardarCasoTriage(fichaEstructurada, telefonoCliente);
+          if (!fichaEstructurada._noPersistir) {
+            await guardarCasoTriage(fichaEstructurada, telefonoCliente);
+          }
 
-          // E. Enviar respuesta al cliente
+          // F. Enviar respuesta al cliente
           if (fichaEstructurada.respuesta_cliente) {
 
             // HU-06: Si fue derivado, solo enviar texto de despedida (sin botones)

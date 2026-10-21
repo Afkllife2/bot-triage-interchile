@@ -34,7 +34,9 @@ const pool = new Pool({
 });
 
 /**
- * Guarda una ficha de Triage generada por la IA en la base de datos Supabase.
+ * Guarda o actualiza una ficha de Triage generada por la IA en Supabase.
+ * Si el cliente ya tiene un caso 'en_proceso' reciente (últimos 60 min), lo actualiza
+ * in-place para consolidar toda la conversación en un único ticket.
  * HU-16 CA-2: Si falla, loguea a error.log y retorna null (no lanza excepción).
  */
 async function guardarCasoTriage(ficha, telefonoCliente) {
@@ -87,43 +89,86 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
       clientId = insertCliente.rows[0].id;
     }
 
-    // 2. Insertar el caso de triage
-    const queryCaso = `
-      INSERT INTO casos_triage (
-        cliente_id,
-        motivo_principal,
-        equipo_tipo,
-        equipo_marca,
-        sintoma_observacion,
-        prioridad_sugerida,
-        disponibilidad_cliente,
-        tiene_fotos,
-        requiere_humano,
-        estado
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
-    `;
-
     // HU-06: Estado derivado si requiere humano
     const estadoCaso = ficha.requiere_derivacion ? 'derivado' : 'en_proceso';
 
-    const valuesCaso = [
-      clientId,
-      ficha.tipo_solicitud,
-      ficha.equipo_tipo || null,
-      ficha.equipo_marca || null,
-      ficha.sintoma_observacion || null,
-      ficha.prioridad || 'Normal',
-      ficha.disponibilidad_cliente || null,
-      ficha.tiene_fotos || false,
-      ficha.requiere_derivacion || false,
-      estadoCaso,
-    ];
+    // 2. Buscar si ya existe un caso activo 'en_proceso' de los últimos 60 min para este cliente
+    const resCasoActivo = await client.query(
+      `SELECT id FROM casos_triage
+       WHERE cliente_id = $1
+         AND estado = 'en_proceso'
+         AND created_at > NOW() - INTERVAL '60 minutes'
+       ORDER BY id DESC
+       LIMIT 1`,
+      [clientId]
+    );
 
-    const resCaso = await client.query(queryCaso, valuesCaso);
+    let casoId;
+    if (resCasoActivo.rows.length > 0) {
+      const idExistente = resCasoActivo.rows[0].id;
+      const updateCaso = `
+        UPDATE casos_triage
+        SET motivo_principal = COALESCE(NULLIF($1, 'Otra Consulta'), motivo_principal, $1),
+            equipo_tipo = COALESCE(NULLIF($2, ''), equipo_tipo),
+            equipo_marca = COALESCE(NULLIF($3, ''), equipo_marca),
+            sintoma_observacion = COALESCE(NULLIF($4, ''), sintoma_observacion),
+            prioridad_sugerida = COALESCE(NULLIF($5, 'Normal'), prioridad_sugerida, 'Normal'),
+            disponibilidad_cliente = COALESCE(NULLIF($6, ''), disponibilidad_cliente),
+            tiene_fotos = COALESCE($7, tiene_fotos),
+            requiere_humano = $8,
+            estado = $9,
+            created_at = CURRENT_TIMESTAMP
+        WHERE id = $10
+        RETURNING id
+      `;
+      const resUpdate = await client.query(updateCaso, [
+        ficha.tipo_solicitud,
+        ficha.equipo_tipo || null,
+        ficha.equipo_marca || null,
+        ficha.sintoma_observacion || null,
+        ficha.prioridad || 'Normal',
+        ficha.disponibilidad_cliente || null,
+        Boolean(ficha.tiene_fotos),
+        Boolean(ficha.requiere_derivacion),
+        estadoCaso,
+        idExistente,
+      ]);
+      casoId = resUpdate.rows[0].id;
+      console.log(`🔄 Caso actualizado en DB exitosamente. ID: ${casoId} (estado: ${estadoCaso})`);
+    } else {
+      const queryCaso = `
+        INSERT INTO casos_triage (
+          cliente_id,
+          motivo_principal,
+          equipo_tipo,
+          equipo_marca,
+          sintoma_observacion,
+          prioridad_sugerida,
+          disponibilidad_cliente,
+          tiene_fotos,
+          requiere_humano,
+          estado
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
+      `;
+      const valuesCaso = [
+        clientId,
+        ficha.tipo_solicitud,
+        ficha.equipo_tipo || null,
+        ficha.equipo_marca || null,
+        ficha.sintoma_observacion || null,
+        ficha.prioridad || 'Normal',
+        ficha.disponibilidad_cliente || null,
+        ficha.tiene_fotos || false,
+        ficha.requiere_derivacion || false,
+        estadoCaso,
+      ];
+      const resCaso = await client.query(queryCaso, valuesCaso);
+      casoId = resCaso.rows[0].id;
+      console.log(`✅ Caso creado en DB exitosamente. ID: ${casoId} (estado: ${estadoCaso})`);
+    }
+
     await client.query('COMMIT');
-
-    console.log(`✅ Caso guardado en DB exitosamente. ID: ${resCaso.rows[0].id}`);
-    return resCaso.rows[0].id;
+    return casoId;
 
   } catch (error) {
     // HU-16 CA-2: Rollback + log local, NO relanzar la excepción

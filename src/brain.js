@@ -40,7 +40,7 @@ const FichaTriage = z.object({
     .describe("El tipo o capacidad del equipo (Ej: Split 24.000 BTU, Cassette, Cortina de aire). Si no lo sabe, dejar vacío."),
   equipo_marca: z
     .string()
-    .describe("La marca del equipo (Ej: Samsung, LG, Anwo). Si no la sabe, dejar vacío."),
+    .describe("La marca del equipo y el modelo específico si el cliente lo menciona (Ej: 'Samsung', 'Samsung WindFree', 'LG DualCool', 'Anwo'). Si el cliente menciona un modelo específico junto a la marca, inclúyelo aquí tal cual lo escribió. Si no la sabe, dejar vacío."),
   sintoma_observacion: z
     .string()
     .describe("Resumen breve del problema o motivo."),
@@ -57,7 +57,7 @@ const FichaTriage = z.object({
   // HU-06: Derivación a Humano
   requiere_derivacion: z
     .boolean()
-    .describe("True si el cliente pide explícitamente hablar con una persona, ejecutivo, o humano. También true si está muy frustrado o el problema es demasiado complejo para resolver por chat."),
+    .describe("True si el cliente pide explícitamente hablar con una persona, ejecutivo, o humano, o cuando ya se completó la recolección de datos del caso para pasarlo a Benjamín."),
 
   // HU-20: Botones interactivos (máx 10 opciones)
   opciones_botones: z
@@ -82,14 +82,18 @@ Tu trabajo en cada turno:
 REGLAS IMPORTANTES:
 - Si el cliente ya dio su nombre antes, NO volver a preguntarlo.
 - Si ya dio el equipo, NO volver a preguntarlo.
+- Solo marcar prioridad 'Alta' si hay interrupción crítica de servicio o urgencia explícita.
+- CONSULTA DE EQUIPO (MARCA Y MODELO):
+  * Cuando el cliente solicite Mantención o Falla Técnica y aún no haya indicado el equipo, pregúntale por el tipo de equipo, la marca y dile que si conoce el modelo específico aún mejor (ej: "¿Me podrías indicar el tipo de equipo, la marca y, si conoces el modelo, aún mejor?").
+  * Si el cliente menciona tanto la marca como el modelo, guarda ambos juntos en el campo equipo_marca (ej: "Samsung WindFree" o la marca y modelo que haya escrito).
 - PROTOCOLO DE DERIVACIÓN Y PRE-CALIFICACIÓN COMERCIAL (Feedback de Benjamín):
   * Si el cliente selecciona "Proyecto Comercial", solicita cotización o arriendo para empresas, o pide hablar con un ejecutivo, NO debes derivarlo de inmediato en frío si aún no tienes contexto.
   * Primero recopila el contexto mínimo esencial para el ejecutivo:
     1) Comuna o ciudad (sucursal_comuna).
     2) Nombre del cliente o empresa (cliente_nombre).
-    3) Tipo de espacio a climatizar (ej: oficinas, local comercial, galpón, clínica).
-  * Mientras falten estos datos básicos (especialmente la comuna/ciudad), mantén requiere_derivacion: false y pídele cordialmente esos detalles al cliente para que Benjamín pueda preparar la propuesta técnica.
-  * Una vez que el cliente haya proporcionado al menos su comuna/ciudad y tipo de espacio/empresa (o si el cliente insiste explícitamente en ser contactado ya sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada con prioridad y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
+    3) Tipo de espacio o equipo requerido (ej: oficinas, local comercial, galpón, clínica, o equipo con marca/modelo).
+  * Mientras falten estos datos básicos (especialmente la comuna/ciudad y nombre/empresa), mantén requiere_derivacion: false y pídele cordialmente esos detalles al cliente.
+  * Una vez que el cliente haya proporcionado los datos completos de su solicitud (o si el cliente insiste explícitamente en hablar con un ejecutivo de inmediato sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
 - Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Cotización", "Arriendo"].
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
@@ -143,10 +147,27 @@ function obtenerContexto(telefono) {
 async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   console.log(`\n🤖 [LangChain] Procesando mensaje de ${telefono}: "${mensajeCliente}"\n`);
 
+  // Comando rápido para reiniciar sesión durante pruebas o demostraciones en vivo
+  const textoLimpio = (mensajeCliente || '').trim().toLowerCase();
+  if (textoLimpio === '/reset' || textoLimpio === 'reset' || textoLimpio === 'reiniciar') {
+    limpiarHistorial(telefono);
+    return {
+      _noPersistir: true,
+      tipo_solicitud: 'Otra Consulta',
+      cliente_nombre: '', sucursal_comuna: '', sucursal_direccion: '',
+      equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Reinicio de sesión',
+      prioridad: 'Normal', disponibilidad_cliente: '', tiene_fotos: false,
+      requiere_derivacion: false,
+      opciones_botones: ['Falla Técnica', 'Mantención', 'Cotización', 'Arriendo'],
+      respuesta_cliente: '🔄 Sesión reiniciada. ¡Hola! Bienvenido a InterChile. ¿En qué podemos ayudarte hoy?',
+    };
+  }
+
   // HU-06 CA-3: Si el cliente ya fue derivado, responder con mensaje estático y no llamar a la IA
   if (clientesDerivados.has(telefono)) {
     console.log(`🔇 [HU-06 CA-3] Cliente ${telefono} ya derivado. Respondiendo con mensaje estático.`);
     return {
+      _noPersistir: true,
       tipo_solicitud: 'Otra Consulta',
       cliente_nombre: '', sucursal_comuna: '', sucursal_direccion: '',
       equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Mensaje post-derivación',
@@ -211,10 +232,11 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
 }
 
 /**
- * Limpia manualmente el historial de un cliente (ej: al cerrar un caso).
+ * Limpia manualmente el historial y el estado de derivación de un cliente.
  */
 function limpiarHistorial(telefono) {
   conversaciones.delete(telefono);
+  clientesDerivados.delete(telefono);
   console.log(`🧹 Historial limpiado para: ${telefono}`);
 }
 

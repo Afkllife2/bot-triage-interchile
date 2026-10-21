@@ -12,7 +12,7 @@
 
 // ============================================================
 // 📦 CATÁLOGO MOCK DE KRONOS
-// Marcas, tipos de equipo y repuestos reconocidos por InterChile
+// Marcas, modelos, tipos de equipo y repuestos reconocidos por InterChile
 // ============================================================
 
 const MARCAS_VALIDAS = new Set([
@@ -20,6 +20,13 @@ const MARCAS_VALIDAS = new Set([
   'hitachi', 'fujitsu', 'haier', 'gree', 'anwo', 'inverter',
   'panasonic', 'toshiba', 'york', 'lennox', 'rheem', 'bg',
   'electrolux', 'whirlpool', 'mabe', 'klimapal', 'rowa',
+]);
+
+const MODELOS_VALIDOS = new Set([
+  'windfree', 'wind-free', 'ar09', 'ar12', 'ar18', 'ar24',
+  'dualcool', 'dual', 'cool', 'artcool', 'inverter',
+  'vrv', 'vrf', 'eco', 'aurora', 'blanc', 'xpower',
+  'sensira', 'kirigamine', 'msz',
 ]);
 
 const TIPOS_EQUIPO_VALIDOS = new Set([
@@ -50,14 +57,25 @@ function simularLatencia() {
 }
 
 /**
- * Verifica si una marca de equipo existe en el catálogo de Kronos.
- * @param {string} marca - Nombre de la marca (ej: "Samsung")
+ * Verifica si una marca (y modelo opcional) de equipo existe en el catálogo de Kronos.
+ * @param {string} marca - Nombre de la marca y/o modelo (ej: "Samsung", "Samsung WindFree")
  * @returns {Promise<{existe: boolean, marcaNormalizada: string|null}>}
  */
 async function validarMarca(marca) {
   await simularLatencia();
   const marcaNorm = marca.toLowerCase().trim();
-  const existe = MARCAS_VALIDAS.has(marcaNorm);
+  if (!marcaNorm) return { existe: false, marcaNormalizada: null };
+
+  if (MARCAS_VALIDAS.has(marcaNorm)) {
+    return { existe: true, marcaNormalizada: marcaNorm };
+  }
+
+  // Si incluye marca + modelo (ej: "Samsung WindFree" vs "Samsung ModeloInventado")
+  const tokens = marcaNorm.split(/\s+/);
+  const tieneMarcaValida = tokens.some(t => MARCAS_VALIDAS.has(t));
+  const todosTokensValidos = tokens.every(t => MARCAS_VALIDAS.has(t) || MODELOS_VALIDOS.has(t));
+  const existe = tieneMarcaValida && todosTokensValidos;
+
   return {
     existe,
     marcaNormalizada: existe ? marcaNorm : null,
@@ -91,11 +109,12 @@ async function validarRepuesto(repuesto) {
 
 /**
  * Obtiene la lista completa del catálogo (para debugging).
- * @returns {{marcas: string[], tipos: string[], repuestos: string[]}}
+ * @returns {{marcas: string[], modelos: string[], tipos: string[], repuestos: string[]}}
  */
 function obtenerCatalogo() {
   return {
     marcas: [...MARCAS_VALIDAS],
+    modelos: [...MODELOS_VALIDOS],
     tipos: [...TIPOS_EQUIPO_VALIDOS],
     repuestos: [...REPUESTOS_VALIDOS],
   };
@@ -108,6 +127,7 @@ module.exports = {
   obtenerCatalogo,
   // Exportar sets para tests unitarios
   MARCAS_VALIDAS,
+  MODELOS_VALIDOS,
   TIPOS_EQUIPO_VALIDOS,
   REPUESTOS_VALIDOS,
 };
