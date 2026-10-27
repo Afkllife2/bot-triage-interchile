@@ -94,7 +94,7 @@ REGLAS IMPORTANTES:
     3) Tipo de espacio o equipo requerido (ej: oficinas, local comercial, galpón, clínica, o equipo con marca/modelo).
   * Mientras falten estos datos básicos (especialmente la comuna/ciudad y nombre/empresa), mantén requiere_derivacion: false y pídele cordialmente esos detalles al cliente.
   * Una vez que el cliente haya proporcionado los datos completos de su solicitud (o si el cliente insiste explícitamente en hablar con un ejecutivo de inmediato sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
-- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Cotización", "Arriendo"].
+- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Instalación", "Cotización", "Proyecto Comercial", "Arriendo", "Otra Consulta"].
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
 // --- 🛡️ ARNÉS DE MEMORIA CONVERSACIONAL (HU-02) ---
@@ -158,7 +158,15 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
       equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Reinicio de sesión',
       prioridad: 'Normal', disponibilidad_cliente: '', tiene_fotos: false,
       requiere_derivacion: false,
-      opciones_botones: ['Falla Técnica', 'Mantención', 'Cotización', 'Arriendo'],
+      opciones_botones: [
+        'Falla Técnica',
+        'Mantención',
+        'Instalación',
+        'Cotización',
+        'Proyecto Comercial',
+        'Arriendo',
+        'Otra Consulta',
+      ],
       respuesta_cliente: '🔄 Sesión reiniciada. ¡Hola! Bienvenido a InterChile. ¿En qué podemos ayudarte hoy?',
     };
   }
