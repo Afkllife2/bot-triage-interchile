@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Control — Bot Triage InterChile</title>
+  <title>Panel de Control — Bot Triage InterChile (Sprint 3)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -33,7 +33,6 @@
       min-height: 100vh;
     }
 
-    /* HEADER */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -46,6 +45,8 @@
       top: 0;
       z-index: 100;
       backdrop-filter: blur(12px);
+      gap: 1rem;
+      flex-wrap: wrap;
     }
     .logo {
       display: flex;
@@ -68,7 +69,17 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .token-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      width: 220px;
     }
     .status-dot {
       display: flex;
@@ -93,76 +104,88 @@
       background: var(--accent);
       color: white;
       border: none;
-      padding: 0.5rem 1.2rem;
+      padding: 0.5rem 1rem;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
     }
     button:hover { background: #2563eb; transform: translateY(-1px); }
     button:active { transform: translateY(0); }
+    button.btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+    }
+    button.btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
 
-    /* MAIN */
-    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+    main { padding: 2rem; max-width: 1480px; margin: 0 auto; }
 
-    /* STATS */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
       gap: 1rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem 1.5rem;
+      padding: 1.1rem 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
-      transition: border-color 0.2s;
+      gap: 0.35rem;
     }
-    .stat-card:hover { border-color: var(--accent); }
     .stat-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
     .stat-value {
-      font-size: 2rem;
+      font-size: 1.75rem;
       font-weight: 700;
-      line-height: 1;
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 0.72rem;
+      color: var(--text-sub);
     }
     .stat-card.total .stat-value { color: var(--accent); }
     .stat-card.alta .stat-value { color: var(--red); }
     .stat-card.humano .stat-value { color: var(--orange); }
     .stat-card.normal .stat-value { color: var(--green); }
+    .stat-card.sla .stat-value { color: var(--purple); }
 
-    /* ALERT BANNER */
-    #alert-banner {
+    #alert-banner, #auth-banner {
       display: none;
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.3);
       border-radius: 10px;
       padding: 0.9rem 1.25rem;
-      margin-bottom: 1.5rem;
-      color: #fca5a5;
-      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
       align-items: center;
+      justify-content: space-between;
       gap: 0.6rem;
     }
-    #alert-banner.visible { display: flex; animation: slideIn 0.3s ease; }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    #alert-banner {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
     }
+    #auth-banner {
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.35);
+      color: #fde68a;
+    }
+    #alert-banner.visible, #auth-banner.visible { display: flex; }
 
-    /* FILTERS */
     .toolbar {
       display: flex;
       align-items: center;
@@ -180,17 +203,15 @@
       background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text-sub);
-      padding: 0.4rem 1rem;
+      padding: 0.4rem 0.9rem;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       cursor: pointer;
-      transition: all 0.2s;
     }
     .filter-btn:hover, .filter-btn.active {
       background: var(--accent-glow);
       border-color: var(--accent);
       color: var(--accent);
-      transform: none;
     }
 
     .section-title {
@@ -201,72 +222,66 @@
       font-weight: 600;
     }
 
-    /* TABLE */
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 14px;
-      overflow: hidden;
+      overflow-x: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.875rem;
+      font-size: 0.82rem;
     }
     thead {
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
     }
     th {
-      padding: 0.9rem 1.25rem;
+      padding: 0.85rem 1rem;
       text-align: left;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-muted);
       font-weight: 600;
     }
     td {
-      padding: 1rem 1.25rem;
+      padding: 0.85rem 1rem;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
     }
     tr:last-child td { border-bottom: none; }
-    tr { transition: background 0.15s; }
     tr:hover td { background: var(--surface2); }
 
-    /* Alta row highlight */
-    tr.alta-row td { background: rgba(239,68,68,0.05); }
-    tr.alta-row:hover td { background: rgba(239,68,68,0.1); }
-
-    /* Humano row highlight */
-    tr.humano-row td { background: rgba(245,158,11,0.05); }
-    tr.humano-row:hover td { background: rgba(245,158,11,0.1); }
-
-    /* BADGES */
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 0.25rem 0.65rem;
+      padding: 0.2rem 0.6rem;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
-      gap: 0.3rem;
+      gap: 0.25rem;
     }
     .badge-alta   { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
     .badge-normal { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
     .badge-humano { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
     .badge-derivado { background: rgba(139,92,246,0.12); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
 
-    /* EMPTY / LOADING */
+    select.state-select, input.date-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.3rem 0.45rem;
+      font-size: 0.75rem;
+    }
+
     .empty-state {
-      padding: 4rem 2rem;
+      padding: 3.5rem 2rem;
       text-align: center;
       color: var(--text-muted);
     }
-    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .empty-state p { font-size: 0.9rem; }
-
     #loading {
       display: none;
       padding: 3rem;
@@ -274,24 +289,7 @@
       color: var(--text-muted);
     }
     #loading.visible { display: block; }
-
-    .spinner {
-      width: 32px; height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* timestamp */
     #last-update { font-size: 0.75rem; color: var(--text-muted); }
-
-    /* scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -301,120 +299,187 @@
     <div class="logo-icon">🤖</div>
     <div>
       <h1>Bot Triage InterChile</h1>
-      <span>Panel de Control — Administración</span>
+      <span>Panel de Control Operativo y Métricas SLA — Sprint 3</span>
     </div>
   </div>
   <div class="header-right">
-    <div class="status-dot">Sistema activo</div>
-    <button id="btn-refresh" onclick="cargarTickets()">↻ Actualizar</button>
+    <input
+      id="api-token-input"
+      type="password"
+      class="token-input"
+      placeholder="Bearer Token de integración..."
+      autocomplete="off"
+    />
+    <button class="btn-secondary" onclick="guardarTokenYCargar()">🔑 Conectar</button>
+    <div class="status-dot">API Protegida</div>
+    <button id="btn-refresh" onclick="cargarTodo()">↻ Actualizar</button>
   </div>
 </header>
 
 <main>
-
-  <!-- ALERT BANNER -->
-  <div id="alert-banner">
-    🚨 <strong id="alert-count">0</strong> ticket(s) requieren atención humana urgente
+  <div id="auth-banner">
+    <span id="auth-msg">🔒 Ingrese el Bearer Token de integración (`TRIAGE_API_TOKEN`) en la barra superior para consultar los casos y métricas.</span>
   </div>
 
-  <!-- STATS -->
+  <div id="alert-banner">
+    <span>🚨 <strong id="alert-count">0</strong> ticket(s) requieren atención humana urgente</span>
+  </div>
+
+  <!-- TARJETAS DE TICKETS Y MÉTRICAS SLA (HU-14 + HU-22) -->
   <div class="stats-grid">
     <div class="stat-card total">
       <span class="stat-label">Total tickets</span>
       <span class="stat-value" id="stat-total">—</span>
+      <span class="stat-sub" id="stat-estados">En proceso / Agendados</span>
     </div>
     <div class="stat-card alta">
       <span class="stat-label">Prioridad Alta</span>
       <span class="stat-value" id="stat-alta">—</span>
+      <span class="stat-sub">Atención prioritaria</span>
     </div>
     <div class="stat-card humano">
       <span class="stat-label">Requieren Humano</span>
       <span class="stat-value" id="stat-humano">—</span>
+      <span class="stat-sub">Derivados a ejecutivo</span>
+    </div>
+    <div class="stat-card sla">
+      <span class="stat-label">Latencia Promedio Bot</span>
+      <span class="stat-value" id="stat-latencia">—</span>
+      <span class="stat-sub" id="stat-sla-badge">Meta SLA &lt; 4000 ms</span>
     </div>
     <div class="stat-card normal">
-      <span class="stat-label">Prioridad Normal</span>
-      <span class="stat-value" id="stat-normal">—</span>
+      <span class="stat-label">Arnés Anti-Alucinación</span>
+      <span class="stat-value" id="stat-arnes">100%</span>
+      <span class="stat-sub" id="stat-arnes-sub">Validación catálogo Kronos</span>
     </div>
   </div>
 
-  <!-- TOOLBAR -->
   <div class="toolbar">
-    <span class="section-title">Tickets de Triage</span>
+    <span class="section-title">Bandeja de Casos de Triage y Cotizaciones Referenciales</span>
     <div class="filters">
       <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
       <button class="filter-btn" onclick="filtrar('alta', this)">🔴 Prioridad Alta</button>
       <button class="filter-btn" onclick="filtrar('humano', this)">🟡 Requieren Humano</button>
-      <button class="filter-btn" onclick="filtrar('normal', this)">🟢 Normal</button>
+      <button class="filter-btn" onclick="filtrar('agendado', this)">📅 Agendados</button>
+      <button class="filter-btn" onclick="filtrar('resuelto', this)">✅ Resueltos</button>
     </div>
     <span id="last-update"></span>
   </div>
 
-  <!-- TABLE -->
   <div class="table-wrap">
-    <div id="loading" class="visible">
-      <div class="spinner"></div>
-      <p>Cargando tickets...</p>
-    </div>
+    <div id="loading">Cargando tickets autenticados...</div>
     <table id="tabla" style="display:none">
       <thead>
         <tr>
           <th>#</th>
-          <th>Fecha</th>
-          <th>Teléfono</th>
-          <th>Cliente</th>
-          <th>Equipo</th>
-          <th>Síntoma</th>
+          <th>Creado</th>
+          <th>Cliente / Teléfono</th>
+          <th>Ubicación</th>
+          <th>Equipo / Motivo</th>
+          <th>Estimación Bot (Ref.)</th>
           <th>Prioridad</th>
-          <th>Estado</th>
+          <th>Estado y Fecha Visita</th>
+          <th>Ficha PDF</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
     </table>
     <div id="empty" class="empty-state" style="display:none">
-      <div class="icon">📭</div>
-      <p>No hay tickets que coincidan con el filtro</p>
+      <p id="empty-text">No hay tickets para mostrar.</p>
     </div>
   </div>
-
 </main>
 
 <script>
   let todosLosTickets = [];
   let filtroActual = 'todos';
 
+  function obtenerToken() {
+    const input = document.getElementById('api-token-input');
+    return (input.value || sessionStorage.getItem('triage_operator_token') || '').trim();
+  }
+
+  function guardarTokenYCargar() {
+    const val = document.getElementById('api-token-input').value.trim();
+    if (val) sessionStorage.setItem('triage_operator_token', val);
+    cargarTodo();
+  }
+
+  function headersAutenticados() {
+    const token = obtenerToken();
+    return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  }
+
+  function formatearCLP(monto) {
+    if (typeof monto !== 'number') return '<span style="color:var(--text-muted)">Sin estimación</span>';
+    return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' CLP';
+  }
+
+  async function cargarTodo() {
+    await Promise.all([cargarTickets(), cargarMetricas()]);
+  }
+
+  async function cargarMetricas() {
+    try {
+      const res = await fetch('/api/metricas', { headers: headersAutenticados() });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.ok || !json.data) return;
+      const m = json.data;
+      document.getElementById('stat-latencia').textContent = (m.sla?.latencia_promedio_ms ?? 0) + ' ms';
+      document.getElementById('stat-sla-badge').textContent = m.sla?.cumple_sla
+        ? '✅ Cumple SLA (< 4.0s)'
+        : '⚠️ Sobre umbral SLA';
+      document.getElementById('stat-arnes').textContent = (m.arnes?.tasa_intercepcion_pct ?? 100) + '%';
+      document.getElementById('stat-arnes-sub').textContent =
+        `${m.arnes?.alucinaciones_interceptadas ?? 0} interceptadas / ${m.arnes?.total_validaciones ?? 0} eval.`;
+    } catch (_) {}
+  }
+
   async function cargarTickets() {
+    const authBanner = document.getElementById('auth-banner');
     document.getElementById('loading').classList.add('visible');
     document.getElementById('tabla').style.display = 'none';
     document.getElementById('empty').style.display = 'none';
 
     try {
-      const res = await fetch('/api/tickets');
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error);
-      todosLosTickets = json.data;
+      const res = await fetch('/api/tickets?limit=50', { headers: headersAutenticados() });
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 401 || res.status === 503) {
+        authBanner.classList.add('visible');
+        document.getElementById('auth-msg').textContent = '🔒 ' + (json.error || 'Ingrese Bearer Token válido para acceder a la bandeja.');
+        document.getElementById('loading').classList.remove('visible');
+        document.getElementById('empty').style.display = 'block';
+        document.getElementById('empty-text').textContent = 'Acceso protegido por token de integración.';
+        return;
+      }
+      authBanner.classList.remove('visible');
+      if (!res.ok || !json.ok) throw new Error(json.error || 'Error al consultar tickets');
+
+      todosLosTickets = json.data || [];
       actualizarEstadisticas(todosLosTickets);
-      renderTabla(todosLosTickets);
+      aplicarFiltroActual();
       document.getElementById('last-update').textContent =
         'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
     } catch (err) {
-      console.error('Error cargando tickets:', err);
       document.getElementById('loading').classList.remove('visible');
       document.getElementById('empty').style.display = 'block';
+      document.getElementById('empty-text').textContent = 'Indisponibilidad del servicio: ' + err.message;
     }
   }
 
   function actualizarEstadisticas(tickets) {
-    const total  = tickets.length;
-    const alta   = tickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente')).length;
+    const total = tickets.length;
+    const alta = tickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta')).length;
     const humano = tickets.filter(t => t.requiere_humano).length;
-    const normal = tickets.filter(t => !(t.prioridad_sugerida || '').toLowerCase().includes('alta') && !(t.prioridad_sugerida || '').toLowerCase().includes('urgente')).length;
+    const agendados = tickets.filter(t => t.estado === 'agendado').length;
+    const resueltos = tickets.filter(t => t.estado === 'resuelto').length;
 
-    document.getElementById('stat-total').textContent  = total;
-    document.getElementById('stat-alta').textContent   = alta;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-alta').textContent = alta;
     document.getElementById('stat-humano').textContent = humano;
-    document.getElementById('stat-normal').textContent = normal;
+    document.getElementById('stat-estados').textContent = `${agendados} agendados · ${resueltos} resueltos`;
 
-    // Alert banner
     const banner = document.getElementById('alert-banner');
     if (humano > 0) {
       document.getElementById('alert-count').textContent = humano;
@@ -427,68 +492,150 @@
   function filtrar(tipo, btn) {
     filtroActual = tipo;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
+    aplicarFiltroActual();
+  }
 
+  function aplicarFiltroActual() {
     let filtrados = todosLosTickets;
-    if (tipo === 'alta')   filtrados = todosLosTickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente'));
-    if (tipo === 'humano') filtrados = todosLosTickets.filter(t => t.requiere_humano);
-    if (tipo === 'normal') filtrados = todosLosTickets.filter(t => !(t.prioridad_sugerida || '').toLowerCase().includes('alta') && !(t.prioridad_sugerida || '').toLowerCase().includes('urgente'));
-
+    if (filtroActual === 'alta') filtrados = todosLosTickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta'));
+    if (filtroActual === 'humano') filtrados = todosLosTickets.filter(t => t.requiere_humano);
+    if (filtroActual === 'agendado') filtrados = todosLosTickets.filter(t => t.estado === 'agendado');
+    if (filtroActual === 'resuelto') filtrados = todosLosTickets.filter(t => t.estado === 'resuelto');
     renderTabla(filtrados);
+  }
+
+  async function guardarEstadoTicket(id, updatedAt) {
+    const sel = document.getElementById(`estado-${id}`);
+    const dateInput = document.getElementById(`fecha-${id}`);
+    const estado = sel.value;
+    const fechaVal = dateInput.value ? new Date(dateInput.value).toISOString() : null;
+
+    if (estado === 'agendado' && !fechaVal) {
+      alert('Para pasar a estado "agendado" es obligatorio indicar la fecha y hora de visita.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/tickets/${id}`, {
+        method: 'PATCH',
+        headers: headersAutenticados(),
+        body: JSON.stringify({
+          estado,
+          fecha_visita: fechaVal,
+          expected_updated_at: updatedAt,
+        }),
+      });
+      const json = await res.json();
+      if (res.status === 409) {
+        alert('Conflicto 409: El ticket fue modificado por otro usuario. Recargando bandeja...');
+        await cargarTodo();
+        return;
+      }
+      if (!res.ok || !json.ok) {
+        alert(json.error || 'No se pudo actualizar el ticket');
+        return;
+      }
+      await cargarTodo();
+    } catch (e) {
+      alert('Error de red al actualizar el ticket: ' + e.message);
+    }
+  }
+
+  async function descargarPdfTicket(id) {
+    try {
+      const res = await fetch(`/api/tickets/${id}/pdf`, { headers: headersAutenticados() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'No autorizado o error al descargar PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha-triage-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      cargarMetricas();
+    } catch (e) {
+      alert('Error al descargar PDF: ' + e.message);
+    }
   }
 
   function renderTabla(tickets) {
     document.getElementById('loading').classList.remove('visible');
-
     if (tickets.length === 0) {
       document.getElementById('tabla').style.display = 'none';
       document.getElementById('empty').style.display = 'block';
+      document.getElementById('empty-text').textContent = 'No hay tickets que coincidan con el filtro.';
       return;
     }
 
     document.getElementById('empty').style.display = 'none';
     document.getElementById('tabla').style.display = 'table';
-
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
 
-    tickets.forEach((t, i) => {
-      const esAlta   = (t.prioridad_sugerida || '').toLowerCase().includes('alta') || (t.prioridad_sugerida || '').toLowerCase().includes('urgente');
-      const esHumano = t.requiere_humano;
-
-      const fila = document.createElement('tr');
-      if (esHumano) fila.classList.add('humano-row');
-      else if (esAlta) fila.classList.add('alta-row');
-
+    tickets.forEach(t => {
+      const esAlta = (t.prioridad_sugerida || '').toLowerCase().includes('alta');
       const fecha = t.created_at
         ? new Date(t.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
         : '—';
+      const fechaVisitaLocal = t.fecha_visita
+        ? new Date(t.fecha_visita).toISOString().slice(0, 16)
+        : '';
 
-      const prioridadBadge = esAlta
-        ? `<span class="badge badge-alta">🔴 Alta</span>`
-        : `<span class="badge badge-normal">🟢 Normal</span>`;
+      const nombre = t.cliente_nombre || t.nombre_completo || 'Sin nombre';
+      const ubicacion = [t.sucursal_comuna, t.sucursal_direccion].filter(Boolean).join(' · ') || 'Por confirmar';
+      const equipo = [t.motivo_principal, t.equipo_tipo, t.equipo_marca].filter(Boolean).join(' · ') || '—';
 
-      let estadoBadge;
-      if (esHumano)       estadoBadge = `<span class="badge badge-humano">🟡 Requiere Humano</span>`;
-      else if (t.estado === 'derivado') estadoBadge = `<span class="badge badge-derivado">↗ Derivado</span>`;
-      else                estadoBadge = `<span class="badge badge-normal">✅ En proceso</span>`;
-
+      const fila = document.createElement('tr');
       fila.innerHTML = `
-        <td style="color:var(--text-muted);font-size:0.8rem">${t.id}</td>
-        <td style="color:var(--text-sub);font-size:0.8rem">${fecha}</td>
-        <td style="font-family:monospace;font-size:0.8rem">${t.telefono || '—'}</td>
-        <td>${t.nombre_completo || '<span style="color:var(--text-muted)">Sin nombre</span>'}</td>
-        <td>${[t.equipo_tipo, t.equipo_marca].filter(Boolean).join(' · ') || '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td style="max-width:280px;color:var(--text-sub)">${t.sintoma_observacion || t.motivo_principal || '—'}</td>
-        <td>${prioridadBadge}</td>
-        <td>${estadoBadge}</td>
+        <td>#${t.id}</td>
+        <td style="font-size:0.76rem;color:var(--text-sub)">${fecha}</td>
+        <td>
+          <strong>${nombre}</strong><br/>
+          <span style="font-family:monospace;font-size:0.75rem;color:var(--text-sub)">${t.telefono || '—'}</span>
+        </td>
+        <td style="font-size:0.78rem;color:var(--text-sub)">${ubicacion}</td>
+        <td>
+          <div>${equipo}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${t.sintoma_observacion || ''}</div>
+        </td>
+        <td>
+          <div><strong>${formatearCLP(t.cotizacion_total)}</strong></div>
+          <div style="font-size:0.7rem;color:var(--text-muted)">Estimación del bot · No oficial</div>
+        </td>
+        <td>
+          <span class="badge ${esAlta ? 'badge-alta' : 'badge-normal'}">${t.prioridad_sugerida || 'Normal'}</span>
+          ${t.requiere_humano ? '<br/><span class="badge badge-humano" style="margin-top:4px">Requiere persona</span>' : ''}
+        </td>
+        <td>
+          <div style="display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap">
+            <select id="estado-${t.id}" class="state-select">
+              <option value="en_proceso" ${t.estado === 'en_proceso' ? 'selected' : ''}>En proceso</option>
+              <option value="derivado" ${t.estado === 'derivado' ? 'selected' : ''}>Derivado</option>
+              <option value="agendado" ${t.estado === 'agendado' ? 'selected' : ''}>Agendado</option>
+              <option value="resuelto" ${t.estado === 'resuelto' ? 'selected' : ''}>Resuelto</option>
+            </select>
+            <input id="fecha-${t.id}" type="datetime-local" class="date-input" value="${fechaVisitaLocal}" />
+            <button onclick="guardarEstadoTicket(${t.id}, '${t.updated_at || ''}')">Guardar</button>
+          </div>
+        </td>
+        <td>
+          <button class="btn-secondary" onclick="descargarPdfTicket(${t.id})">📄 PDF</button>
+        </td>
       `;
       tbody.appendChild(fila);
     });
   }
 
-  // Carga inicial
-  cargarTickets();
+  const savedToken = sessionStorage.getItem('triage_operator_token');
+  if (savedToken) document.getElementById('api-token-input').value = savedToken;
+  cargarTodo();
 </script>
 </body>
 </html>
