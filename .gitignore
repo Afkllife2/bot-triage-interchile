@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.production
 
+# Runtime logs
+logs/
+
 # Backups and temporary files
 *_BACKUP_*.docx
 C:\Users\count\Documents\New project\bot-verificador-x-prototipo\Portafolio_BACKUP_*.docx

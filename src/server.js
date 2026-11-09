@@ -2,33 +2,91 @@ const express = require('express');
 const crypto = require('crypto');
 const path = require('path');
 const { extraerFichaTriage } = require('./brain');
-const { guardarCasoTriage, getTicketsDashboard } = require('./db');
+const db = require('./db');
 const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('./whatsapp');
 const { aplicarArnes } = require('./arneses'); // HU-21
+const { generarFichaCotizacionPDF } = require('./pdfGenerator'); // HU-05
+const {
+  registrarLatencia,
+  registrarGeneracionPdf,
+  obtenerResumenMetricas,
+} = require('./metricsStore'); // HU-22
 require('dotenv').config();
 
 const app = express();
 
-// Servir archivos estáticos del Dashboard (HTML, CSS, JS)
+// Servir archivos estáticos del Dashboard (sin exponer tokens en HTML/JS)
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Middleware global para registrar TODO lo que entra
+// Middleware de trazabilidad segura: NUNCA registra cabeceras completas, tokens ni conversaciones (KRON2-152)
 app.use((req, res, next) => {
-  console.log(`\n[${new Date().toISOString()}] 🌐 PETICIÓN ENTRANTE: ${req.method} ${req.url}`);
-  console.log('Headers:', req.headers);
+  console.log(`[${new Date().toISOString()}] 🌐 ${req.method} ${req.path}`);
   next();
 });
 
-// Middleware para guardar el body "crudo" para poder validar la firma HMAC
+// Middleware para guardar el body "crudo" para poder validar la firma HMAC de Meta
 app.use(express.json({
   verify: (req, res, buf) => {
     req.rawBody = buf;
-  }
+  },
 }));
 
 const PORT = process.env.PORT || 3000;
-const META_VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
-const META_APP_SECRET = process.env.META_APP_SECRET;
+
+/**
+ * Comparación en tiempo constante para evitar ataques de timing sobre el Bearer token.
+ */
+function safeCompareTokens(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  const bufA = Buffer.from(provided, 'utf8');
+  const bufB = Buffer.from(expected, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * KRON2-152: Middleware de autenticación Bearer privada para rutas `/api/*`.
+ * Exige `TRIAGE_API_TOKEN` distinto de los secretos de Meta/Gemini.
+ */
+function requireTriageAuth(req, res, next) {
+  const configuredToken = (process.env.TRIAGE_API_TOKEN || '').trim();
+  if (!configuredToken) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Integración de triage no configurada en el servidor',
+    });
+  }
+
+  // Asegurar que el token de integración no reutilice secretos de Meta o Gemini
+  if (
+    (process.env.META_VERIFY_TOKEN && configuredToken === process.env.META_VERIFY_TOKEN) ||
+    (process.env.META_APP_SECRET && configuredToken === process.env.META_APP_SECRET) ||
+    (process.env.GEMINI_API_KEY && configuredToken === process.env.GEMINI_API_KEY)
+  ) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Configuración inválida: TRIAGE_API_TOKEN debe ser exclusivo de integración',
+    });
+  }
+
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      ok: false,
+      error: 'No autorizado: se requiere credencial Bearer de integración',
+    });
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  if (!token || !safeCompareTokens(token, configuredToken)) {
+    return res.status(401).json({
+      ok: false,
+      error: 'No autorizado: token de integración inválido',
+    });
+  }
+
+  return next();
+}
 
 // Endpoint de verificación de salud para Render / monitoreo en la nube
 app.get('/healthz', (req, res) => res.status(200).send('OK'));
@@ -38,16 +96,16 @@ app.get('/', (req, res) => res.redirect('/dashboard'));
 
 /**
  * 1. GET /webhooks/meta
- * Equivalente a verify_meta_webhook en el código de Aerandir.
- * Facebook hace un GET aquí para verificar que este servidor es tuyo.
+ * Verificación del webhook de Meta (WhatsApp Cloud API).
  */
 app.get('/webhooks/meta', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
+  const metaVerifyToken = process.env.META_VERIFY_TOKEN;
 
-  if (mode === 'subscribe' && token === META_VERIFY_TOKEN) {
-    console.log('✅ Webhook de Meta verificado con éxito!');
+  if (mode === 'subscribe' && metaVerifyToken && token === metaVerifyToken) {
+    console.log('✅ Webhook de Meta verificado con éxito');
     res.status(200).send(challenge);
   } else {
     console.error('❌ Falló la verificación del Webhook de Meta');
@@ -57,118 +115,243 @@ app.get('/webhooks/meta', (req, res) => {
 
 /**
  * 2. POST /webhooks/meta
- * Equivalente a receive_meta_webhook en el código de Aerandir.
- * Aquí llegan los mensajes reales de WhatsApp.
+ * Recepción de mensajes de WhatsApp con verificación obligatoria HMAC-SHA256.
+ * No registra cabeceras completas, tokens ni contenido íntegro de conversaciones.
  */
 app.post('/webhooks/meta', async (req, res) => {
-  // A. Validación de Seguridad (HMAC-SHA256) igual que Aerandir
+  const startTime = Date.now();
   const signature = req.headers['x-hub-signature-256'];
   if (!signature) {
-    console.warn('⚠️ Intento de acceso sin firma. Bloqueado.');
+    console.warn('⚠️ Intento de acceso a webhook sin firma HMAC. Bloqueado.');
     return res.status(401).send('Firma requerida');
   }
 
-  const expectedSignature = 'sha256=' + crypto.createHmac('sha256', META_APP_SECRET)
-    .update(req.rawBody)
+  const metaAppSecret = process.env.META_APP_SECRET || '';
+  const rawBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body || {}), 'utf8');
+  const expectedSignature = 'sha256=' + crypto.createHmac('sha256', metaAppSecret)
+    .update(rawBuffer)
     .digest('hex');
 
-  if (signature !== expectedSignature) {
-    console.warn('⚠️ Intento de acceso con firma inválida. Hackeo bloqueado.');
+  if (!safeCompareTokens(signature, expectedSignature)) {
+    console.warn('⚠️ Intento de acceso a webhook con firma HMAC inválida. Bloqueado.');
     return res.status(403).send('Firma inválida');
   }
 
-  // B. Parseo del mensaje de WhatsApp
   const payload = req.body;
-  console.log('📩 Payload recibido de WhatsApp:', JSON.stringify(payload, null, 2));
 
   try {
-    // Verificamos si es un mensaje de usuario (no un estado o acuse de recibo)
-    if (payload.entry && payload.entry[0].changes && payload.entry[0].changes[0].value.messages) {
+    if (payload?.entry?.[0]?.changes?.[0]?.value?.messages) {
       const waMessage = payload.entry[0].changes[0].value.messages[0];
-      const contact = payload.entry[0].changes[0].value.contacts[0];
-      
+      const contact = payload.entry[0].changes[0].value.contacts?.[0] || {};
       const telefonoCliente = contact.wa_id;
 
-      // HU-20: detectar si el cliente presionó un botón interactivo o seleccionó una opción de lista
       let textoCliente = '';
       if (waMessage.type === 'interactive') {
         if (waMessage.interactive?.button_reply) {
           textoCliente = waMessage.interactive.button_reply.title;
-          console.log(`\n🔘 Botón presionado por [${telefonoCliente}]: "${textoCliente}"`);
         } else if (waMessage.interactive?.list_reply) {
           textoCliente = waMessage.interactive.list_reply.title;
-          console.log(`\n📋 Opción de lista seleccionada por [${telefonoCliente}]: "${textoCliente}"`);
         }
       } else if (waMessage.text) {
         textoCliente = waMessage.text.body;
-        console.log(`\n🗣️ Nuevo mensaje de [${telefonoCliente}]: "${textoCliente}"`);
       }
 
-      // C. Conexión con el Cerebro IA (Generar Ficha)
-      if (textoCliente) {
+      if (textoCliente && telefonoCliente) {
         const fichaIA = await extraerFichaTriage(textoCliente, telefonoCliente);
-
-        // D. HU-21 CA-1: Arnés intercepta ANTES de guardar o enviar al cliente
         const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
 
-        // E. Guardar Ficha en Base de Datos Supabase (salvo comandos /reset o silencio post-derivación)
         if (fichaEstructurada) {
           if (!fichaEstructurada._noPersistir) {
-            await guardarCasoTriage(fichaEstructurada, telefonoCliente);
+            await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);
           }
 
-          // F. Enviar respuesta al cliente
           if (fichaEstructurada.respuesta_cliente) {
-
-            // HU-06: Si fue derivado, solo enviar texto de despedida (sin botones)
             if (fichaEstructurada.requiere_derivacion) {
-              console.log(`\n🔀 [HU-06] Derivando a humano. Enviando mensaje de cierre.`);
               await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
-
-            // HU-20: Si hay opciones de botones, enviar mensaje interactivo
             } else if (fichaEstructurada.opciones_botones && fichaEstructurada.opciones_botones.length > 0) {
-              console.log(`\n🔘 [HU-20] Enviando botones interactivos: ${fichaEstructurada.opciones_botones.join(', ')}`);
               await enviarMensajeConBotones(
                 telefonoCliente,
                 fichaEstructurada.respuesta_cliente,
                 fichaEstructurada.opciones_botones
               );
-
-            // Normal: solo texto
             } else {
-              console.log(`\n💬 Respondiendo al cliente: "${fichaEstructurada.respuesta_cliente}"`);
               await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
             }
           }
         }
+        registrarLatencia(Date.now() - startTime);
       }
     }
-    
-    // Facebook exige que respondas 200 OK rápido para saber que recibiste el mensaje
+
     res.status(200).send('EVENT_RECEIVED');
   } catch (error) {
-    console.error('❌ Error procesando el mensaje de WhatsApp:', error);
+    console.error('❌ Error procesando evento de WhatsApp:', error.message);
     res.status(500).send('Internal Server Error');
   }
 });
 
 /**
  * 3. GET /api/tickets
- * API REST que devuelve los últimos tickets en JSON para el Dashboard.
+ * Listado paginado y autenticado de tickets normalizados (KRON2-152 + HU-14).
+ * Soporta `limit` (1–50) y `cursor` estable (`updated_at+id`), devolviendo `{ ok, data, nextCursor }`.
  */
-app.get('/api/tickets', async (req, res) => {
+app.get('/api/tickets', requireTriageAuth, async (req, res) => {
   try {
-    const tickets = await getTicketsDashboard(50);
-    res.status(200).json({ ok: true, data: tickets });
+    let limit = 50;
+    if (req.query.limit !== undefined) {
+      const parsed = Number(req.query.limit);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) {
+        return res.status(400).json({
+          ok: false,
+          error: 'El parámetro limit debe ser un entero entre 1 y 50',
+        });
+      }
+      limit = parsed;
+    }
+
+    const cursor = req.query.cursor ? String(req.query.cursor) : null;
+    if (cursor && typeof db.decodeCursor === 'function' && !db.decodeCursor(cursor)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'El parámetro cursor tiene un formato inválido',
+      });
+    }
+
+    if (typeof db.getTicketsPaginados === 'function') {
+      const page = await db.getTicketsPaginados({ limit, cursor });
+      return res.status(200).json({
+        ok: true,
+        data: page.data,
+        nextCursor: page.nextCursor ?? null,
+      });
+    }
+
+    const tickets = await db.getTicketsDashboard(limit);
+    return res.status(200).json({
+      ok: true,
+      data: tickets,
+      nextCursor: null,
+    });
   } catch (error) {
-    console.error('❌ Error en /api/tickets:', error);
-    res.status(500).json({ ok: false, error: 'Error al obtener tickets' });
+    console.error('❌ Error en GET /api/tickets:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al obtener tickets' });
   }
 });
 
 /**
- * 4. GET /dashboard
- * Sirve el Panel de Control web para administradores.
+ * 4. GET /api/tickets/:id
+ * Detalle autenticado de un ticket normalizado (KRON2-152).
+ */
+app.get('/api/tickets/:id', requireTriageAuth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: 'ID de ticket inválido' });
+    }
+
+    const ticket = await db.getTicketById(id);
+    if (!ticket) {
+      return res.status(404).json({ ok: false, error: 'Ticket no encontrado' });
+    }
+
+    return res.status(200).json({ ok: true, data: ticket });
+  } catch (error) {
+    console.error('❌ Error en GET /api/tickets/:id:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al obtener el detalle del ticket' });
+  }
+});
+
+/**
+ * 5. PATCH /api/tickets/:id
+ * Actualización autenticada de estado y fecha_visita con control de concurrencia (KRON2-152 + HU-19).
+ */
+app.patch('/api/tickets/:id', requireTriageAuth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: 'ID de ticket inválido' });
+    }
+
+    const {
+      estado,
+      fecha_visita,
+      expected_updated_at,
+      expectedUpdatedAt,
+      updated_at,
+    } = req.body || {};
+
+    const resultado = await db.actualizarEstadoTicket(id, {
+      estado,
+      fecha_visita,
+      expected_updated_at: expected_updated_at || expectedUpdatedAt || updated_at,
+    });
+
+    if (!resultado.ok) {
+      return res.status(resultado.status || 400).json({
+        ok: false,
+        error: resultado.message,
+        code: resultado.error,
+        ...(resultado.current ? { current: resultado.current } : {}),
+      });
+    }
+
+    return res.status(200).json({ ok: true, data: resultado.data });
+  } catch (error) {
+    console.error('❌ Error en PATCH /api/tickets/:id:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al actualizar el ticket' });
+  }
+});
+
+/**
+ * 6. GET /api/tickets/:id/pdf
+ * Descarga autenticada de Ficha Técnica y Borrador de Cotización en PDF (HU-05 + HU-19).
+ */
+app.get('/api/tickets/:id/pdf', requireTriageAuth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: 'ID de ticket inválido' });
+    }
+
+    const ticket = await db.getTicketById(id);
+    if (!ticket) {
+      return res.status(404).json({ ok: false, error: 'Ticket no encontrado' });
+    }
+
+    const pdfBuffer = generarFichaCotizacionPDF(ticket);
+    registrarGeneracionPdf(true);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="ficha-triage-${ticket.id}.pdf"`);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(pdfBuffer);
+  } catch (error) {
+    registrarGeneracionPdf(false);
+    console.error('❌ Error en GET /api/tickets/:id/pdf:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al generar el PDF del ticket' });
+  }
+});
+
+/**
+ * 7. GET /api/metricas
+ * Endpoint autenticado de métricas de calidad, latencia SLA y efectividad del arnés (HU-22).
+ */
+app.get('/api/metricas', requireTriageAuth, async (req, res) => {
+  try {
+    const tickets = typeof db.getTicketsDashboard === 'function'
+      ? await db.getTicketsDashboard(50)
+      : [];
+    const resumen = obtenerResumenMetricas(tickets);
+    return res.status(200).json({ ok: true, data: resumen });
+  } catch (error) {
+    console.error('❌ Error en GET /api/metricas:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al obtener métricas' });
+  }
+});
+
+/**
+ * 8. GET /dashboard
+ * Sirve el Panel de Control web para demostración académica (exige token en memoria del operador, sin token embebido).
  */
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
@@ -176,35 +359,27 @@ app.get('/dashboard', (req, res) => {
 
 /**
  * HU-16 CA-4: Manejador global de errores de Express.
- * Captura cualquier excepción no controlada y evita que el servidor crashee.
- * Meta siempre recibe HTTP 200 en el webhook, el error queda logueado.
  */
 app.use((err, req, res, next) => {
-  const entry = {
+  console.error('🛑 [HU-16 CA-4] Error global capturado:', {
     timestamp: new Date().toISOString(),
     method: req.method,
-    url: req.url,
+    path: req.path,
     message: err.message,
-    stack: err.stack,
-  };
-  console.error('🛑 [HU-16 CA-4] Error global capturado:', entry);
+  });
 
-  // Si ya se envio una respuesta, dejar que Express maneje el cierre
   if (res.headersSent) return next(err);
 
-  // WhatsApp requiere 200 incluso si hubo error interno
   if (req.path === '/webhooks/meta') {
     return res.status(200).send('EVENT_RECEIVED');
   }
-  res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+  return res.status(500).json({ ok: false, error: 'Error interno del servidor' });
 });
 
-// Arrancar el servidor (solo si se ejecuta directamente; los tests de integración importan `app`)
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor Webhook corriendo en el puerto ${PORT}`);
     console.log(`📊 Dashboard disponible en: http://localhost:${PORT}/dashboard`);
-    console.log('Esperando conexiones de Meta (WhatsApp)...');
   });
 }
 
