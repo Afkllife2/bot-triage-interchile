@@ -9,6 +9,7 @@
  */
 process.env.META_APP_SECRET = 'secreto_de_prueba';
 process.env.META_VERIFY_TOKEN = 'token_de_prueba';
+process.env.TRIAGE_API_TOKEN = 'triage_token_integracion_test';
 
 jest.mock('../src/brain', () => ({ extraerFichaTriage: jest.fn() }));
 jest.mock('../src/db', () => ({
@@ -28,6 +29,7 @@ const { guardarCasoTriage, getTicketsDashboard } = require('../src/db');
 const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('../src/whatsapp');
 
 const TEL = '56911112222';
+const AUTH_HEADER = 'Bearer triage_token_integracion_test';
 
 const fichaBase = (extra = {}) => ({
   tipo_solicitud: 'Otra Consulta',
@@ -171,24 +173,39 @@ describe('Integración — Arnés HU-21 con catálogo Kronos dentro del pipeline
   });
 });
 
-describe('Integración — Dashboard (HU-14)', () => {
-  test('GET /api/tickets devuelve los tickets de la capa de datos', async () => {
+describe('Integración — Dashboard (HU-14 + KRON2-152)', () => {
+  test('GET /api/tickets devuelve los tickets de la capa de datos cuando está autenticado', async () => {
     getTicketsDashboard.mockResolvedValue([{ id: 1, prioridad_sugerida: 'Alta' }]);
-    const res = await request(app).get('/api/tickets');
+    const res = await request(app)
+      .get('/api/tickets')
+      .set('Authorization', AUTH_HEADER);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, data: [{ id: 1, prioridad_sugerida: 'Alta' }] });
+    expect(res.body).toEqual({
+      ok: true,
+      data: [{ id: 1, prioridad_sugerida: 'Alta' }],
+      nextCursor: null,
+    });
+  });
+
+  test('GET /api/tickets sin Bearer token es rechazado con 401', async () => {
+    const res = await request(app).get('/api/tickets');
+    expect(res.status).toBe(401);
+    expect(res.body.ok).toBe(false);
   });
 
   test('GET /api/tickets responde 500 controlado si la capa de datos lanza una excepción', async () => {
     getTicketsDashboard.mockRejectedValue(new Error('BD caída'));
-    const res = await request(app).get('/api/tickets');
+    const res = await request(app)
+      .get('/api/tickets')
+      .set('Authorization', AUTH_HEADER);
     expect(res.status).toBe(500);
     expect(res.body.ok).toBe(false);
   });
 
-  test('GET /dashboard sirve la página HTML', async () => {
+  test('GET /dashboard sirve la página HTML sin exponer tokens en código fuente', async () => {
     const res = await request(app).get('/dashboard');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/html/);
+    expect(res.text).not.toContain('triage_token_integracion_test');
   });
 });
