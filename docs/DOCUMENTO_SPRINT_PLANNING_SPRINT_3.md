@@ -1,112 +1,159 @@
-# Documento de Sprint Planning — Sprint 3 (Cierre de Titulación)
+# Documento Oficial de Sprint Planning — Sprint 3 (Cierre de Titulación)
 
-**Proyecto:** Agente Autónomo de Triage Comercial e Integración ERP Kronos  
-**Empresa Contraparte:** InterChile Climatización  
-**Alumno:** Carlos Gabriel González Salgado  
-**Profesora Metodológica:** Sarita González Catalán  
+**Asignatura:** Seminario de Título / Proyecto de Título (Modalidad Scrum Adaptado Unipersonal — UNAB)  
+**Proyecto:** Agente Autónomo de Triage Comercial e Integración ERP Kronos — InterChile Climatización  
+**Estudiante / Developer:** Carlos Gabriel González Salgado  
+**Profesora Metodológica (PO Acad.):** Sarita González Catalán  
 **Profesor Guía Técnico:** Matías Vargas  
-**Período de Ejecución:** 09 de noviembre al 20 de noviembre de 2026  
-**Duración del Sprint:** 2 semanas (10 días hábiles)  
-**Herramienta de Gestión:** Jira Software (`AAI` - Board 202, Sprint 3 ID: 434)  
+**Stakeholder / Contraparte Empresa:** Benjamín Yáñez (Gerente / Product Owner InterChile Climatización)  
+**Sprint:** Sprint 3 — Hito 3 (Cierre) (`Jira Board 202 · Sprint ID: 434`)  
+**Período de la Iteración:** 09 de noviembre de 2026 al 20 de noviembre de 2026 (2 semanas · 40 horas)  
 
 ---
 
-## 1. Sprint Goal (Meta Cuantitativa, Medible y Verificable)
+## Tabla de Cumplimiento de las 10 Actividades Mínimas de la Sprint Planning (Pauta Oficial UNAB)
 
-> **"Consolidar el cierre operativo del Agente de Triage Comercial mediante la generación determinista de borradores de cotización y fichas técnicas en PDF, la gestión de agendamiento y estados en el Dashboard Web (Contingencia R-15), la integración al contrato del ERP Kronos 2.0 y el monitoreo en tiempo real de métricas de calidad y SLA. El éxito de la iteración se evalúa cuantitativamente mediante 4 indicadores verificables:"**
-
-### Indicadores Clave de Éxito del Sprint 3:
-1. **Latencia promedio de respuesta del bot:** $< 4.0\text{ s}$ en el pipeline end-to-end bajo condiciones normales de red.
-2. **Efectividad anti-alucinaciones (Arnés Kronos):** $100\%$ de detección y neutralización de marcas, modelos o repuestos no verificados, reemplazándolos por `[dato por confirmar]`.
-3. **Resistencia a la concurrencia y estrés:** Tasa de éxito $> 99\%$ sobre ráfagas de 20 usuarios simultáneos en el Webhook de WhatsApp sin colisiones de sesión ni pérdida de datos.
-4. **Disponibilidad y generación de fichas PDF:** Tasa de éxito del $100\%$ en la emisión y descarga de documentos `%PDF-1.4` generados en memoria ($< 5\text{ ms}$).
-
----
-
-## 2. Capacidad del Equipo y Estimación del Esfuerzo
-
-- **Desarrollador Responsable:** Carlos González (`CG` - Full Stack Developer / Ingeniero de Software).
-- **Dedicación Neta:** 20 horas semanales $\times$ 2 semanas = **40 horas de desarrollo e ingeniería**.
-- **Puntos de Historia Comprometidos:** **26 Story Points (SP)** distribuidos en 4 Historias de Usuario.
-- **Subtareas Técnicas:** 13 subtareas desglosadas con horas estimadas y vinculadas a criterios de aceptación BDD.
+| Nº | Actividad Mínima Exigida | Estado | Sección de Evidencia en este Documento |
+| :-: | :--- | :---: | :--- |
+| **1** | **Revisar el Product Backlog** | Cumplido | Sección 1 (Incorporación de hallazgos H-05 a H-08 de la Review del Sprint 2 y encargo `KRON2-152`) |
+| **2** | **Definir el Sprint Goal** | Cumplido | Sección 2 (Meta cuantitativa, propósito de negocio y 4 indicadores verificables) |
+| **3** | **Seleccionar las HU del Sprint y Refinamiento Previo** | Cumplido | Sección 3 (`AAI-25`, `AAI-90`, `AAI-94`, `AAI-98` con Usuario/Necesidad/Valor, Dependencias, Restricciones y Supuestos) |
+| **4** | **Revisar los Criterios de Aceptación (CA)** | Cumplido | Sección 4 (12 Criterios de Aceptación en formato BDD `Dado / Cuando / Entonces` con casos positivos, negativos y fallbacks) |
+| **5** | **Definir el Alcance del Sprint (In Scope / Out of Scope)** | Cumplido | Sección 5 (Alcance comprometido de 26 SP y exclusiones explícitas) |
+| **6** | **Revisar el Definition of Done (DoD)** | Cumplido | Sección 6 (DoD corto, directo y consecuente de 5 condiciones verificables) |
+| **7** | **Construir el Sprint Backlog en Jira** | Cumplido | Sección 7 (Descomposición en 13 subtareas técnicas `AAI-86` a `AAI-101` vinculadas a cada HU) |
+| **8** | **Estimar y organizar el trabajo** | Cumplido | Sección 8 (Estimación de 26 SP / 40 horas, dependencias y cronograma secuencial de 2 semanas) |
+| **9** | **Identificar riesgos e impedimentos iniciales** | Cumplido | Sección 9 (Evaluación de riesgos R-15 a R-18 y acciones concretas de mitigación) |
+| **10** | **Definir las evidencias esperadas** | Cumplido | Sección 10 (Entregables verificables en Jira, GitHub, Jest y Render) |
 
 ---
 
-## 3. Sprint Backlog Comprometido (Historias de Usuario y Subtareas)
+## 1. Actividad 1: Revisión y Refinamiento del Product Backlog
 
-### Historia 1: `AAI-25` (`[INT-HU-05]`)
-**Título:** Generación de Borrador de Cotización y Ficha Técnica en PDF  
-**Estimación:** 8 Story Points | 12 Horas  
-**Enfoque Usuario:** *Como ejecutivo de ventas de InterChile, quiero que el bot genere un borrador de cotización referencial con IVA y una ficha técnica descargable en PDF, para entregar una estimación rápida al cliente sin errores de cálculo manual.*  
-
-- **Criterios de Aceptación (BDD):**
-  - **CA-1 (Cálculo Determinista):** Dado un caso de triage con tipo de solicitud (`Mantención`, `Falla Técnica`, etc.) y equipo clasificado (`Split`, `Cassette`, etc.), cuando se calcula la cotización, entonces el sistema calcula automáticamente subtotal neto, IVA (19%) y total CLP sin alucinaciones numéricas.
-  - **CA-2 (Manejo de Incertidumbre):** Dado un equipo no reconocido o marcado como `[dato por confirmar]`, cuando se evalúa la cotización, entonces el sistema retorna `null` en los importes y rotula *"Sin estimación"*, evitando suponer costos en cero.
-  - **CA-3 (Ficha Técnica PDF):** Dado un ticket registrado, cuando el operador solicita su descarga, entonces el servidor entrega un documento `%PDF-1.4` con los datos del cliente, falla, equipo, sello *"Estimación del bot · No oficial"* y descarga autorizada.
-
-- **Desglose de Subtareas en Jira:**
-  - `AAI-86` (3h): Implementación del motor determinista `src/cotizador.js` (tarifario CLP e IVA 19%).
-  - `AAI-87` (4h): Implementación del generador nativo en memoria `src/pdfGenerator.js` y endpoint `/api/tickets/:id/pdf`.
-  - `AAI-88` (3h): Persistencia en base de datos (`cotizacion_neto`, `cotizacion_iva`, `cotizacion_total`, `catalogo_verificado`) en `src/db.js`.
-  - `AAI-89` (2h): Pruebas unitarias y de integración de cotización y PDF en Jest (`100% PASS`).
+Al cierre del Sprint 2 (Acta de Sprint Review del 22/10/2026 y retroalimentación técnica del Hito 2 con nota 6,2 / 88,75%), se actualizaron las prioridades del Product Backlog incorporando:
+1. **Hallazgo H-07 (Acta Review Sprint 2):** Necesidad de generar un borrador de cotización referencial en CLP (con IVA 19%) y una ficha técnica descargable en PDF a partir de los datos capturados en el triage (`[INT-HU-05]` / `AAI-25`).
+2. **Hallazgo H-08 y Riesgo Crítico R-15 (Acordado con Prof. Sarita):** Dado que el sistema ERP interno **Kronos 2.0** de InterChile se desarrolla en paralelo, el bot debe contar con:
+   - Una **capacidad autónoma completa en su propio Dashboard Web** (cambio manual de estados `en_proceso`, `derivado`, `agendado`, `resuelto`, asignación de `fecha_visita` técnica y descarga de ficha PDF) para no bloquear la operación ni la defensa académica si el ERP externo sufriera retrasos (`[INT-HU-19]` / `AAI-90`).
+   - Un **contrato de API cerrado y autenticado mediante Bearer Token (`TRIAGE_API_TOKEN`)** compatible con la bandeja de integración de Kronos 2.0 (`KRON2-152`), con paginación por cursor estable (`updated_at+id`) y control de concurrencia optimista (`409 Conflict`).
+3. **Hallazgo H-05 y Observación del Prof. Guía Técnico (Atributos de Calidad y Pruebas):** Necesidad de visualizar métricas cuantitativas de calidad y SLA en tiempo real (`[INT-HU-22]` / `AAI-94`) y validar el sistema completo mediante pruebas de concurrencia con múltiples usuarios simultáneos, diagrama integrativo E2E e informe técnico separado de pruebas (`[INT-HU-23]` / `AAI-98`).
 
 ---
 
-### Historia 2: `AAI-90` (`[INT-HU-19]`)
-**Título:** Gestión de Agendamiento, Estados y Descarga de PDF en Dashboard Web  
-**Estimación:** 8 Story Points | 12 Horas  
-**Enfoque Usuario:** *Como coordinador de operaciones de InterChile, quiero gestionar el estado de los tickets, asignar fecha de visita técnica y descargar la ficha PDF desde el Dashboard protegido, para coordinar la atención en terreno cuando Kronos esté en mantención o fuera de línea (Contingencia R-15).*  
+## 2. Actividad 2: Definición del Sprint Goal (Meta Cuantitativa y Verificable)
 
-- **Criterios de Aceptación (BDD):**
-  - **CA-1 (Autenticación Bearer):** Dado un operador o sistema externo que accede a `/api/tickets*`, cuando realiza la petición sin credenciales o con credencial inválida, entonces el servidor responde `401 Unauthorized` o `503` si la integración no está configurada, protegiendo los datos del cliente.
-  - **CA-2 (Paginación Cursor Estable):** Dado un volumen creciente de tickets, cuando se consulta la bandeja paginada, entonces el sistema pagina mediante cursor `updated_at+id` (`limit` 1–50) sin duplicados ni omisiones.
-  - **CA-3 (Transición de Estados y Conflicto Concurrente):** Dado un operador que modifica un ticket a `agendado`, cuando envía los datos, entonces el sistema exige obligatoriamente `fecha_visita` en formato ISO UTC (`400`) y rechaza con `409 Conflict` si otro usuario modificó el ticket previamente.
+- **Propósito de Negocio:** Cerrar el ciclo comercial y operativo del pre-diagnóstico automatizado en InterChile Climatización, entregando estimaciones referenciales en CLP con ficha PDF descargable, permitiendo a los coordinadores agendar visitas técnicas y gestionar estados con seguridad, y garantizando el cumplimiento de niveles de servicio (SLA) bajo carga concurrente.
+- **Sprint Goal Oficial (Registrado en Jira Sprint 434):**
+  > *"Meta verificable: Consolidar el cierre operativo con generación de cotizaciones PDF, agendamiento en Dashboard (Contingencia R-15) y monitoreo de calidad. Indicadores de éxito: (1) Latencia promedio < 4.0s, (2) 100% generación PDF exitosa, (3) 100% alucinaciones bloqueadas por arnés, (4) >99% éxito en tests de concurrencia (20 usuarios)."*
 
-- **Desglose de Subtareas en Jira:**
-  - `AAI-91` (4h): Endpoints protegidos `GET /api/tickets`, `GET /api/tickets/:id` y `PATCH /api/tickets/:id` con paginación cursor y conflicto 409.
-  - `AAI-92` (5h): Interfaz en `public/dashboard.html` con selectores de estado, modal de agendamiento de fecha y descarga PDF.
-  - `AAI-93` (3h): Pruebas automatizadas de concurrencia optimista, estados e inmutabilidad de fechas en Jest (`100% PASS`).
+| Indicador Cuantitativo del Sprint Goal | Umbral de Éxito Comprometido | Método de Verificación |
+| :--- | :---: | :--- |
+| **1. Latencia promedio de respuesta del bot** | $< 4.0\text{ s}$ ($< 4000\text{ ms}$) | Medición en `src/metricsStore.js` (`GET /api/metricas`) y pruebas de integración en Jest |
+| **2. Efectividad del arnés anti-alucinaciones** | $100\%$ interceptado | Suite `test/arneses.test.js` y `test/sprint3.test.js` frente a catálogo Kronos y fallbacks |
+| **3. Éxito en pruebas de estrés y concurrencia** | $> 99\%$ sobre $N = 20$ usuarios | Ráfaga concurrente `Promise.all` de 20 webhooks firmados en `test/sprint3.test.js` |
+| **4. Generación y descarga exitosa de fichas PDF** | $100\%$ | Validación de binario `%PDF-1.4` y `GET /api/tickets/:id/pdf` en `test/sprint3.test.js` |
 
 ---
 
-### Historia 3: `AAI-94` (`[INT-HU-22]`)
-**Título:** Monitoreo de Métricas de Calidad y Cumplimiento de SLA en Dashboard  
-**Estimación:** 5 Story Points | 8 Horas  
-**Enfoque Usuario:** *Como supervisor técnico de InterChile, quiero visualizar en tiempo real los indicadores de latencia SLA, tasa de intercepción del arnés y estado de casos, para verificar la confiabilidad y desempeño del asistente antes del despliegue masivo.*  
+## 3. Actividad 3: Selección de Historias de Usuario y Refinamiento Previo
 
-- **Criterios de Aceptación (BDD):**
-  - **CA-1 (Contrato Catálogo Kronos):** Dado el arnés de IA, cuando consulta `GET /api/kronos/catalogo` con timeout de 5 s, entonces distingue entre validación oficial Kronos (`catalogo_verificado: true`) y respaldo local (`catalogo_verificado: false`), marcando `[dato por confirmar]` si Kronos no está disponible.
-  - **CA-2 (Métricas SLA en Tiempo Real):** Dado el flujo de mensajería, cuando se atienden clientes, entonces el almacén en memoria registra la latencia de cada request y el endpoint `GET /api/metricas` calcula el promedio, verificando el cumplimiento del umbral SLA $< 4000\text{ ms}$.
+Todas las Historias de Usuario fueron formuladas desde la perspectiva del usuario final (`Como... Quiero... Para...`) y refinadas previo al inicio del desarrollo identificando sus dependencias, restricciones y supuestos:
 
-- **Desglose de Subtareas en Jira:**
-  - `AAI-95` (3h): Módulo `src/metricsStore.js` y endpoint protegido `GET /api/metricas`.
-  - `AAI-96` (3h): Visualización de métricas en tarjetas interactivas de `public/dashboard.html`.
-  - `AAI-97` (2h): Pruebas unitarias de catálogo, timeout y cálculo de SLA en Jest (`100% PASS`).
+| Key Jira | Código HU | Historia de Usuario (Perspectiva de Usuario) | Prioridad | SP | Horas | Refinamiento Previo (Dependencias, Restricciones y Supuestos) |
+| :---: | :---: | :--- | :---: | :-: | :-: | :--- |
+| **`AAI-25`** | `[INT-HU-05]` | **Como** ejecutivo comercial de InterChile, **quiero** que el sistema calcule automáticamente un borrador de cotización referencial en CLP (con IVA 19%) y genere una ficha técnica descargable en PDF por cada caso de triage, **para** entregar al cliente una estimación formal y rápida sin realizar cálculos manuales. | Alta | 8 | 12h | **Dependencias:** Requiere ficha extraída por `src/brain.js` y validada por `src/arneses.js` (`HU-02`/`HU-21`).<br>**Restricciones:** El cálculo aritmético NUNCA debe delegarse al LLM; si el equipo es `[dato por confirmar]` los montos deben quedar en `null` (nunca inventar `$0`). El generador PDF no debe usar Puppeteer/Chromium para no exceder los 512 MB de RAM en Render.<br>**Supuestos:** Tarifario base en CLP definido por categoría de equipo y tipo de servicio con IVA legal del 19%. |
+| **`AAI-90`** | `[INT-HU-19]` | **Como** coordinador de operaciones de InterChile, **quiero** actualizar el estado de los tickets (`en_proceso`, `derivado`, `agendado`, `resuelto`), registrar la fecha de visita técnica y descargar la ficha en PDF desde el Dashboard Web protegido, **para** gestionar la operación comercial de forma autónoma (Contingencia R-15) y sincronizar casos con Kronos 2.0. | Alta | 8 | 12h | **Dependencias:** Requiere capa de persistencia en `src/db.js` (`HU-04`) y panel base (`HU-14`).<br>**Restricciones:** Las rutas `/api/*` deben exigir Bearer Token privado (`TRIAGE_API_TOKEN`) distinto de Meta/Gemini; `created_at` debe ser inmutable; pasar a `agendado` exige `fecha_visita` ISO UTC; cambios con versión antigua deben responder `409 Conflict`.<br>**Supuestos:** El operador ingresa su credencial en memoria de sesión sin exponer tokens en el código fuente HTML/JS. |
+| **`AAI-94`** | `[INT-HU-22]` | **Como** supervisor de servicio de InterChile, **quiero** visualizar en el Dashboard tarjetas con las métricas de latencia promedio (SLA `< 4.0s`), tasa de alucinaciones interceptadas por el arnés y distribución de casos por estado, **para** auditar en tiempo real la calidad y confiabilidad de la atención automatizada. | Media | 5 | 8h | **Dependencias:** Requiere pipeline de webhooks (`src/server.js`) y validador `src/arneses.js` + `src/kronos.js`.<br>**Restricciones:** La consulta al catálogo remoto `GET /api/kronos/catalogo` tiene timeout máximo de 5 s; debe distinguir respaldo local (`catalogo_verificado: false`) de catálogo oficial (`catalogo_verificado: true`).<br>**Supuestos:** Ventana móvil de hasta 200 muestras en memoria para cálculo instantáneo de SLA sin sobrecargar PostgreSQL. |
+| **`AAI-98`** | `[INT-HU-23]` | **Como** líder técnico y evaluador del proyecto, **quiero** contar con pruebas automatizadas de concurrencia (20 usuarios simultáneos), un diagrama de secuencia integrativo E2E con ADRs y un informe técnico formal de pruebas, **para** certificar la estabilidad del sistema en producción y la trazabilidad exigida al cierre de titulación. | Media | 5 | 8h | **Dependencias:** Requiere `AAI-25`, `AAI-90` y `AAI-94` implementadas.<br>**Restricciones:** Las pruebas en Jest deben simular bordes externos (Meta/Gemini) y ejecutarse con `--runInBand` logrando `100% PASS` sin tests omitidos.<br>**Supuestos:** El informe de pruebas se entrega en un documento exclusivo (`docs/INFORME_DE_PRUEBAS_SPRINT_3.md`). |
 
 ---
 
-### Historia 4: `AAI-98` (`[INT-HU-23]`)
-**Título:** Validación de Concurrencia, Diagrama Integrativo E2E e Informe Formal de Pruebas  
-**Estimación:** 5 Story Points | 8 Horas  
-**Enfoque Usuario:** *Como evaluador del proyecto de título, quiero disponer de un informe formal de pruebas con matriz de trazabilidad estricta y pruebas de estrés con múltiples usuarios simultáneos, para verificar la robustez técnica y rigor metodológico exigido para el cierre de titulación.*  
+## 4. Actividad 4: Criterios de Aceptación Verificables (Formato BDD)
 
-- **Criterios de Aceptación (BDD):**
-  - **CA-1 (Prueba de Estrés 20 Usuarios):** Dado un escenario de alta demanda, cuando se envían 20 solicitudes simultáneas al webhook, entonces el 100% responde HTTP 200, no hay cruce de sesiones de chat y la latencia promedio es $< 4.0\text{ s}$.
-  - **CA-2 (Diagrama E2E y ADRs):** Dado el cierre de arquitectura, cuando se documenta el sistema, entonces se emite un diagrama de secuencia integrativo en Mermaid y los Registros de Decisiones de Arquitectura (ADRs).
-  - **CA-3 (Informe Formal de Pruebas):** Dado el fin de la iteración, cuando se consolidan las pruebas, entonces se genera `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` con trazabilidad $\text{HU} \to \text{CA} \to \text{Test} \to \text{PASS} \to \text{Captura con Timestamp}$.
+### `AAI-25` (`[INT-HU-05]`): Borrador de Cotización y Ficha Técnica en PDF
+- **CA-1 (Cálculo Determinista CLP + IVA 19%):** **Dado que** un caso de triage cuenta con un motivo tarifable (`Mantención`, `Falla Técnica`, `Instalación`, `Cotización`, `Arriendo`, `Proyecto Comercial`) y un tipo de equipo válido (`Split`, `Cassette`, `Piso Techo`, `Ducto`, `Chiller`, `VRV`), **Cuando** `src/cotizador.js` procesa la ficha, **Entonces** calcula de forma determinista `subtotal_neto`, `iva` (`Math.round(neto * 0.19)`) y `total_clp`, aplicando recargo de urgencia si es `Falla Técnica` con prioridad `Alta`.
+- **CA-2 (Caso Negativo / Incertidumbre):** **Dado que** el tipo de equipo fue reemplazado por `[dato por confirmar]` por el arnés o el motivo es `Otra Consulta`, **Cuando** se evalúa la cotización, **Entonces** el sistema retorna `null` en `cotizacion_neto`, `cotizacion_iva` y `cotizacion_total` (nunca inventa `$0`).
+- **CA-3 (Emisión y Descarga Autorizada de PDF):** **Dado que** existe un ticket persistido en base de datos, **Cuando** un cliente autenticado solicita `GET /api/tickets/:id/pdf`, **Entonces** el servidor responde `HTTP 200` con `Content-Type: application/pdf` y un binario `%PDF-1.4` válido que incluye el aviso explícito *"Ficha de triage · Estimación del bot · No es presupuesto oficial"*.
 
-- **Desglose de Subtareas en Jira:**
-  - `AAI-99` (3h): Test de estrés y concurrencia con 20 usuarios simultáneos en `test/sprint3.test.js`.
-  - `AAI-100` (3h): Elaboración de `docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md` (Diagrama E2E y ADRs).
-  - `AAI-101` (2h): Consolidación de `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` y evidencias con timestamp.
+### `AAI-90` (`[INT-HU-19]`): Gestión de Agendamiento, Estados y Contrato API
+- **CA-1 (Seguridad Bearer Privada):** **Dado que** se realiza una petición a `/api/tickets`, `/api/tickets/:id`, `/api/tickets/:id/pdf` o `/api/metricas`, **Cuando** no se incluye un header `Authorization: Bearer <TRIAGE_API_TOKEN>` válido o el token reutiliza credenciales de Meta/Gemini, **Entonces** el servidor bloquea el acceso con `HTTP 401 Unauthorized` (o `HTTP 503` si no está configurado) sin filtrar secretos en logs.
+- **CA-2 (Paginación por Cursor e Inmutabilidad de `created_at`):** **Dado que** se consulta `GET /api/tickets?limit=N&cursor=C`, **Cuando** `limit` está entre 1 y 50, **Entonces** retorna `{ ok: true, data, nextCursor }` ordenado por `updated_at DESC, id DESC` sin duplicados y conservando `created_at` inmutable ante actualizaciones posteriores.
+- **CA-3 (Agendamiento con `fecha_visita` y Control de Concurrencia 409):** **Dado que** un operador envía `PATCH /api/tickets/:id`, **Cuando** cambia el estado a `agendado` sin `fecha_visita` válida recibe `HTTP 400`, y **Cuando** envía un `expected_updated_at` distinto a la versión actual en base de datos recibe `HTTP 409 Conflict` evitando sobrescrituras accidentales.
+
+### `AAI-94` (`[INT-HU-22]`): Monitoreo de Métricas de Calidad, SLA y Catálogo Kronos
+- **CA-1 (Validación contra Contrato de Catálogo Kronos):** **Dado que** `src/kronos.js` consulta `GET /api/kronos/catalogo` con timeout de 5 segundos, **Cuando** el catálogo oficial responde `{ available: false }`, sufre timeout o desconoce el equipo, **Entonces** el arnés marca `[dato por confirmar]` y `catalogo_verificado = false`, distinguiendo siempre la lista local de respaldo de una validación oficial.
+- **CA-2 (Reporte de SLA y Calidad en Tiempo Real):** **Dado que** el bot procesa mensajes y validaciones del arnés, **Cuando** se consulta `GET /api/metricas`, **Entonces** retorna `latencia_promedio_ms`, `cumple_sla` (`< 4000 ms`), `tasa_intercepcion_pct` (`100%`), `pdfs_generados` y el conteo de tickets desglosado por los 4 estados operativos.
+
+### `AAI-98` (`[INT-HU-23]`): Concurrencia, Diagrama Integrativo E2E e Informe Formal de Pruebas
+- **CA-1 (Prueba de Estrés con 20 Usuarios Simultáneos):** **Dado que** 20 clientes distintos envían mensajes de WhatsApp en paralelo (`POST /webhooks/meta` con firma HMAC-SHA256), **Cuando** el servidor procesa la ráfaga concurrente, **Entonces** el 100% de las peticiones responde `HTTP 200`, se persisten las 20 sesiones aisladas sin colisión de datos y la latencia promedio por solicitud es `< 4.0 s`.
+- **CA-2 (Diagrama Integrativo E2E y ADRs):** **Dado que** se integran todos los módulos de los Sprints 1, 2 y 3, **Cuando** se documenta la arquitectura final en `docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md`, **Entonces** incluye el diagrama de secuencia completo en Mermaid y 4 ADRs justificando las decisiones técnicas.
+- **CA-3 (Informe Técnico Formal Separado):** **Dado que** se ejecuta la suite completa de Jest, **Cuando** finalizan las 5 suites (54 tests), **Entonces** los resultados quedan documentados en `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` con la matriz $\text{HU} \to \text{CA} \to \text{Tipo} \to \text{Archivo} \to \text{PASS} \to \text{Captura con Timestamp}$.
 
 ---
 
-## 4. Definition of Done (DoD) Aplicable
+## 5. Actividad 5: Alcance del Sprint (Inclusiones y Exclusiones Explícitas)
 
-Una Historia de Usuario se da por **Terminada (Done)** si y solo si cumple:
-1. **Código operativo y desplegado en Render (HTTPS/SSL):** Endpoints protegidos con HMAC-SHA256 y Bearer Token privado de integración.
-2. **Criterios de Aceptación BDD cubiertos:** Escenarios positivos, negativos y fallbacks validados.
-3. **Pruebas automatizadas en Jest con 100% PASS:** 5 suites / 54 tests en verde sin omisiones.
-4. **Commits semánticos y Tag de release en GitHub:** Trazabilidad en repositorio oficial (`Afkllife2/bot-triage-interchile`).
-5. **Subtareas en Jira con Time Tracking:** 13 subtareas con estimación y horas reales registradas.
+### Dentro del Alcance (In Scope — 26 Story Points / 40 Horas):
+- Motor determinista de cotización borrador en CLP + IVA 19% (`src/cotizador.js`).
+- Generador nativo de fichas técnicas y cotizaciones en PDF `%PDF-1.4` (`src/pdfGenerator.js`).
+- Contrato de API autenticado con Bearer Token (`GET /api/tickets` paginado con cursor, `GET /api/tickets/:id`, `PATCH /api/tickets/:id` con bloqueo optimista `409`, `GET /api/tickets/:id/pdf` y `GET /api/metricas`).
+- Adaptador de catálogo `src/kronos.js` con soporte para `GET /api/kronos/catalogo` (timeout 5 s) y flag `catalogo_verificado`.
+- Evolución del Dashboard Web (`public/dashboard.html`) con tarjetas SLA, selector de estados, agendamiento de visita y descarga de PDF.
+- Suite de 54 pruebas automatizadas en Jest (incluyendo test de concurrencia de 20 usuarios), diagrama integrativo E2E, ADRs e informe formal de pruebas.
+
+### Fuera del Alcance (Out of Scope / Exclusiones Explícitas):
+- **Emisión tributaria electrónica (SII):** El bot emite estimaciones referenciales de triage (*"No es presupuesto oficial"*); no emite facturas ni boletas electrónicas ante el SII.
+- **Pasarela de pagos en línea o cobro por WhatsApp:** Toda aceptación comercial definitiva y facturación ocurre tras la validación técnica humana en terreno.
+- **Asignación automática de técnicos en calendario interno:** La `fecha_visita` registrada en el triage es referencial para coordinación operativa y no bloquea agendas de RR.HH. automáticamente.
+- **Procesamiento de notas de voz o video:** El canal procesa texto libre, botones interactivos (`button_reply`), listas desplegables (`list_reply`) y metadatos de imagen.
+
+---
+
+## 6. Actividad 6: Definition of Done (DoD) del Sprint 3
+
+Una Historia de Usuario del Sprint 3 se declara **Terminada (Done)** única y exclusivamente cuando cumple estas **5 condiciones verificables**:
+1. **Código operativo y desplegado en Render (HTTPS/SSL):** Servicio activo en la nube con endpoints protegidos mediante HMAC-SHA256 (`/webhooks/meta`) y Bearer Token privado de integración (`TRIAGE_API_TOKEN` en `/api/*`).
+2. **Criterios de Aceptación (CA) BDD cubiertos con casos positivos, negativos y fallbacks:** Todos los escenarios `Dado / Cuando / Entonces` implementados, incluyendo manejo de errores (`400`, `401`, `404`, `409 Conflict`, `503`) y degradación elegante (`[dato por confirmar]`).
+3. **Pruebas automatizadas en Jest (Unitarias + Integración + Concurrencia) con 100% PASS:** `5 suites / 54 tests en verde (100% PASS)` documentados en `docs/INFORME_DE_PRUEBAS_SPRINT_3.md`.
+4. **Commits semánticos en GitHub con ramas de feature y Tag formal de release:** Código versionado en `Afkllife2/bot-triage-interchile` bajo tag `v3.0.0-sprint3`.
+5. **Subtareas en Jira con horas estimadas y registradas (Time Tracking):** Las 13 subtareas técnicas (`AAI-86` a `AAI-101`) cuentan con estimación original, registro de horas reales (`worklog`) y evidencia adjunta en Jira (`AAI`).
+
+---
+
+## 7. Actividad 7 y 8: Construcción del Sprint Backlog en Jira, Estimación y Cronograma
+
+| Semana | Orden | Subtarea Jira | HU Padre | Descripción Técnica de la Subtarea | Estimación | Horas Reales | Estado Jira |
+| :---: | :---: | :---: | :---: | :--- | :---: | :---: | :---: |
+| **Sem. 1** | 1 | **`AAI-86`** | `AAI-25` | Implementar motor determinista `src/cotizador.js` (tarifario CLP + IVA 19% y manejo de `null`) | 3h | 3h | Listo |
+| **Sem. 1** | 2 | **`AAI-87`** | `AAI-25` | Implementar generador nativo `src/pdfGenerator.js` (`%PDF-1.4`) y ruta `GET /api/tickets/:id/pdf` | 4h | 4h | Listo |
+| **Sem. 1** | 3 | **`AAI-88`** | `AAI-25` | Actualizar `src/db.js` para persistir montos de cotización, `catalogo_verificado` y `created_at` inmutable | 3h | 3h | Listo |
+| **Sem. 1** | 4 | **`AAI-89`** | `AAI-25` | Crear pruebas unitarias y de integración de cotizador y PDF en Jest (`test/sprint3.test.js`) | 2h | 2h | Listo |
+| **Sem. 1** | 5 | **`AAI-91`** | `AAI-90` | Implementar auth Bearer (`TRIAGE_API_TOKEN`), paginación cursor y `PATCH /api/tickets/:id` con conflicto `409` | 4h | 4h | Listo |
+| **Sem. 1** | 6 | **`AAI-92`** | `AAI-90` | Actualizar `public/dashboard.html` con cambio de estados, `fecha_visita` y descarga privada de PDF | 5h | 5h | Listo |
+| **Sem. 2** | 7 | **`AAI-93`** | `AAI-90` | Crear pruebas de contrato de BD, cursor paginado y concurrencia `409` (`test/db-contrato.test.js`) | 3h | 3h | Listo |
+| **Sem. 2** | 8 | **`AAI-95`** | `AAI-94` | Implementar `src/metricsStore.js`, endpoint `GET /api/metricas` y cliente remoto `GET /api/kronos/catalogo` | 3h | 3h | Listo |
+| **Sem. 2** | 9 | **`AAI-96`** | `AAI-94` | Incorporar tarjetas de KPIs de calidad, SLA (`< 4.0s`) y efectividad del arnés en `public/dashboard.html` | 3h | 3h | Listo |
+| **Sem. 2** | 10 | **`AAI-97`** | `AAI-94` | Validar en Jest escenarios de catálogo remoto vacío, timeout de 5 s y cálculo de métricas SLA | 2h | 2h | Listo |
+| **Sem. 2** | 11 | **`AAI-99`** | `AAI-98` | Ejecutar prueba de estrés y concurrencia con 20 usuarios simultáneos en `test/sprint3.test.js` | 3h | 3h | Listo |
+| **Sem. 2** | 12 | **`AAI-100`** | `AAI-98` | Documentar Diagrama de Secuencia Integrativo E2E y 4 ADRs en `docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md` | 3h | 3h | Listo |
+| **Sem. 2** | 13 | **`AAI-101`** | `AAI-98` | Emitir `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` con matriz de trazabilidad y captura con timestamp | 2h | 2h | Listo |
+| **TOTAL** | — | **13 Subtareas** | **4 HUs** | **Cobertura completa del Sprint 3 (26 Story Points)** | **40h** | **40h** | **100%** |
+
+---
+
+## 8. Actividad 9: Identificación de Riesgos e Impedimentos Iniciales del Sprint 3
+
+| ID | Riesgo / Impedimento Identificado para el Sprint 3 | Prob. (1-3) | Imp. (1-3) | Severidad | Acción de Respuesta y Mitigación Concreta |
+| :-: | :--- | :---: | :---: | :---: | :--- |
+| **R-15** | **Desarrollo paralelo de Kronos 2.0:** El ERP Kronos 2.0 de InterChile se encuentra aún en construcción (Sprint S02 de Kronos) y su catálogo maestro aún no está poblado. | 3 | 3 | **9 (Rojo)** | **Mitigación Dual Ejecutada:** (1) El Bot cuenta con su propio Dashboard Web autónomo (`INT-HU-19`) para agendar, cambiar estados y descargar PDF sin depender de Kronos; y (2) se implementó el contrato exacto `KRON2-152` (`GET /api/kronos/catalogo` con `{available:false}` y bandera `catalogo_verificado`). |
+| **R-16** | **Alucinación aritmética en presupuestos:** Riesgo de que el LLM invente tarifas o calcule erróneamente el IVA (19%). | 2 | 3 | **6 (Amarillo)** | **Mitigación Determinista (ADR-01):** Se desacopló el cálculo financiero en `src/cotizador.js` usando reglas puras en código y retornando `null` cuando el equipo no está confirmado. |
+| **R-17** | **Agotamiento de memoria RAM en Render al generar PDFs:** Librerías pesadas como Puppeteer exceden los 512 MB del contenedor web. | 2 | 3 | **6 (Amarillo)** | **Mitigación Nativa (ADR-02):** Se construyó `src/pdfGenerator.js` generando flujos binarios `%PDF-1.4` nativos en memoria en `< 5 ms` con cero dependencias pesadas. |
+| **R-18** | **Sobrescritura de estados o colisión de sesiones concurrentes:** Dos operadores editando el mismo ticket o 20 clientes escribiendo al mismo tiempo. | 2 | 2 | **4 (Amarillo)** | **Mitigación por Bloqueo Optimista (ADR-03):** `PATCH /api/tickets/:id` verifica `expected_updated_at` con `SELECT ... FOR UPDATE` devolviendo `409 Conflict`, y la memoria conversacional aísla sesiones por `wa_id`. |
+
+---
+
+## 9. Actividad 10: Evidencias Esperadas al Cierre de la Iteración
+
+1. **Tablero Jira (`AAI` — Sprint 3 ID 434):** 4 Historias de Usuario (26 SP) y 13 subtareas con estimación original, registro de horas (`40h` en `worklog`) y capturas adjuntas.
+2. **Repositorio GitHub (`Afkllife2/bot-triage-interchile`):** Ramas `feat/sprint3-bot-y-contrato-kronos`, `develop` y `main` actualizadas bajo tag formal `v3.0.0-sprint3`.
+3. **Informe Técnico Separado de Pruebas (`docs/INFORME_DE_PRUEBAS_SPRINT_3.md`):** Matriz de trazabilidad completa y evidencia `docs/evidencias_png/Evidencia_Suite_Jest_Sprint3_54_PASS.png` (`5 suites / 54 tests PASS`).
+4. **Arquitectura Integrativa (`docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md`):** Diagrama de secuencia E2E en Mermaid y 4 ADRs.

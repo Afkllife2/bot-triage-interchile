@@ -77,3 +77,32 @@ Detalle de componentes y decisiones en [ARQUITECTURA_V2.md](ARQUITECTURA_V2.md).
 - **HU-06:** el cliente pide un ejecutivo → la IA marca derivación → se guarda `derivado` → se entrega el contacto de Benjamín → mensajes posteriores reciben respuesta estática.
 - **HU-20:** saludo → lista de 4 opciones (incl. Arriendo) → el clic llega como `list_reply` → la IA continúa el flujo.
 - **HU-21:** la IA menciona una marca inexistente → el arnés la reemplaza por `[dato por confirmar]` antes de guardar.
+
+---
+
+# Actualización Sprint 3 (Hito 3) — Vistas 4+1 del Incremento de Cierre e Integración Kronos 2.0
+
+Detalle completo de secuencia y ADRs en [ARQUITECTURA_INTEGRATIVA_SPRINT_3.md](ARQUITECTURA_INTEGRATIVA_SPRINT_3.md).
+
+## 1. Vista Lógica (Sprint 3)
+- **`cotizador.js` (`[INT-HU-05]`):** Motor determinista de estimación comercial en CLP (`subtotal_neto`, `iva` 19%, `total_clp`) desacoplado del LLM; retorna `null` cuando el equipo está por confirmar.
+- **`pdfGenerator.js` (`[INT-HU-05]`):** Generador nativo en memoria de fichas técnicas y borradores de cotización en formato estándar `%PDF-1.4` con sello no oficial.
+- **`metricsStore.js` (`[INT-HU-22]`):** Almacén en memoria de métricas de latencia SLA (`< 4000 ms`), efectividad del arnés (`100%`) y tasa de generación de PDFs.
+- **`kronos.js` + `arneses.js` (`KRON2-152`):** Adaptador HTTP con timeout de 5 s hacia `GET /api/kronos/catalogo` y distinción explícita entre catálogo oficial (`catalogo_verificado: true`) y lista local de respaldo (`catalogo_verificado: false`).
+- **`db.js` + `server.js` (`[INT-HU-19]` + `KRON2-152`):** Autenticación Bearer privada (`TRIAGE_API_TOKEN`), inmutabilidad de `created_at`, paginación por cursor estable `updated_at+id` y control de concurrencia optimista (`409 Conflict`) en `PATCH /api/tickets/:id`.
+
+## 2. Vista de Procesos (Sprint 3)
+- **Flujo de Triage + Cotización:** `POST /webhooks/meta` (HMAC-SHA256) → `brain.js` → `arneses.js` (`kronos.js` con timeout 5 s) → `db.guardarCasoTriage` (invoca `cotizador.js` y persiste con `created_at` inmutable) → `whatsapp.js` → `metricsStore.registrarLatencia`.
+- **Flujo de Gestión, Agendamiento y Sincronización Kronos 2.0:** `GET /api/tickets?limit=50&cursor=...` (Bearer `TRIAGE_API_TOKEN`) → `PATCH /api/tickets/:id` (valida `fecha_visita` ISO UTC al pasar a `agendado` y verifica `expected_updated_at` devolviendo `409` ante conflicto) → `GET /api/tickets/:id/pdf` (entrega binario `%PDF-1.4`).
+
+## 3. Vista de Desarrollo (Sprint 3)
+- Rama `feat/sprint3-bot-y-contrato-kronos` integrada en `develop` y `main` bajo tag `v3.0.0-sprint3`.
+- Suite automatizada en Jest (`5 suites / 54 tests PASS`): `test/interchile.test.js`, `test/arneses.test.js`, `test/integracion.test.js`, `test/db-contrato.test.js` y `test/sprint3.test.js`.
+
+## 4. Vista Física (Sprint 3)
+- Servicio Node.js desplegado 24/7 en **Render** con HTTPS/SSL (`https://bot-triage-interchile.onrender.com`), conectado a **Supabase PostgreSQL**, **Meta WhatsApp Cloud API**, **Google Gemini API** y preparado para comunicación servidor-a-servidor HTTPS con **Kronos 2.0**.
+
+## 5. Vista de Escenarios (Sprint 3)
+- **INT-HU-05:** Cliente reporta mantención de Split Samsung → el bot calcula `$45.000` neto + `$8.550` IVA = `$53.550 CLP` → el administrador descarga la ficha `%PDF-1.4`.
+- **INT-HU-19 / KRON2-152:** Coordinador agenda visita técnica con fecha ISO UTC → si otro usuario editó antes el ticket, el servidor rechaza con `409 Conflict` protegiendo la integridad.
+- **INT-HU-23:** 20 usuarios envían mensajes simultáneos por WhatsApp → el 100% recibe `HTTP 200` con sesiones aisladas y latencia `< 4.0 s`.

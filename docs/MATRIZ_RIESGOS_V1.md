@@ -56,6 +56,19 @@ Esta matriz identifica los riesgos potenciales que podrían afectar el desarroll
 | **R-14** | **Dependencia de un LLM externo** (latencia / cuota / caída de Gemini) | IA / Disponibilidad | 2 | 3 | **6 (Amarillo)** | Benchmark empírico seleccionó `gemini-2.5-flash` (~3–5 s) sobre Gemini 3.x (> 50 s); timeout de 12 s y mensaje de contingencia (HU-16). |
 | **R-15** | **Atraso en el desarrollo de la plataforma interna "Kronos" por parte de InterChile fuera de los plazos académicos del Hito 3** | Dependencia Externa / Cliente | 3 | 3 | **9 (Rojo)** | **Plan de Contingencia (Obligatorio Hito 3):** Si la empresa InterChile no tiene lista su plataforma Kronos dentro de los plazos del curso, **no se bloqueará la entrega**: se evolucionará y entregará una **Plataforma Web Intermedia Propia** (basada en nuestro Dashboard en Render + Supabase) que incluirá agendamiento autónomo de mantenciones, gestión completa del ciclo de vida del ticket, autenticación y exportación de datos compatible para cuando Kronos entre en producción. |
 
-## C. Resumen Ejecutivo
+## C. Resumen Ejecutivo (Cierre Sprint 2)
 - **Riesgos Críticos Cerrados en Sprint 2:** R-07 (Token permanente activo), R-08 (Supabase activo con índices), R-09 (Listas interactivas) y R-11 (Despliegue 24/7 en Render).
 - **Riesgo Crítico Principal hacia el Hito 3:** **R-15** (Dependencia del software interno Kronos de la empresa), el cual cuenta con un **Plan de Contingencia** concreto y autónomo acordado en la sesión de Review con la profesora guía.
+
+---
+
+# Actualización de la Matriz de Riesgos — Inicio y Ejecución Sprint 3 (Hito 3)
+
+**Fecha de revisión:** 09 de Noviembre 2026 · Evaluación de riesgos para el cierre de titulación e integración con Kronos 2.0 (`KRON2-152`).
+
+| ID | Riesgo Sprint 3 | Categoría | Prob. | Impacto | Severidad | Estado y Mitigación Implementada en Sprint 3 |
+|---|---|---|---|---|---|---|
+| **R-15** | **Desarrollo paralelo del ERP Kronos 2.0** fuera de los plazos de defensa del Hito 3 | Dependencia Externa | 3 | 3 | **9 (Rojo)** | **Mitigado con Estrategia Dual:** (1) Se implementó en el propio Bot el agendamiento con `fecha_visita`, transición de los 4 estados, cotizador CLP y descarga de PDF en `public/dashboard.html` (`INT-HU-19`), garantizando operación 100% autónoma en Render; y (2) se implementó el contrato cerrado `KRON2-152` con Bearer Token (`TRIAGE_API_TOKEN`) y cliente `GET /api/kronos/catalogo` (`catalogo_verificado`). |
+| **R-16** | **Alucinación numérica del LLM al calcular cotizaciones e IVA (19%)** | IA / Financiero | 2 | 3 | **6 (Amarillo)** | **Mitigado (ADR-01):** El cálculo comercial se desacopló del LLM en `src/cotizador.js` mediante reglas deterministas puras y retorno `null` cuando el equipo es `[dato por confirmar]`. |
+| **R-17** | **Desborde de RAM en Render (512 MB) al generar documentos PDF** | Infraestructura | 2 | 3 | **6 (Amarillo)** | **Mitigado (ADR-02):** Se construyó `src/pdfGenerator.js` generando binarios `%PDF-1.4` nativos en memoria en `< 5 ms` sin depender de Chromium/Puppeteer. |
+| **R-18** | **Condiciones de carrera en actualizaciones simultáneas de tickets o ráfagas de WhatsApp** | Concurrencia / Datos | 2 | 2 | **4 (Amarillo)** | **Mitigado (ADR-03):** Bloqueo optimista en `PATCH /api/tickets/:id` (`expected_updated_at` -> `HTTP 409 Conflict`) y validación con prueba de estrés de 20 usuarios simultáneos (`100% PASS`). |
