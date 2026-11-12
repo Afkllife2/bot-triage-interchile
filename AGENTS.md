@@ -17,11 +17,12 @@
 
 ## 2. Anzuelo Obligatorio de Flujo Incremental: 1 Rama por HU + Avance Real + Tiempo Real + Screenshot por Subtarea
 - **PROHIBIDO marcar todas las historias o subtareas como `Listo` de golpe** o agrupar todo el Sprint en una sola rama genérica.
-- Cada Historia de Usuario se desarrolla en su **propia rama específica en GitHub**:
+- Cada Historia de Usuario / Tarea Técnica se desarrolla en su **propia rama específica en GitHub**:
   - `AAI-25` (`[INT-HU-05]`): `feat/AAI-25-HU-05-cotizacion-borrador-pdf`
   - `AAI-90` (`[INT-HU-19]`): `feat/AAI-90-HU-19-agendamiento-estados-dashboard`
   - `AAI-94` (`[INT-HU-22]`): `feat/AAI-94-HU-22-metricas-calidad-sla`
-  - `AAI-98` (`[INT-HU-23]`): `feat/AAI-98-HU-23-concurrencia-informe-pruebas`
+  - `AAI-102` (`[INT-HU-23]`): `feat/AAI-102-HU-23-agendamiento-reuniones-calendario`
+  - `AAI-98` (`[INT-TSK-03]`): `feat/AAI-98-TSK-03-concurrencia-informe-pruebas`
 - **Cada vez que trabajemos en una subtarea (Hook automático):**
   1. Movemos **solo esa subtarea** a `En curso` y trabajamos en la rama específica de su HU.
   2. Al terminarla, registramos en Jira el **tiempo real exacto** que nos tomó (ej. `1h 20m`, `45m`), detallando qué hicimos realmente y el SHA del commit de esa rama.
