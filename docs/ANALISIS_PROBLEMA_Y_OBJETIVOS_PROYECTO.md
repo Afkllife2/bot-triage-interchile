@@ -12,20 +12,20 @@ La solución propuesta busca centralizar y automatizar este proceso mediante un 
 
 ---
 
-**Objetivo general :**
+**Objetivo general:**
 
 Diseñar e implementar un sistema de triage comercial y pre-diagnóstico técnico mediante un agente conversacional con inteligencia artificial para InterChile Climatización, que permita automatizar la recepción de solicitudes vía WhatsApp, clasificar requerimientos y generar cotizaciones preliminares, garantizando la trazabilidad de los casos y la derivación oportuna a ejecutivos humanos.
 
 ---
 
-**Objetivos especifico 1:**
+**Objetivo específico 1:**
 
 Diseñar e implementar el módulo conversacional de atención para la recepción y clasificación de consultas a través de WhatsApp, guiando la recolección de datos técnicos y el nivel de prioridad del servicio.
 
-**Objetivos especifico 2:**
+**Objetivo específico 2:**
 
 Implementar la lógica de negocio para la validación de requerimientos técnicos, cálculo de cotizaciones preliminares con descarga en formato PDF y la derivación asistida a ejecutivos humanos integrada con el panel de administración.
 
-**Objetivos especifico 3:**
+**Objetivo específico 3:**
 
 Verificar el funcionamiento del sistema mediante pruebas funcionales, de integración y de rendimiento, comprobando el cumplimiento de las reglas de atención, la consistencia de las respuestas y la estabilidad operativa.

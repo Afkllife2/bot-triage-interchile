@@ -6,7 +6,7 @@ Consolidar el cierre funcional y operativo del agente autónomo de triage comerc
 
 ---
 
-**Alcance :**
+**Alcance:**
 
 - **4 historias de usuario y 1 tarea técnica de QA**, estimadas en **34 Story points** (48 horas de trabajo en 2 semanas).
 - **Desarrollo de las funcionalidades de cierre del ciclo de atención y gestión comercial:**
