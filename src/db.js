@@ -486,18 +486,25 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
 
     const currentTicket = normalizarTicketRow(currentRes.rows[0]);
 
-    if (expected_updated_at) {
-      const expectedTime = new Date(expected_updated_at).getTime();
-      const currentTime = new Date(currentTicket.updated_at).getTime();
-      if (Number.isNaN(expectedTime) || expectedTime !== currentTime) {
-        await client.query('ROLLBACK');
-        return {
-          error: 'conflict',
-          status: 409,
-          message: 'Conflicto de versión: el ticket fue modificado recientemente',
-          current: currentTicket,
-        };
-      }
+    if (!expected_updated_at) {
+      await client.query('ROLLBACK');
+      return {
+        error: 'missing_expected_updated_at',
+        status: 400,
+        message: 'El campo expected_updated_at es obligatorio para control de concurrencia y versiones',
+      };
+    }
+
+    const expectedTime = new Date(expected_updated_at).getTime();
+    const currentTime = new Date(currentTicket.updated_at).getTime();
+    if (Number.isNaN(expectedTime) || expectedTime !== currentTime) {
+      await client.query('ROLLBACK');
+      return {
+        error: 'conflict',
+        status: 409,
+        message: 'Conflicto de versión: el ticket fue modificado recientemente',
+        current: currentTicket,
+      };
     }
 
     const nuevaFechaVisita = estado === 'agendado'

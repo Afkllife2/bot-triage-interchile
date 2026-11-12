@@ -19,7 +19,7 @@ const DEFAULT_TIMEOUT_MS = 5000;
 
 let runtimeConfig = {
   baseUrl: process.env.KRONOS_API_BASE_URL || '',
-  token: process.env.KRONOS_CATALOGO_TOKEN || process.env.TRIAGE_API_TOKEN || '',
+  token: process.env.KRONOS_CATALOGO_TOKEN || process.env.KRONOS_CATALOG_TOKEN || '',
   timeoutMs: Number(process.env.KRONOS_CATALOGO_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
   fetchImpl: typeof global.fetch === 'function' ? global.fetch.bind(global) : null,
 };
@@ -41,7 +41,7 @@ function configurarClienteKronos(overrides = {}) {
 function resetClienteKronos() {
   runtimeConfig = {
     baseUrl: process.env.KRONOS_API_BASE_URL || '',
-    token: process.env.KRONOS_CATALOGO_TOKEN || process.env.TRIAGE_API_TOKEN || '',
+    token: process.env.KRONOS_CATALOGO_TOKEN || process.env.KRONOS_CATALOG_TOKEN || '',
     timeoutMs: Number(process.env.KRONOS_CATALOGO_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
     fetchImpl: typeof global.fetch === 'function' ? global.fetch.bind(global) : null,
   };
