@@ -113,30 +113,30 @@ Todas las Historias de Usuario fueron formuladas desde la perspectiva del usuari
 Una Historia de Usuario del Sprint 3 se declara **Terminada (Done)** única y exclusivamente cuando cumple estas **5 condiciones verificables**:
 1. **Código operativo y desplegado en Render (HTTPS/SSL):** Servicio activo en la nube con endpoints protegidos mediante HMAC-SHA256 (`/webhooks/meta`) y Bearer Token privado de integración (`TRIAGE_API_TOKEN` en `/api/*`).
 2. **Criterios de Aceptación (CA) BDD cubiertos con casos positivos, negativos y fallbacks:** Todos los escenarios `Dado / Cuando / Entonces` implementados, incluyendo manejo de errores (`400`, `401`, `404`, `409 Conflict`, `503`) y degradación elegante (`[dato por confirmar]`).
-3. **Pruebas automatizadas en Jest (Unitarias + Integración + Concurrencia) con 100% PASS:** `5 suites / 54 tests en verde (100% PASS)` documentados en `docs/INFORME_DE_PRUEBAS_SPRINT_3.md`.
-4. **Commits semánticos en GitHub con ramas de feature y Tag formal de release:** Código versionado en `Afkllife2/bot-triage-interchile` bajo tag `v3.0.0-sprint3`.
-5. **Subtareas en Jira con horas estimadas y registradas (Time Tracking):** Las 13 subtareas técnicas (`AAI-86` a `AAI-101`) cuentan con estimación original, registro de horas reales (`worklog`) y evidencia adjunta en Jira (`AAI`).
+3. **Pruebas automatizadas en Jest (Unitarias + Integración + Concurrencia) con 100% PASS:** Suite automatizada de Jest en verde documentada al cierre en `docs/INFORME_DE_PRUEBAS_SPRINT_3.md`.
+4. **Commits semánticos en GitHub en la rama específica de cada Historia de Usuario y Tag formal al cierre:** Cada HU desarrollada en su propia rama (`feat/AAI-25-HU-05-...`, `feat/AAI-90-HU-19-...`, `feat/AAI-94-HU-22-...`, `feat/AAI-98-HU-23-...`) en `Afkllife2/bot-triage-interchile`.
+5. **Subtareas en Jira con horas estimadas, horas reales registradas y captura de evidencia adjunta (Time Tracking):** Cada subtarea técnica (`AAI-86` a `AAI-101`) registra su tiempo real ejecutado (`worklog`) y su captura de pantalla (`screenshot`) a medida que se completa.
 
 ---
 
-## 7. Actividad 7 y 8: Construcción del Sprint Backlog en Jira, Estimación y Cronograma
+## 7. Actividad 7 y 8: Construcción del Sprint Backlog en Jira, Ramas por HU, Estimación y Estado Inicial
 
-| Semana | Orden | Subtarea Jira | HU Padre | Descripción Técnica de la Subtarea | Estimación | Horas Reales | Estado Jira |
-| :---: | :---: | :---: | :---: | :--- | :---: | :---: | :---: |
-| **Sem. 1** | 1 | **`AAI-86`** | `AAI-25` | Implementar motor determinista `src/cotizador.js` (tarifario CLP + IVA 19% y manejo de `null`) | 3h | 3h | Listo |
-| **Sem. 1** | 2 | **`AAI-87`** | `AAI-25` | Implementar generador nativo `src/pdfGenerator.js` (`%PDF-1.4`) y ruta `GET /api/tickets/:id/pdf` | 4h | 4h | Listo |
-| **Sem. 1** | 3 | **`AAI-88`** | `AAI-25` | Actualizar `src/db.js` para persistir montos de cotización, `catalogo_verificado` y `created_at` inmutable | 3h | 3h | Listo |
-| **Sem. 1** | 4 | **`AAI-89`** | `AAI-25` | Crear pruebas unitarias y de integración de cotizador y PDF en Jest (`test/sprint3.test.js`) | 2h | 2h | Listo |
-| **Sem. 1** | 5 | **`AAI-91`** | `AAI-90` | Implementar auth Bearer (`TRIAGE_API_TOKEN`), paginación cursor y `PATCH /api/tickets/:id` con conflicto `409` | 4h | 4h | Listo |
-| **Sem. 1** | 6 | **`AAI-92`** | `AAI-90` | Actualizar `public/dashboard.html` con cambio de estados, `fecha_visita` y descarga privada de PDF | 5h | 5h | Listo |
-| **Sem. 2** | 7 | **`AAI-93`** | `AAI-90` | Crear pruebas de contrato de BD, cursor paginado y concurrencia `409` (`test/db-contrato.test.js`) | 3h | 3h | Listo |
-| **Sem. 2** | 8 | **`AAI-95`** | `AAI-94` | Implementar `src/metricsStore.js`, endpoint `GET /api/metricas` y cliente remoto `GET /api/kronos/catalogo` | 3h | 3h | Listo |
-| **Sem. 2** | 9 | **`AAI-96`** | `AAI-94` | Incorporar tarjetas de KPIs de calidad, SLA (`< 4.0s`) y efectividad del arnés en `public/dashboard.html` | 3h | 3h | Listo |
-| **Sem. 2** | 10 | **`AAI-97`** | `AAI-94` | Validar en Jest escenarios de catálogo remoto vacío, timeout de 5 s y cálculo de métricas SLA | 2h | 2h | Listo |
-| **Sem. 2** | 11 | **`AAI-99`** | `AAI-98` | Ejecutar prueba de estrés y concurrencia con 20 usuarios simultáneos en `test/sprint3.test.js` | 3h | 3h | Listo |
-| **Sem. 2** | 12 | **`AAI-100`** | `AAI-98` | Documentar Diagrama de Secuencia Integrativo E2E y 4 ADRs en `docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md` | 3h | 3h | Listo |
-| **Sem. 2** | 13 | **`AAI-101`** | `AAI-98` | Emitir `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` con matriz de trazabilidad y captura con timestamp | 2h | 2h | Listo |
-| **TOTAL** | — | **13 Subtareas** | **4 HUs** | **Cobertura completa del Sprint 3 (26 Story Points)** | **40h** | **40h** | **100%** |
+| Semana | Orden | Subtarea Jira | HU Padre | Rama Específica en GitHub | Descripción Técnica de la Subtarea | Estimado | Tiempo Real | Estado Jira |
+| :---: | :---: | :---: | :---: | :--- | :--- | :---: | :---: | :---: |
+| **Sem. 1** | 1 | **`AAI-86`** | `AAI-25` | `feat/AAI-25-HU-05-cotizacion-borrador-pdf` | Implementar motor determinista `src/cotizador.js` (tarifario CLP + IVA 19% y manejo de `null`) | 3h | 1h 25m | **Listo** |
+| **Sem. 1** | 2 | **`AAI-87`** | `AAI-25` | `feat/AAI-25-HU-05-cotizacion-borrador-pdf` | Implementar generador nativo `src/pdfGenerator.js` (`%PDF-1.4`) y ruta `GET /api/tickets/:id/pdf` | 4h | 1h 45m | **Listo** |
+| **Sem. 1** | 3 | **`AAI-88`** | `AAI-25` | `feat/AAI-25-HU-05-cotizacion-borrador-pdf` | Actualizar `src/db.js` para persistir montos de cotización, `catalogo_verificado` y `created_at` inmutable | 3h | 40m (parcial) | **En curso** |
+| **Sem. 1** | 4 | **`AAI-89`** | `AAI-25` | `feat/AAI-25-HU-05-cotizacion-borrador-pdf` | Crear pruebas unitarias y de integración de cotizador y PDF en Jest | 2h | — | Por hacer |
+| **Sem. 1** | 5 | **`AAI-91`** | `AAI-90` | `feat/AAI-90-HU-19-agendamiento-estados-dashboard` | Implementar auth Bearer (`TRIAGE_API_TOKEN`), paginación cursor y `PATCH /api/tickets/:id` con conflicto `409` | 4h | — | Por hacer |
+| **Sem. 1** | 6 | **`AAI-92`** | `AAI-90` | `feat/AAI-90-HU-19-agendamiento-estados-dashboard` | Actualizar `public/dashboard.html` con cambio de estados, `fecha_visita` y descarga privada de PDF | 5h | — | Por hacer |
+| **Sem. 2** | 7 | **`AAI-93`** | `AAI-90` | `feat/AAI-90-HU-19-agendamiento-estados-dashboard` | Crear pruebas de contrato de BD, cursor paginado y concurrencia `409` | 3h | — | Por hacer |
+| **Sem. 2** | 8 | **`AAI-95`** | `AAI-94` | `feat/AAI-94-HU-22-metricas-calidad-sla` | Implementar `src/metricsStore.js`, endpoint `GET /api/metricas` y cliente remoto `GET /api/kronos/catalogo` | 3h | — | Por hacer |
+| **Sem. 2** | 9 | **`AAI-96`** | `AAI-94` | `feat/AAI-94-HU-22-metricas-calidad-sla` | Incorporar tarjetas de KPIs de calidad, SLA (`< 4.0s`) y efectividad del arnés en `public/dashboard.html` | 3h | — | Por hacer |
+| **Sem. 2** | 10 | **`AAI-97`** | `AAI-94` | `feat/AAI-94-HU-22-metricas-calidad-sla` | Validar en Jest escenarios de catálogo remoto vacío, timeout de 5 s y cálculo de métricas SLA | 2h | — | Por hacer |
+| **Sem. 2** | 11 | **`AAI-99`** | `AAI-98` | `feat/AAI-98-HU-23-concurrencia-informe-pruebas` | Ejecutar prueba de estrés y concurrencia con 20 usuarios simultáneos | 3h | — | Por hacer |
+| **Sem. 2** | 12 | **`AAI-100`** | `AAI-98` | `feat/AAI-98-HU-23-concurrencia-informe-pruebas` | Documentar Diagrama de Secuencia Integrativo E2E y 4 ADRs en `docs/ARQUITECTURA_INTEGRATIVA_SPRINT_3.md` | 2h | — | Por hacer |
+| **Sem. 2** | 13 | **`AAI-101`** | `AAI-98` | `feat/AAI-98-HU-23-concurrencia-informe-pruebas` | Emitir `docs/INFORME_DE_PRUEBAS_SPRINT_3.md` con matriz de trazabilidad y captura con timestamp | 3h | — | Por hacer |
+| **TOTAL** | — | **13 Subtareas** | **4 HUs** | **4 Ramas Específicas por HU** | **Esfuerzo Total Planificado para el Sprint 3 (26 Story Points)** | **40h** | **3h 50m (Inicio S3)** | **En ejecución** |
 
 ---
 
