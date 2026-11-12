@@ -1,44 +1,14 @@
-# Reglas Obligatorias de Metodología y Calidad — Sprint 3 (Profesora Sarita González)
+# Pauta Obligatoria y Anzuelos Automáticos — Sprint 3 (Profesora Sarita González y Profesor Matías Vargas)
 
-> **PROPÓSITO:** Reglas incondicionales y directrices permanentes para el desarrollo del **Sprint 3 (Cierre de Titulación)**. Estas reglas se aplican de forma automática y proactiva en cada sesión, sin necesidad de que el estudiante las recuerde.
+Este archivo respalda en `docs/` las reglas permanentes configuradas en `AGENTS.md`:
 
----
-
-## 1. Definition of Done (DoD) Corta, Directa y Consecuente
-- El DoD debe ser **sintético, directo al hueso y 100% consecuente** con el trabajo real realizado (evitar formulaciones abstractas o infladas).
-- Condiciones esenciales:
-  1. Código operativo y desplegado en Render (HTTPS/SSL).
-  2. Criterios de Aceptación (CA) BDD cubiertos con casos positivos, negativos y fallbacks.
-  3. Pruebas automatizadas en Jest (Unitarias + Integración) con 100% PASS.
-  4. Commits semánticos en GitHub con ramas de feature y Tag formal de release.
-  5. Subtareas en Jira con horas estimadas y registradas (Time Tracking).
-
----
-
-## 2. Informe Técnico Formal y Separado de Pruebas
-- Toda prueba debe consolidarse en un documento técnico dedicado y exclusivo: `docs/INFORME_DE_PRUEBAS_SPRINT_3.md`.
-- Debe contener la matriz de trazabilidad estricta:
-  `HU ➡️ CA ➡️ Tipo de Prueba (Unitaria / Integración) ➡️ Archivo Test (Jest) ➡️ Resultado (PASS) ➡️ Captura con Timestamp`
-- Las pruebas de integración deben probar explícitamente el flujo entre módulos (ej. Botón WhatsApp ➡️ Motor IA ➡️ Generación PDF ➡️ Persistencia BD ➡️ Dashboard).
-
----
-
-## 3. Desglose de Tareas y Control de Horas en Jira (Time Tracking)
-- Cada Historia de Usuario debe descomponerse en subtareas técnicas claras vinculadas directamente a la resolución de sus Criterios de Aceptación.
-- **Obligatorio:** Cada subtarea en Jira debe incluir **tiempo estimado** y **tiempo real dedicado** (horas/minutos), para demostrar cuantitativamente el esfuerzo de desarrollo por cada CA.
-- *"Cada paso que demos debe quedar documentado y con sus horas asociadas."*
-
----
-
-## 4. Sprint Goal Cuantitativo, Medible y Verificable con Indicadores
-- La meta del Sprint 3 **no puede ser solo descriptiva**. Debe incluir **métricas e indicadores verificables** al cierre:
-  - Latencia promedio de respuesta del bot (< 4.0s).
-  - Tasa de efectividad anti-alucinaciones con arnés Kronos (100% interceptado).
-  - Tasa de éxito en pruebas de estrés y concurrencia (> 99% sobre N usuarios simultáneos).
-  - Tasa de generación y descarga exitosa de cotizaciones en PDF (100%).
-- Al cierre del Sprint 3, se debe emitir un reporte cuantitativo demostrando con métricas si la meta fue alcanzada.
-
----
-
-## 5. Trazabilidad y Evidencias Proactivas
-- Cada avance, prueba ejecutada o ajuste de código debe acompañarse inmediatamente de su evidencia visual (screenshot/log), su commit correspondiente y su actualización en Jira, evitando acumular trabajo retrospectivo para las revisiones.
+1. **Una Rama Específica por Historia de Usuario en GitHub:**
+   - `feat/AAI-25-HU-05-cotizacion-borrador-pdf` (`AAI-25`)
+   - `feat/AAI-90-HU-19-agendamiento-estados-dashboard` (`AAI-90`)
+   - `feat/AAI-94-HU-22-metricas-calidad-sla` (`AAI-94`)
+   - `feat/AAI-98-HU-23-concurrencia-informe-pruebas` (`AAI-98`)
+2. **Progresión Realista en Jira (Prohibido marcar todo `Listo` de golpe):**
+   - Solo se marcan como `Listo` las subtareas efectivamente completadas, registrando el tiempo real invertido (`worklog`), el commit específico y adjuntando una captura de pantalla (`screenshot`) real de esa subtarea.
+3. **DoD Corto, Directo y Consecuente (5 puntos).**
+4. **Informe Formal Separado de Pruebas (`docs/INFORME_DE_PRUEBAS_SPRINT_3.md`).**
+5. **Sprint Goal Cuantitativo con 4 Indicadores Verificables.**
