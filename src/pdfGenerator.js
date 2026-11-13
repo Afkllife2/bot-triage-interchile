@@ -10,7 +10,7 @@
  * "Ficha de triage · Estimación del bot · No es presupuesto oficial emitido"
  */
 
-const { calcularCotizacionBorrador } = require('./cotizador');
+const { calcularCotizacionBorrador, formatearCLP } = require('./cotizador');
 
 /**
  * Normaliza caracteres latinos a WinAnsi (ISO-8859-1) y escapa delimitadores PDF.
@@ -25,18 +25,6 @@ function sanitizePdfText(str) {
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
     .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
-}
-
-/**
- * Formatea un monto en pesos chilenos (ej: 45000 -> "$45.000 CLP").
- * @param {number|null|undefined} monto
- * @returns {string}
- */
-function formatearCLP(monto) {
-  if (typeof monto !== 'number' || Number.isNaN(monto)) {
-    return 'Sin estimacion';
-  }
-  return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' CLP';
 }
 
 /**
@@ -86,6 +74,29 @@ function generarFichaCotizacionPDF(ticket = {}) {
     }
   }
 
+  const esProyectoComplejo = /proyecto\s+comercial/i.test(motivo);
+  const tieneDatoPorConfirmar =
+    /dato por confirmar/i.test(equipoTipo) ||
+    /dato por confirmar/i.test(equipoMarca) ||
+    /repuesto por confirmar/i.test(sintoma);
+  const sinTarifaCerrada =
+    esProyectoComplejo || tieneDatoPorConfirmar || neto === null || iva === null || total === null;
+  const kronosVerifLabel = ticket.catalogo_verificado ? 'SI (Equipo verificado en catalogo)' : 'NO (Referencial / Por confirmar)';
+
+  const bloqueEconomico = sinTarifaCerrada
+    ? [
+        { font: 'F2', size: 11, y: 470, text: '3. FICHA TECNICA DE LEVANTAMIENTO (SIN PRECIO CERRADO)' },
+        { font: 'F2', size: 10, y: 450, text: 'Valor sujeto a evaluacion y visita tecnica por ejecutivo comercial' },
+        { font: 'F1', size: 9.5, y: 434, text: 'Criterio CA-3: No se emiten montos cerrados para proyectos complejos o campos por confirmar.' },
+        { font: 'F1', size: 9.5, y: 416, text: 'Contacto comercial: Benjamin Yanez (Benjamin@interchileclima.cl / +56 9 9440 2632)' },
+      ]
+    : [
+        { font: 'F2', size: 11, y: 470, text: '3. ESTIMACION DEL BOT (NO ES PRESUPUESTO OFICIAL)' },
+        { font: 'F1', size: 10, y: 450, text: `Subtotal Neto Estimado: ${formatearCLP(neto)}` },
+        { font: 'F1', size: 10, y: 434, text: `IVA (19%): ${formatearCLP(iva)}` },
+        { font: 'F2', size: 11, y: 416, text: `Total Estimado Referencial: ${formatearCLP(total)}` },
+      ];
+
   const lineas = [
     { font: 'F2', size: 15, y: 780, text: 'INTERCHILE CLIMATIZACION — FICHA DE TRIAGE COMERCIAL' },
     { font: 'F2', size: 10, y: 762, text: 'AVISO: Ficha de triage / Estimacion del bot - No es presupuesto oficial emitido' },
@@ -100,16 +111,14 @@ function generarFichaCotizacionPDF(ticket = {}) {
     { font: 'F2', size: 11, y: 606, text: '2. DIAGNOSTICO DE TRIAGE Y EQUIPO' },
     { font: 'F1', size: 10, y: 588, text: `Motivo Principal: ${motivo}` },
     { font: 'F1', size: 10, y: 572, text: `Tipo de Equipo: ${equipoTipo}   |   Marca: ${equipoMarca}` },
-    { font: 'F1', size: 10, y: 556, text: `Sintoma / Observacion: ${sintoma.slice(0, 85)}` },
-    { font: 'F1', size: 10, y: 540, text: `Prioridad Sugerida: ${prioridad}   |   Requiere Persona: ${requiereHumano}` },
-    { font: 'F1', size: 10, y: 524, text: `Fecha Visita Referencial: ${fechaVisita}` },
-    { font: 'F1', size: 9, y: 506, text: '--------------------------------------------------------------------------------------------------' },
-    { font: 'F2', size: 11, y: 486, text: '3. ESTIMACION DEL BOT (NO ES PRESUPUESTO OFICIAL)' },
-    { font: 'F1', size: 10, y: 466, text: `Subtotal Neto Estimado: ${formatearCLP(neto)}` },
-    { font: 'F1', size: 10, y: 450, text: `IVA (19%): ${formatearCLP(iva)}` },
-    { font: 'F2', size: 11, y: 432, text: `Total Estimado Referencial: ${formatearCLP(total)}` },
-    { font: 'F1', size: 8, y: 395, text: 'Nota: Los importes indicados corresponden a una estimacion automatizada de triage.' },
-    { font: 'F1', size: 8, y: 382, text: 'No constituyen diagnostico validado ni presupuesto oficial de InterChile Climatizacion.' },
+    { font: 'F1', size: 10, y: 556, text: `Validacion Catalogo Kronos: ${kronosVerifLabel}` },
+    { font: 'F1', size: 10, y: 540, text: `Sintoma / Observacion: ${sintoma.slice(0, 85)}` },
+    { font: 'F1', size: 10, y: 524, text: `Prioridad Sugerida: ${prioridad}   |   Requiere Persona: ${requiereHumano}` },
+    { font: 'F1', size: 10, y: 508, text: `Fecha Visita Referencial: ${fechaVisita}` },
+    { font: 'F1', size: 9, y: 490, text: '--------------------------------------------------------------------------------------------------' },
+    ...bloqueEconomico,
+    { font: 'F1', size: 8, y: 384, text: 'Nota: Los importes indicados corresponden a una estimacion automatizada de triage.' },
+    { font: 'F1', size: 8, y: 371, text: 'No constituyen diagnostico validado ni presupuesto oficial de InterChile Climatizacion.' },
   ];
 
   const streamOps = ['BT'];

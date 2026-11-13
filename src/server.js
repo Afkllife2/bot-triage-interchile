@@ -5,6 +5,7 @@ const { extraerFichaTriage } = require('./brain');
 const db = require('./db');
 const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('./whatsapp');
 const { aplicarArnes } = require('./arneses'); // HU-21
+const { enriquecerRespuestaConCotizacion } = require('./cotizador'); // HU-05 CA-4
 const { generarFichaCotizacionPDF } = require('./pdfGenerator'); // HU-05
 const {
   registrarLatencia,
@@ -161,21 +162,27 @@ app.post('/webhooks/meta', async (req, res) => {
         const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
 
         if (fichaEstructurada) {
+          let casoId = null;
           if (!fichaEstructurada._noPersistir) {
-            await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);
+            casoId = await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);
           }
 
           if (fichaEstructurada.respuesta_cliente) {
+            const mensajeFinal = enriquecerRespuestaConCotizacion(
+              fichaEstructurada.respuesta_cliente,
+              fichaEstructurada,
+              casoId
+            );
             if (fichaEstructurada.requiere_derivacion) {
-              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
+              await enviarMensajeWhatsApp(telefonoCliente, mensajeFinal);
             } else if (fichaEstructurada.opciones_botones && fichaEstructurada.opciones_botones.length > 0) {
               await enviarMensajeConBotones(
                 telefonoCliente,
-                fichaEstructurada.respuesta_cliente,
+                mensajeFinal,
                 fichaEstructurada.opciones_botones
               );
             } else {
-              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
+              await enviarMensajeWhatsApp(telefonoCliente, mensajeFinal);
             }
           }
         }

@@ -15,6 +15,19 @@
  */
 
 const IVA_RATE = 0.19;
+const CONTACTO_COMERCIAL = 'Benjamín Yáñez · Benjamin@interchileclima.cl · +56 9 9440 2632';
+
+/**
+ * Formatea un monto numérico en pesos chilenos (ej: 45000 -> "$45.000 CLP").
+ * @param {number|null|undefined} monto
+ * @returns {string}
+ */
+function formatearCLP(monto) {
+  if (typeof monto !== 'number' || Number.isNaN(monto)) {
+    return 'Sin estimacion';
+  }
+  return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' CLP';
+}
 
 // Tarifario base referencial InterChile Climatización (valores netos en CLP)
 const TARIFAS_BASE_POR_EQUIPO = {
@@ -24,7 +37,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 120000, descripcion: 'Instalación estándar unidad Split muro (hasta 3 m cañería)' },
     'Cotización': { neto: 380000, descripcion: 'Suministro e instalación referencial equipo Split Inverter' },
     'Arriendo': { neto: 95000, descripcion: 'Arriendo mensual referencial equipo climatización Split/Portátil' },
-    'Proyecto Comercial': { neto: 450000, descripcion: 'Evaluación y habilitación climatización comercial Split' },
   },
   cassette: {
     'Mantención': { neto: 65000, descripcion: 'Mantención preventiva unidad Cassette 4 vías (bomba condensado y serpentín)' },
@@ -32,7 +44,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 185000, descripcion: 'Instalación unidad Cassette en cielo falso comercial' },
     'Cotización': { neto: 780000, descripcion: 'Suministro e instalación referencial unidad Cassette Inverter' },
     'Arriendo': { neto: 160000, descripcion: 'Arriendo mensual referencial unidad Cassette comercial' },
-    'Proyecto Comercial': { neto: 890000, descripcion: 'Proyecto climatización comercial con unidades Cassette' },
   },
   'piso techo': {
     'Mantención': { neto: 65000, descripcion: 'Mantención preventiva unidad Piso-Techo comercial' },
@@ -40,7 +51,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 175000, descripcion: 'Instalación unidad Piso-Techo de alta capacidad' },
     'Cotización': { neto: 750000, descripcion: 'Suministro e instalación referencial unidad Piso-Techo' },
     'Arriendo': { neto: 155000, descripcion: 'Arriendo mensual referencial unidad Piso-Techo' },
-    'Proyecto Comercial': { neto: 850000, descripcion: 'Proyecto climatización comercial Piso-Techo' },
   },
   ducto: {
     'Mantención': { neto: 85000, descripcion: 'Mantención preventiva equipo Baja/Alta Silueta por Ducto' },
@@ -48,7 +58,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 260000, descripcion: 'Montaje y conexión unidad interior/exterior por Ducto' },
     'Cotización': { neto: 980000, descripcion: 'Suministro e instalación referencial sistema por Ducto' },
     'Arriendo': { neto: 210000, descripcion: 'Arriendo mensual referencial equipo por Ducto' },
-    'Proyecto Comercial': { neto: 1250000, descripcion: 'Ingeniería y montaje proyecto comercial por Ducto' },
   },
   chiller: {
     'Mantención': { neto: 180000, descripcion: 'Mantención preventiva Chiller industrial (circuitos e intercambiador)' },
@@ -56,7 +65,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 650000, descripcion: 'Habilitación y puesta en marcha unidad Chiller' },
     'Cotización': { neto: 2400000, descripcion: 'Cotización base proyecto Chiller industrial' },
     'Arriendo': { neto: 550000, descripcion: 'Arriendo mensual referencial Chiller enfriador de agua' },
-    'Proyecto Comercial': { neto: 2800000, descripcion: 'Proyecto de ingeniería térmica Chiller industrial' },
   },
   vrv: {
     'Mantención': { neto: 140000, descripcion: 'Mantención preventiva sistema centralizado VRV/VRF' },
@@ -64,7 +72,6 @@ const TARIFAS_BASE_POR_EQUIPO = {
     'Instalación': { neto: 420000, descripcion: 'Instalación módulo sistema flujo refrigerante variable VRV/VRF' },
     'Cotización': { neto: 1850000, descripcion: 'Suministro referencial sistema centralizado VRV/VRF' },
     'Arriendo': { neto: 390000, descripcion: 'Arriendo mensual referencial módulo VRV/VRF' },
-    'Proyecto Comercial': { neto: 2200000, descripcion: 'Proyecto integral climatización VRV/VRF corporativo' },
   },
 };
 
@@ -114,8 +121,14 @@ function calcularCotizacionBorrador(params = {}) {
   const motivo = (params.tipo_solicitud || params.motivo_principal || '').trim();
   const categoriaEquipo = normalizarCategoriaEquipo(params.equipo_tipo);
 
-  // Si no hay equipo válido ni motivo tarifable, retornar null (nunca inferir cero falso)
-  if (!categoriaEquipo || !motivo || motivo === 'Otra Consulta') {
+  // CA-3: Proyectos complejos, datos por confirmar o consultas generales nunca inventan precios cerrados
+  if (
+    !categoriaEquipo ||
+    !motivo ||
+    motivo === 'Otra Consulta' ||
+    motivo === 'Proyecto Comercial' ||
+    (typeof params.equipo_marca === 'string' && params.equipo_marca.toLowerCase().includes('dato por confirmar'))
+  ) {
     return null;
   }
 
@@ -155,9 +168,66 @@ function calcularCotizacionBorrador(params = {}) {
   };
 }
 
+/**
+ * Inyecta en la respuesta de WhatsApp el valor estimado determinista y contacto comercial
+ * cuando el cliente completa datos tarifables o solicita derivación (AAI-25 CA-3 / CA-4).
+ *
+ * @param {string} respuestaBase
+ * @param {Object} ficha
+ * @param {number|string|null} [casoId]
+ * @returns {string}
+ */
+function enriquecerRespuestaConCotizacion(respuestaBase, ficha = {}, casoId = null) {
+  const textoBase = typeof respuestaBase === 'string' ? respuestaBase.trim() : '';
+  if (!textoBase || ficha._noPersistir) return textoBase;
+
+  const tieneOpcionesSinDerivacion =
+    !ficha.requiere_derivacion && Array.isArray(ficha.opciones_botones) && ficha.opciones_botones.length > 0;
+  if (tieneOpcionesSinDerivacion) return textoBase;
+
+  const cotizacion = calcularCotizacionBorrador(ficha);
+  const motivo = (ficha.tipo_solicitud || ficha.motivo_principal || '').trim();
+  const datosCompletos = Boolean(ficha.requiere_derivacion || (ficha.cliente_nombre && ficha.sucursal_comuna));
+
+  if (!datosCompletos) return textoBase;
+
+  const contacto = textoBase.includes('Benjamin@interchileclima.cl')
+    ? ''
+    : `\n📞 Contacto comercial: ${CONTACTO_COMERCIAL}`;
+
+  if (cotizacion) {
+    const folioTxt = casoId ? ` (Folio #${casoId})` : '';
+    return (
+      `${textoBase}\n\n` +
+      `💰 Estimación referencial${folioTxt}: Neto ${formatearCLP(cotizacion.subtotal_neto)} + ` +
+      `IVA (19%) ${formatearCLP(cotizacion.iva)} = Total estimado ${formatearCLP(cotizacion.total_clp)}.\n` +
+      `(Estimación referencial del bot; no es presupuesto oficial)` +
+      contacto
+    );
+  }
+
+  const esProyectoOPorConfirmar =
+    motivo === 'Proyecto Comercial' ||
+    String(ficha.equipo_tipo || '').includes('dato por confirmar') ||
+    String(ficha.equipo_marca || '').includes('dato por confirmar');
+
+  if (esProyectoOPorConfirmar) {
+    return (
+      `${textoBase}\n\n` +
+      `📋 Valor sujeto a evaluación y visita técnica por ejecutivo comercial.` +
+      contacto
+    );
+  }
+
+  return textoBase;
+}
+
 module.exports = {
   calcularCotizacionBorrador,
+  enriquecerRespuestaConCotizacion,
   normalizarCategoriaEquipo,
+  formatearCLP,
   IVA_RATE,
+  CONTACTO_COMERCIAL,
   TARIFAS_BASE_POR_EQUIPO,
 };
