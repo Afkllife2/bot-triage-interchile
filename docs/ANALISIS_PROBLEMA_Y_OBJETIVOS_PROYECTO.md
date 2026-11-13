@@ -24,7 +24,7 @@ Diseñar e implementar el módulo conversacional de atención para la recepción
 
 **Objetivo específico 2:**
 
-Implementar la lógica de negocio para la validación de requerimientos técnicos, cálculo de cotizaciones preliminares con descarga en formato PDF y la derivación asistida a ejecutivos humanos integrada con el panel de administración.
+Implementar la lógica de negocio para la validación de requerimientos técnicos, cálculo de cotizaciones preliminares con descarga en formato PDF, gestión de agendamientos y derivación asistida a ejecutivos humanos integrada con el panel de administración.
 
 **Objetivo específico 3:**
 
