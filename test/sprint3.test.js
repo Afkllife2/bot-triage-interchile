@@ -518,6 +518,89 @@ describe('[INT-HU-19] (AAI-90) & KRON2-152 — Seguridad Bearer, Paginación Cur
     expect(res200.body.data.estado).toBe('agendado');
     expect(res200.body.data.fecha_visita).toBe('2026-11-12T14:00:00.000Z');
   });
+
+  test('CA-1 / CA-2 / CA-4 (AAI-93): soporta los 4 estados, valida ID/estado/404/500 y verifica UI Dashboard', async () => {
+    // 1. Transición secuencial por estados operativos (en_proceso -> derivado -> agendado -> resuelto)
+    for (const est of ['en_proceso', 'derivado', 'agendado', 'resuelto']) {
+      db.actualizarEstadoTicket.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        data: {
+          id: 30,
+          estado: est,
+          fecha_visita: est === 'agendado' ? '2026-11-20T17:00:00.000Z' : null,
+          updated_at: '2026-11-16T15:00:00.000Z',
+        },
+      });
+      const r = await request(app)
+        .patch('/api/tickets/30')
+        .set('Authorization', AUTH)
+        .send({
+          estado: est,
+          ...(est === 'agendado' ? { fecha_visita: '2026-11-20T17:00:00.000Z' } : {}),
+        });
+      expect(r.status).toBe(200);
+      expect(r.body.data.estado).toBe(est);
+    }
+
+    // 2. CA-3: PDF de ticket agendado refleja fecha_visita programada
+    db.getTicketById.mockResolvedValueOnce(
+      db.normalizarTicketRow({
+        id: 30,
+        created_at: '2026-11-16T10:00:00.000Z',
+        updated_at: '2026-11-16T15:00:00.000Z',
+        nombre_completo: 'Hotel Pacífico',
+        motivo_principal: 'Mantención',
+        equipo_tipo: 'Cassette',
+        equipo_marca: 'LG',
+        estado: 'agendado',
+        fecha_visita: '2026-11-20T17:00:00.000Z',
+      })
+    );
+    const pdfAgendado = await request(app).get('/api/tickets/30/pdf').set('Authorization', AUTH);
+    expect(pdfAgendado.status).toBe(200);
+    expect(pdfAgendado.body.toString('latin1')).toContain('2026-11-20 17:00 UTC');
+
+    // 3. CA-4: Validaciones 400 (ID inválido / estado no permitido), 404 y 500 controlado sin botar el server
+    const getBadId = await request(app).get('/api/tickets/abc').set('Authorization', AUTH);
+    expect(getBadId.status).toBe(400);
+
+    const patchZeroId = await request(app).patch('/api/tickets/0').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patchZeroId.status).toBe(400);
+
+    db.actualizarEstadoTicket.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      error: 'invalid_state',
+      message: 'Estado inválido',
+    });
+    const patchBadState = await request(app).patch('/api/tickets/30').set('Authorization', AUTH).send({ estado: 'cerrado_x' });
+    expect(patchBadState.status).toBe(400);
+
+    db.actualizarEstadoTicket.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      error: 'not_found',
+      message: 'Ticket no encontrado',
+    });
+    const patch404 = await request(app).patch('/api/tickets/9999').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patch404.status).toBe(404);
+
+    db.actualizarEstadoTicket.mockRejectedValueOnce(new Error('Falla transitoria PG'));
+    const patch500 = await request(app).patch('/api/tickets/30').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patch500.status).toBe(500);
+
+    const health = await request(app).get('/healthz');
+    expect(health.status).toBe(200);
+
+    // 4. Dashboard HTML contiene controles HU-19 y logo corporativo sin exponer secreto
+    const dashRes = await request(app).get('/dashboard');
+    expect(dashRes.status).toBe(200);
+    expect(dashRes.text).toContain('/assets/logo-interchile.png');
+    expect(dashRes.text).toContain('datetime-local');
+    expect(dashRes.text).toContain('descargarPdfTicket');
+    expect(dashRes.text).not.toContain('triage_bearer_token_exclusivo_sprint3');
+  });
 });
 
 // ============================================================================
