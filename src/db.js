@@ -431,7 +431,8 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
   if (!Number.isInteger(numId) || numId <= 0) {
     return { error: 'invalid_id', status: 400, message: 'ID de ticket inválido' };
   }
-  if (!estado || !ESTADOS_VALIDOS.has(estado)) {
+  const estadoNorm = typeof estado === 'string' ? estado.trim().toLowerCase() : '';
+  if (!estadoNorm || !ESTADOS_VALIDOS.has(estadoNorm)) {
     return {
       error: 'invalid_state',
       status: 400,
@@ -440,7 +441,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
   }
 
   let fechaVisitaIso = null;
-  if (estado === 'agendado') {
+  if (estadoNorm === 'agendado') {
     if (!fecha_visita) {
       return {
         error: 'missing_fecha_visita',
@@ -500,7 +501,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
       }
     }
 
-    const nuevaFechaVisita = estado === 'agendado'
+    const nuevaFechaVisita = estadoNorm === 'agendado'
       ? fechaVisitaIso
       : (fecha_visita === null ? null : (fechaVisitaIso || currentTicket.fecha_visita));
 
@@ -510,7 +511,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
            fecha_visita = $2,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $3`,
-      [estado, nuevaFechaVisita, numId]
+      [estadoNorm, nuevaFechaVisita, numId]
     );
 
     const updatedRes = await client.query(`${BASE_SELECT_TICKETS} WHERE ct.id = $1`, [numId]);

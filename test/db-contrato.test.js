@@ -143,4 +143,61 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
     expect(conflicto.error).toBe('conflict');
     expect(conflicto.current.updated_at).toBe('2026-11-09T16:30:00.000Z');
   });
+
+  test('actualizarEstadoTicket valida ID/estado/fecha (400/404) y persiste transición agendado (200)', async () => {
+    const badId = await db.actualizarEstadoTicket('abc', { estado: 'en_proceso' });
+    expect(badId.status).toBe(400);
+    expect(badId.error).toBe('invalid_id');
+
+    const badState = await db.actualizarEstadoTicket(10, { estado: 'estado_falso' });
+    expect(badState.status).toBe(400);
+    expect(badState.error).toBe('invalid_state');
+
+    const badDate = await db.actualizarEstadoTicket(10, { estado: 'agendado', fecha_visita: 'fecha-mala' });
+    expect(badDate.status).toBe(400);
+    expect(badDate.error).toBe('invalid_fecha_visita');
+
+    // Ticket inexistente -> 404 + ROLLBACK
+    mockQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // SELECT FOR UPDATE vacío
+      .mockResolvedValueOnce({}); // ROLLBACK
+    const notFound = await db.actualizarEstadoTicket(999, { estado: 'resuelto' });
+    expect(notFound.status).toBe(404);
+    expect(notFound.error).toBe('not_found');
+
+    // Transición exitosa normalizando mayúsculas/espacios (' Agendado ') -> 200
+    const updatedRow = {
+      id: 10,
+      created_at: '2026-11-09T10:00:00.000Z',
+      updated_at: '2026-11-16T14:00:00.000Z',
+      nombre_completo: 'Empresa Sur',
+      estado: 'agendado',
+      fecha_visita: '2026-11-18T14:30:00.000Z',
+    };
+    mockQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{
+          ...updatedRow,
+          estado: 'en_proceso',
+          fecha_visita: null,
+          updated_at: '2026-11-09T12:00:00.000Z',
+        }],
+      })
+      .mockResolvedValueOnce({}) // UPDATE casos_triage
+      .mockResolvedValueOnce({ rows: [updatedRow] }) // SELECT actualizado
+      .mockResolvedValueOnce({}); // COMMIT
+
+    const okRes = await db.actualizarEstadoTicket(10, {
+      estado: ' Agendado ',
+      fecha_visita: '2026-11-18T14:30:00.000Z',
+      expected_updated_at: '2026-11-09T12:00:00.000Z',
+    });
+
+    expect(okRes.status).toBe(200);
+    expect(okRes.ok).toBe(true);
+    expect(okRes.data.estado).toBe('agendado');
+    expect(okRes.data.fecha_visita).toBe('2026-11-18T14:30:00.000Z');
+  });
 });

@@ -36,11 +36,11 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
+      padding: 0.65rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 64px;
+      min-height: 64px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -53,15 +53,20 @@
       align-items: center;
       gap: 0.75rem;
     }
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--purple));
+    .logo-brand-wrap {
+      background: #ffffff;
       border-radius: 10px;
+      padding: 4px 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
+      height: 44px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .logo-brand-wrap img {
+      height: 34px;
+      width: auto;
+      display: block;
     }
     .logo h1 { font-size: 1rem; font-weight: 600; }
     .logo span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
@@ -184,7 +189,32 @@
       border: 1px solid rgba(245,158,11,0.35);
       color: #fde68a;
     }
-    #alert-banner.visible, #auth-banner.visible { display: flex; }
+    #alert-banner.visible, #auth-banner.visible, #toast-banner.visible { display: flex; }
+    #toast-banner {
+      display: none;
+      border-radius: 10px;
+      padding: 0.8rem 1.15rem;
+      margin-bottom: 1.1rem;
+      font-size: 0.84rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+    #toast-banner.ok {
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.35);
+      color: #6ee7b7;
+    }
+    #toast-banner.warn {
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.35);
+      color: #fde68a;
+    }
+    #toast-banner.err {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: #fca5a5;
+    }
 
     .toolbar {
       display: flex;
@@ -296,10 +326,12 @@
 
 <header>
   <div class="logo">
-    <div class="logo-icon">🤖</div>
+    <div class="logo-brand-wrap">
+      <img src="/assets/logo-interchile.png" alt="InterChile Clima SpA" />
+    </div>
     <div>
-      <h1>Bot Triage InterChile</h1>
-      <span>Panel de Control Operativo y Métricas SLA — Sprint 3</span>
+      <h1>Bot Triage Comercial · InterChile Clima SpA</h1>
+      <span>Panel de Control Operativo, Agendamiento y Métricas SLA — Sprint 3</span>
     </div>
   </div>
   <div class="header-right">
@@ -323,6 +355,11 @@
 
   <div id="alert-banner">
     <span>🚨 <strong id="alert-count">0</strong> ticket(s) requieren atención humana urgente</span>
+  </div>
+
+  <div id="toast-banner" role="status" aria-live="polite">
+    <span id="toast-msg"></span>
+    <button class="btn-secondary" style="padding:0.2rem 0.55rem;font-size:0.72rem" onclick="ocultarToast()">✕</button>
   </div>
 
   <!-- TARJETAS DE TICKETS Y MÉTRICAS SLA (HU-14 + HU-22) -->
@@ -358,6 +395,8 @@
     <span class="section-title">Bandeja de Casos de Triage y Cotizaciones Referenciales</span>
     <div class="filters">
       <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="filtrar('en_proceso', this)">⏳ En proceso</button>
+      <button class="filter-btn" onclick="filtrar('derivado', this)">👤 Derivados</button>
       <button class="filter-btn" onclick="filtrar('alta', this)">🔴 Prioridad Alta</button>
       <button class="filter-btn" onclick="filtrar('humano', this)">🟡 Requieren Humano</button>
       <button class="filter-btn" onclick="filtrar('agendado', this)">📅 Agendados</button>
@@ -410,8 +449,45 @@
     return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
   }
 
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  let toastTimer = null;
+  function mostrarToast(texto, tipo = 'ok') {
+    const el = document.getElementById('toast-banner');
+    const msg = document.getElementById('toast-msg');
+    el.className = 'visible ' + tipo;
+    msg.textContent = texto;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(ocultarToast, 6000);
+  }
+  function ocultarToast() {
+    document.getElementById('toast-banner').className = '';
+  }
+
+  function toDatetimeLocalValue(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return '';
+    const localMs = d.getTime() - d.getTimezoneOffset() * 60000;
+    return new Date(localMs).toISOString().slice(0, 16);
+  }
+
+  function formatVisitaLegible(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
   function formatearCLP(monto) {
-    if (typeof monto !== 'number') return '<span style="color:var(--text-muted)">Sin estimación</span>';
+    if (typeof monto !== 'number') return '<span style="color:var(--text-muted)">Por evaluar / Ref.</span>';
     return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' CLP';
   }
 
@@ -498,6 +574,8 @@
 
   function aplicarFiltroActual() {
     let filtrados = todosLosTickets;
+    if (filtroActual === 'en_proceso') filtrados = todosLosTickets.filter(t => t.estado === 'en_proceso');
+    if (filtroActual === 'derivado') filtrados = todosLosTickets.filter(t => t.estado === 'derivado');
     if (filtroActual === 'alta') filtrados = todosLosTickets.filter(t => (t.prioridad_sugerida || '').toLowerCase().includes('alta'));
     if (filtroActual === 'humano') filtrados = todosLosTickets.filter(t => t.requiere_humano);
     if (filtroActual === 'agendado') filtrados = todosLosTickets.filter(t => t.estado === 'agendado');
@@ -512,7 +590,8 @@
     const fechaVal = dateInput.value ? new Date(dateInput.value).toISOString() : null;
 
     if (estado === 'agendado' && !fechaVal) {
-      alert('Para pasar a estado "agendado" es obligatorio indicar la fecha y hora de visita.');
+      mostrarToast(`⚠️ Para agendar el Ticket #${id} debes indicar fecha y hora de visita.`, 'warn');
+      dateInput.focus();
       return;
     }
 
@@ -528,17 +607,32 @@
       });
       const json = await res.json();
       if (res.status === 409) {
-        alert('Conflicto 409: El ticket fue modificado por otro usuario. Recargando bandeja...');
-        await cargarTodo();
+        mostrarToast(`⚠️ Conflicto 409 en Ticket #${id}: fue modificado por otro usuario. Bandeja sincronizada.`, 'warn');
+        if (json.current) {
+          todosLosTickets = todosLosTickets.map(t => (t.id === id ? json.current : t));
+          actualizarEstadisticas(todosLosTickets);
+          aplicarFiltroActual();
+        } else {
+          await cargarTodo();
+        }
         return;
       }
       if (!res.ok || !json.ok) {
-        alert(json.error || 'No se pudo actualizar el ticket');
+        mostrarToast(`❌ Error (${res.status}) en Ticket #${id}: ${json.error || 'No se pudo actualizar'}`, 'err');
         return;
       }
-      await cargarTodo();
+
+      // CA-1: Actualizar fila y contadores superiores de inmediato sin recargar la página
+      todosLosTickets = todosLosTickets.map(t => (t.id === id ? json.data : t));
+      actualizarEstadisticas(todosLosTickets);
+      aplicarFiltroActual();
+      cargarMetricas();
+      document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+
+      const visitaTxt = json.data?.fecha_visita ? ` · Visita: ${formatVisitaLegible(json.data.fecha_visita)}` : '';
+      mostrarToast(`✅ Ticket #${id} actualizado a "${json.data.estado}"${visitaTxt}`, 'ok');
     } catch (e) {
-      alert('Error de red al actualizar el ticket: ' + e.message);
+      mostrarToast('❌ Error de red al actualizar ticket: ' + e.message, 'err');
     }
   }
 
@@ -547,7 +641,7 @@
       const res = await fetch(`/api/tickets/${id}/pdf`, { headers: headersAutenticados() });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || 'No autorizado o error al descargar PDF');
+        mostrarToast(`❌ Error al descargar PDF (#${id}): ${err.error || 'No autorizado'}`, 'err');
         return;
       }
       const blob = await res.blob();
@@ -560,8 +654,9 @@
       a.remove();
       URL.revokeObjectURL(url);
       cargarMetricas();
+      mostrarToast(`📄 Ficha PDF de Ticket #${id} descargada correctamente.`, 'ok');
     } catch (e) {
-      alert('Error al descargar PDF: ' + e.message);
+      mostrarToast('❌ Error de red al descargar PDF: ' + e.message, 'err');
     }
   }
 
@@ -584,13 +679,15 @@
       const fecha = t.created_at
         ? new Date(t.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
         : '—';
-      const fechaVisitaLocal = t.fecha_visita
-        ? new Date(t.fecha_visita).toISOString().slice(0, 16)
-        : '';
+      const fechaVisitaLocal = toDatetimeLocalValue(t.fecha_visita);
+      const fechaVisitaLegible = formatVisitaLegible(t.fecha_visita);
 
-      const nombre = t.cliente_nombre || t.nombre_completo || 'Sin nombre';
-      const ubicacion = [t.sucursal_comuna, t.sucursal_direccion].filter(Boolean).join(' · ') || 'Por confirmar';
-      const equipo = [t.motivo_principal, t.equipo_tipo, t.equipo_marca].filter(Boolean).join(' · ') || '—';
+      const nombre = esc(t.cliente_nombre || t.nombre_completo || 'Sin nombre');
+      const tel = esc(t.telefono || '—');
+      const ubicacion = esc([t.sucursal_comuna, t.sucursal_direccion].filter(Boolean).join(' · ') || 'Por confirmar');
+      const equipo = esc([t.motivo_principal, t.equipo_tipo, t.equipo_marca].filter(Boolean).join(' · ') || '—');
+      const sintoma = esc(t.sintoma_observacion || '');
+      const prio = esc(t.prioridad_sugerida || 'Normal');
 
       const fila = document.createElement('tr');
       fila.innerHTML = `
@@ -598,19 +695,19 @@
         <td style="font-size:0.76rem;color:var(--text-sub)">${fecha}</td>
         <td>
           <strong>${nombre}</strong><br/>
-          <span style="font-family:monospace;font-size:0.75rem;color:var(--text-sub)">${t.telefono || '—'}</span>
+          <span style="font-family:monospace;font-size:0.75rem;color:var(--text-sub)">${tel}</span>
         </td>
         <td style="font-size:0.78rem;color:var(--text-sub)">${ubicacion}</td>
         <td>
           <div>${equipo}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted)">${t.sintoma_observacion || ''}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${sintoma}</div>
         </td>
         <td>
           <div><strong>${formatearCLP(t.cotizacion_total)}</strong></div>
           <div style="font-size:0.7rem;color:var(--text-muted)">Estimación del bot · No oficial</div>
         </td>
         <td>
-          <span class="badge ${esAlta ? 'badge-alta' : 'badge-normal'}">${t.prioridad_sugerida || 'Normal'}</span>
+          <span class="badge ${esAlta ? 'badge-alta' : 'badge-normal'}">${prio}</span>
           ${t.requiere_humano ? '<br/><span class="badge badge-humano" style="margin-top:4px">Requiere persona</span>' : ''}
         </td>
         <td>
@@ -622,8 +719,9 @@
               <option value="resuelto" ${t.estado === 'resuelto' ? 'selected' : ''}>Resuelto</option>
             </select>
             <input id="fecha-${t.id}" type="datetime-local" class="date-input" value="${fechaVisitaLocal}" />
-            <button onclick="guardarEstadoTicket(${t.id}, '${t.updated_at || ''}')">Guardar</button>
+            <button onclick="guardarEstadoTicket(${t.id}, '${esc(t.updated_at || '')}')">Guardar</button>
           </div>
+          ${fechaVisitaLegible ? `<div style="margin-top:4px;font-size:0.73rem;color:#60a5fa">📅 Visita: ${esc(fechaVisitaLegible)}</div>` : ''}
         </td>
         <td>
           <button class="btn-secondary" onclick="descargarPdfTicket(${t.id})">📄 PDF</button>
