@@ -3,16 +3,15 @@
  *
  * 📄 [INT-HU-05] (AAI-25 / AAI-87): Generador de Ficha Técnica de Triage y Borrador de Cotización en PDF
  *
- * Construye un documento PDF estándar (%PDF-1.4) corporativo en memoria (Buffer)
- * con logotipo oficial de InterChile Clima SpA incrustado vía FlateDecode,
- * sin dependencias pesadas (0 Chromium), garantizando < 5 ms en Render.
+ * Construye un documento PDF estándar (%PDF-1.4) en memoria (Buffer) siguiendo la línea gráfica
+ * corporativa oficial de InterChile Clima SpA (membrete limpio, secciones numeradas 01/02/03,
+ * grilla gris claro, tabla burdeo #9e1046 y pie institucional interchileclima.cl), sin Chromium.
  */
 
 const fs = require('fs');
 const path = require('path');
 const { calcularCotizacionBorrador, formatearCLP } = require('./cotizador');
 
-// Cargar logotipo pre-comprimido una sola vez en memoria al iniciar el módulo
 const LOGO_ZLIB_PATH = path.join(__dirname, 'assets', 'logo-interchile.rgb.zlib');
 const LOGO_META_PATH = path.join(__dirname, 'assets', 'logo-meta.json');
 const LOGO_ZLIB = fs.existsSync(LOGO_ZLIB_PATH) ? fs.readFileSync(LOGO_ZLIB_PATH) : null;
@@ -21,9 +20,7 @@ const LOGO_META = fs.existsSync(LOGO_META_PATH)
   : null;
 
 /**
- * Normaliza guiones largos, caracteres latinos a WinAnsi (ISO-8859-1) y escapa delimitadores PDF.
- * @param {string} str
- * @returns {string}
+ * Normaliza guiones largos, comillas y delimitadores PDF preservando caracteres WinAnsi (tildes y ñ).
  */
 function sanitizePdfText(str) {
   if (str === null || str === undefined) return '-';
@@ -39,9 +36,22 @@ function sanitizePdfText(str) {
 }
 
 /**
- * Emite comandos PDF para rectángulos de relleno / borde.
+ * Estima el ancho tipográfico aproximado de Helvetica para alinear textos a la derecha.
  */
-function rectOp(x, y, w, h, fillRgb = null, strokeRgb = null, lineWidth = 0.6) {
+function estimateTextWidth(str, size, bold = false) {
+  const txt = sanitizePdfText(str).replace(/\\([()\\])/g, '$1');
+  const scale = bold ? 0.56 : 0.52;
+  let width = 0;
+  for (const ch of txt) {
+    if ('iIl1.,:;|! '.includes(ch)) width += size * 0.28;
+    else if ('mwMW@'.includes(ch)) width += size * 0.78;
+    else if (ch >= 'A' && ch <= 'Z') width += size * (bold ? 0.65 : 0.61);
+    else width += size * scale;
+  }
+  return width;
+}
+
+function rectOp(x, y, w, h, fillRgb = null, strokeRgb = null, lineWidth = 0.5) {
   const ops = ['q'];
   if (fillRgb) ops.push(`${fillRgb} rg`);
   if (strokeRgb) ops.push(`${strokeRgb} RG ${lineWidth} w`);
@@ -53,24 +63,36 @@ function rectOp(x, y, w, h, fillRgb = null, strokeRgb = null, lineWidth = 0.6) {
   return ops.join('\n');
 }
 
-/**
- * Emite comando PDF de texto posicionado con color opcional.
- */
-function textOp(x, y, text, font = 'F1', size = 10, rgb = '0.118 0.161 0.231') {
+function lineOp(x1, y1, x2, y2, strokeRgb, lineWidth = 0.5) {
+  return `q\n${strokeRgb} RG ${lineWidth} w\n${x1} ${y1} m\n${x2} ${y2} l\nS\nQ`;
+}
+
+function textOp(x, y, text, font = 'F1', size = 10, rgb = '0.133 0.149 0.180') {
   return `BT\n${rgb} rg\n/${font} ${size} Tf\n1 0 0 1 ${x} ${y} Tm\n(${sanitizePdfText(text)}) Tj\nET`;
 }
 
-/**
- * Trunca texto limpiamente para evitar desbordes horizontales dentro de cajas.
- */
+function textRightOp(rightX, y, text, font = 'F1', size = 10, rgb = '0.133 0.149 0.180') {
+  const x = Number((rightX - estimateTextWidth(text, size, font === 'F2')).toFixed(2));
+  return textOp(x, y, text, font, size, rgb);
+}
+
 function clipText(str, maxLen) {
   const txt = String(str || '').trim();
   if (txt.length <= maxLen) return txt;
   return txt.slice(0, Math.max(0, maxLen - 3)) + '...';
 }
 
+function formatDateEs(dateInput) {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  const meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+  return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+}
+
 /**
- * Genera un Buffer PDF (%PDF-1.4) corporativo con los datos del ticket y su estimación referencial.
+ * Genera un Buffer PDF (%PDF-1.4) corporativo siguiendo la línea gráfica InterChile Clima SpA.
  *
  * @param {Object} ticket - Ticket normalizado de la base de datos
  * @returns {Buffer} Buffer binario válido con encabezado %PDF-1.4
@@ -80,12 +102,13 @@ function generarFichaCotizacionPDF(ticket = {}) {
   const fechaCreacion = ticket.created_at
     ? new Date(ticket.created_at).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
     : new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const fechaTexto = formatDateEs(ticket.created_at);
   const fechaVisita = ticket.fecha_visita
     ? new Date(ticket.fecha_visita).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
     : 'No agendada (referencial)';
 
   const clienteNombre = ticket.cliente_nombre || ticket.nombre_completo || 'Sin nombre registrado';
-  const telefono = ticket.telefono || 'Sin telefono';
+  const telefono = ticket.telefono || 'Sin teléfono';
   const comuna = ticket.sucursal_comuna || ticket.comuna || 'Por confirmar';
   const direccion = ticket.sucursal_direccion || ticket.direccion || 'Por confirmar';
 
@@ -94,8 +117,8 @@ function generarFichaCotizacionPDF(ticket = {}) {
   const equipoMarca = ticket.equipo_marca || 'Por confirmar';
   const sintoma = ticket.sintoma_observacion || 'Sin observaciones adicionales';
   const prioridad = ticket.prioridad_sugerida || ticket.prioridad || 'Normal';
-  const estado = ticket.estado || 'en_proceso';
-  const requiereHumano = ticket.requiere_humano ? 'SI (Derivado a Ejecutivo)' : 'NO (Atencion Automatizada)';
+  const estado = (ticket.estado || 'en_proceso').toUpperCase();
+  const requiereHumano = ticket.requiere_humano ? 'SÍ (Derivado a ejecutivo)' : 'Bot automatizado';
 
   let neto = typeof ticket.cotizacion_neto === 'number' ? ticket.cotizacion_neto : null;
   let iva = typeof ticket.cotizacion_iva === 'number' ? ticket.cotizacion_iva : null;
@@ -130,171 +153,178 @@ function generarFichaCotizacionPDF(ticket = {}) {
     ? 'SI (Equipo verificado en catalogo)'
     : 'NO (Referencial / Por confirmar)';
 
-  // Paleta corporativa InterChile Clima SpA (#9e1046)
-  const C_BRAND = '0.620 0.063 0.275';
-  const C_BRAND_SOFT = '0.992 0.949 0.965';
-  const C_DARK = '0.118 0.161 0.231';
-  const C_MUTED = '0.392 0.455 0.545';
-  const C_BORDER = '0.796 0.835 0.882';
-  const C_BG_LIGHT = '0.969 0.980 0.992';
+  // Paleta oficial extraída de los documentos de InterChile Clima SpA
+  const C_BRAND = '0.620 0.063 0.275';      // #9e1046 burdeo institucional
+  const C_BRAND_SOFT = '0.992 0.949 0.965'; // #fdf2f6 resaltado total
+  const C_DARK = '0.133 0.149 0.180';       // #22262e carbón elegante
+  const C_TEXT = '0.239 0.275 0.325';       // #3d4653 cuerpo legible
+  const C_MUTED = '0.420 0.459 0.514';      // #6b7583 subtítulos y pie
+  const C_BG_CARD = '0.953 0.961 0.969';    // #f3f5f7 tarjeta resumen gris suave
+  const C_ROW_ALT = '0.980 0.984 0.988';    // #fafbfc fila alternada
+  const C_LINE = '0.847 0.867 0.894';       // #d8dde4 divisores sutiles
   const C_WHITE = '1 1 1';
-  const C_AMBER_BG = '1 0.984 0.922';
-  const C_AMBER_BD = '0.851 0.467 0.024';
+  const C_AMBER_BG = '1 0.984 0.929';
+  const C_AMBER_BD = '0.835 0.510 0.090';
   const C_AMBER_TX = '0.573 0.251 0.055';
 
   const ops = [];
 
-  // Bandas superior e inferior institucionales
-  ops.push(rectOp(0, 832, 595, 10, C_BRAND));
-  ops.push(rectOp(0, 0, 595, 8, C_BRAND));
-
-  // Logo corporativo (arriba a la izquierda)
+  // 1. MEMBRETE EDITORIAL LIMPIO (Logo izquierda + Clasificación derecha + Hairline)
   if (LOGO_ZLIB && LOGO_META) {
-    const logoW = 148;
+    const logoW = 128;
     const logoH = Number(((logoW * LOGO_META.height) / LOGO_META.width).toFixed(2));
-    const logoY = Number((816 - logoH).toFixed(2));
+    const logoY = Number((806 - logoH).toFixed(2));
     ops.push(`q\n${logoW} 0 0 ${logoH} 42 ${logoY} cm\n/Im1 Do\nQ`);
   } else {
-    ops.push(textOp(42, 788, 'INTERCHILE CLIMA SPA', 'F2', 14, C_BRAND));
-    ops.push(textOp(42, 773, 'SOLUCIONES AMBIENTALES', 'F1', 9.5, C_DARK));
+    ops.push(textOp(42, 782, 'INTERCHILE CLIMA SPA', 'F2', 13, C_BRAND));
+    ops.push(textOp(42, 768, 'SOLUCIONES AMBIENTALES', 'F1', 8.5, C_DARK));
   }
 
-  // Encabezado derecho y aviso destacado
-  ops.push(textOp(212, 800, 'FICHA DE TRIAGE COMERCIAL', 'F2', 15.5, C_BRAND));
-  ops.push(textOp(212, 783, 'InterChile Clima SpA - Soluciones Ambientales', 'F2', 9.5, C_DARK));
-  ops.push(rectOp(212, 746, 341, 28, C_AMBER_BG, C_AMBER_BD, 0.7));
-  ops.push(textOp(221, 762, 'AVISO IMPORTANTE:', 'F2', 8.5, C_AMBER_TX));
-  ops.push(
-    textOp(221, 751, 'Ficha de triage / Estimacion del bot - No es presupuesto oficial emitido', 'F1', 8.5, C_AMBER_TX)
-  );
+  const docEyebrow = sinTarifaCerrada ? 'SERVICIO TÉCNICO Y COMERCIAL' : 'PROPUESTA REFERENCIAL';
+  ops.push(textRightOp(553, 792, docEyebrow, 'F2', 8.5, C_BRAND));
+  ops.push(textRightOp(553, 779, 'CLIMATIZACIÓN Y VENTILACIÓN', 'F1', 8.5, C_TEXT));
+  ops.push(textRightOp(553, 761, fechaTexto, 'F1', 8.5, C_MUTED));
+  ops.push(lineOp(42, 734, 553, 734, C_LINE, 0.6));
 
-  // Barra de metadatos del Ticket
-  ops.push(rectOp(42, 704, 511, 26, C_BG_LIGHT, C_BORDER, 0.7));
+  // 2. TITULO HERO + SUBRAYADO BURDEO + SUBTITULO
+  const heroTitle = sinTarifaCerrada ? 'FICHA TÉCNICA DE LEVANTAMIENTO' : 'FICHA DE TRIAGE COMERCIAL';
+  ops.push(textOp(42, 694, heroTitle, 'F2', 20, C_DARK));
+  ops.push(rectOp(42, 681, 34, 3, C_BRAND));
   ops.push(
     textOp(
-      54,
-      714,
-      `Ticket Folio: #${id}     |     Fecha Emision: ${fechaCreacion}     |     Estado: ${estado.toUpperCase()}`,
-      'F2',
-      9,
-      C_DARK
+      42,
+      663,
+      `Ticket Folio #${id}  ·  Estimación del bot - No es presupuesto oficial emitido`,
+      'F1',
+      10,
+      C_MUTED
     )
   );
 
-  // SECCION 1: DATOS DE CONTACTO Y UBICACION
-  ops.push(rectOp(42, 608, 511, 82, C_WHITE, C_BORDER, 0.7));
-  ops.push(rectOp(42, 668, 511, 22, C_BRAND));
-  ops.push(textOp(54, 675, '1. DATOS DE CONTACTO Y UBICACION', 'F2', 10, C_WHITE));
+  // 3. TARJETA RESUMEN EJECUTIVO (Estilo Carta Oferta / Informe Técnico)
+  ops.push(rectOp(42, 588, 511, 62, C_BG_CARD));
+  ops.push(lineOp(298, 597, 298, 641, C_LINE, 0.6));
 
-  ops.push(textOp(54, 650, 'Cliente / Empresa:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(152, 650, clipText(clienteNombre, 26), 'F1', 9.5, C_DARK));
-  ops.push(textOp(324, 650, 'Telefono WhatsApp:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(424, 650, clipText(telefono, 20), 'F1', 9.5, C_DARK));
+  ops.push(textOp(54, 633, 'DESTINATARIO / CLIENTE', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(54, 619, clipText(clienteNombre, 34), 'F2', 10, C_DARK));
+  ops.push(textOp(54, 603, `WhatsApp: ${clipText(telefono, 22)}  ·  ${clipText(comuna, 22)}`, 'F1', 8.5, C_TEXT));
 
-  ops.push(textOp(54, 632, 'Comuna / Sucursal:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(152, 632, clipText(comuna, 56), 'F1', 9.5, C_DARK));
+  ops.push(textOp(312, 633, 'FOLIO Y ESTADO OPERATIVO', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(312, 619, `Folio #${id}  ·  Estado: ${estado}`, 'F2', 10, C_DARK));
+  ops.push(textOp(312, 603, `Registro: ${fechaCreacion}`, 'F1', 8.5, C_TEXT));
 
-  ops.push(textOp(54, 615, 'Direccion:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(152, 615, clipText(direccion, 62), 'F1', 9.5, C_DARK));
+  // 4. SECCION 01 — DATOS DE CONTACTO Y UBICACIÓN
+  ops.push(textOp(42, 560, '01', 'F2', 11.5, C_BRAND));
+  ops.push(textOp(62, 560, 'DATOS DEL SOLICITANTE Y UBICACIÓN', 'F2', 11.5, C_DARK));
+  ops.push(rectOp(42, 512, 511, 40, C_ROW_ALT, C_LINE, 0.5));
+  ops.push(lineOp(42, 532, 553, 532, C_LINE, 0.5));
 
-  // SECCION 2: DIAGNOSTICO DE TRIAGE Y EQUIPO
-  ops.push(rectOp(42, 452, 511, 142, C_WHITE, C_BORDER, 0.7));
-  ops.push(rectOp(42, 572, 511, 22, C_DARK));
-  ops.push(textOp(54, 579, '2. DIAGNOSTICO DE TRIAGE Y EQUIPO', 'F2', 10, C_WHITE));
+  ops.push(textOp(52, 539, 'COMUNA / SUCURSAL', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 539, clipText(comuna, 24), 'F1', 9, C_DARK));
+  ops.push(textOp(310, 539, 'DIRECCIÓN REFERENCIAL', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(426, 539, clipText(direccion, 24), 'F1', 9, C_DARK));
 
-  ops.push(textOp(54, 554, 'Motivo Principal:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 554, clipText(motivo, 26), 'F1', 9.5, C_DARK));
-  ops.push(textOp(324, 554, 'Prioridad Sugerida:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(426, 554, clipText(prioridad, 18), 'F2', 9.5, C_DARK));
+  ops.push(textOp(52, 519, 'VISITA PROGRAMADA', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 519, clipText(fechaVisita, 28), 'F1', 9, C_DARK));
+  ops.push(textOp(310, 519, 'ATENCIÓN', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(426, 519, clipText(requiereHumano, 26), 'F1', 9, C_DARK));
 
-  ops.push(textOp(54, 536, 'Tipo de Equipo:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 536, clipText(equipoTipo, 26), 'F1', 9.5, C_DARK));
-  ops.push(textOp(324, 536, 'Marca / Modelo:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(426, 536, clipText(equipoMarca, 22), 'F1', 9.5, C_DARK));
+  // 5. SECCION 02 — DIAGNÓSTICO DE TRIAGE Y VERIFICACIÓN KRONOS
+  ops.push(textOp(42, 484, '02', 'F2', 11.5, C_BRAND));
+  ops.push(textOp(62, 484, 'DIAGNÓSTICO TÉCNICO DE TRIAGE Y EQUIPO', 'F2', 11.5, C_DARK));
 
-  ops.push(textOp(54, 518, 'Validacion Kronos:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 518, kronosVerifLabel, 'F1', 9.5, C_DARK));
+  ops.push(rectOp(42, 400, 511, 76, C_WHITE, C_LINE, 0.5));
+  ops.push(rectOp(42, 456, 511, 20, C_BG_CARD));
+  ops.push(lineOp(42, 456, 553, 456, C_LINE, 0.5));
+  ops.push(lineOp(42, 437, 553, 437, C_LINE, 0.5));
+  ops.push(lineOp(42, 418, 553, 418, C_LINE, 0.5));
 
-  ops.push(textOp(54, 500, 'Requiere Persona:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 500, requiereHumano, 'F1', 9.5, C_DARK));
+  ops.push(textOp(52, 463, 'MOTIVO PRINCIPAL', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 463, clipText(motivo, 22), 'F2', 9, C_DARK));
+  ops.push(textOp(310, 463, 'PRIORIDAD', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(392, 463, clipText(prioridad, 20), 'F2', 9, C_DARK));
 
-  ops.push(textOp(54, 482, 'Visita Referencial:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 482, fechaVisita, 'F1', 9.5, C_DARK));
+  ops.push(textOp(52, 444, 'TIPO DE EQUIPO', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 444, clipText(equipoTipo, 24), 'F1', 9, C_DARK));
+  ops.push(textOp(310, 444, 'MARCA / MODELO', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(392, 444, clipText(equipoMarca, 26), 'F1', 9, C_DARK));
 
-  ops.push(textOp(54, 464, 'Sintoma / Detalle:', 'F2', 9.5, C_MUTED));
-  ops.push(textOp(156, 464, clipText(sintoma, 70), 'F1', 9.5, C_DARK));
+  ops.push(textOp(52, 425, 'VALIDACIÓN KRONOS', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 425, kronosVerifLabel, 'F1', 9, C_DARK));
 
-  // SECCION 3: ESTIMACION COMERCIAL O FICHA DE LEVANTAMIENTO (CA-1 / CA-3)
+  ops.push(textOp(52, 406, 'SÍNTOMA / DETALLE', 'F2', 7.5, C_BRAND));
+  ops.push(textOp(158, 406, clipText(sintoma, 70), 'F1', 9, C_TEXT));
+
+  // 6. SECCION 03 — TABLA BURDEO DE COTIZACIÓN O FICHA TÉCNICA DE LEVANTAMIENTO (CA-1 / CA-3)
+  ops.push(textOp(42, 370, '03', 'F2', 11.5, C_BRAND));
   if (sinTarifaCerrada) {
-    ops.push(rectOp(42, 278, 511, 158, C_AMBER_BG, C_AMBER_BD, 0.8));
-    ops.push(rectOp(42, 414, 511, 22, C_AMBER_BD));
-    ops.push(textOp(54, 421, '3. FICHA TECNICA DE LEVANTAMIENTO (SIN PRECIO CERRADO)', 'F2', 10, C_WHITE));
+    ops.push(textOp(62, 370, 'FICHA TECNICA DE LEVANTAMIENTO (SIN PRECIO CERRADO)', 'F2', 11.5, C_DARK));
 
-    ops.push(textOp(54, 386, 'Valor sujeto a evaluacion y visita tecnica por ejecutivo comercial', 'F2', 11, C_AMBER_TX));
+    ops.push(rectOp(42, 244, 511, 116, C_AMBER_BG, C_AMBER_BD, 0.7));
+    ops.push(rectOp(42, 338, 511, 22, C_AMBER_BD));
+    ops.push(textOp(54, 345, 'EVALUACIÓN TÉCNICA REQUERIDA ANTES DE COTIZAR', 'F2', 9, C_WHITE));
+
+    ops.push(textOp(54, 314, 'Valor sujeto a evaluacion y visita tecnica por ejecutivo comercial', 'F2', 11, C_AMBER_TX));
     ops.push(
       textOp(
         54,
-        362,
-        'Alcance comercial: Para proyectos complejos o equipos con datos por confirmar,',
+        294,
+        'Alcance comercial: Para proyectos complejos o equipos con campos por confirmar,',
         'F1',
-        9.5,
-        C_DARK
+        9,
+        C_TEXT
       )
     );
     ops.push(
       textOp(
         54,
-        348,
-        'InterChile Clima SpA realiza levantamiento tecnico previo antes de emitir presupuesto oficial.',
+        280,
+        'InterChile Clima SpA realiza levantamiento técnico en terreno previo al presupuesto oficial.',
         'F1',
-        9.5,
-        C_DARK
+        9,
+        C_TEXT
       )
     );
-    ops.push(rectOp(54, 294, 487, 36, C_WHITE, C_BORDER, 0.6));
-    ops.push(textOp(66, 314, 'Contacto Ejecutivo Comercial:', 'F2', 9.5, C_BRAND));
-    ops.push(
-      textOp(66, 300, 'Benjamin Yanez  |  Correo: Benjamin@interchileclima.cl  |  WhatsApp: +56 9 9440 2632', 'F1', 9.5, C_DARK)
-    );
+    ops.push(textOp(54, 256, 'Estado tarifario: Sin monto cerrado inventado (regla anti-alucinaciones activa).', 'F2', 8.5, C_BRAND));
   } else {
-    ops.push(rectOp(42, 266, 511, 170, C_WHITE, C_BORDER, 0.7));
-    ops.push(rectOp(42, 414, 511, 22, C_BRAND));
-    ops.push(textOp(54, 421, '3. ESTIMACION DEL BOT (NO ES PRESUPUESTO OFICIAL)', 'F2', 10, C_WHITE));
+    ops.push(textOp(62, 370, 'ESTIMACIÓN REFERENCIAL DEL BOT (NO ES PRESUPUESTO OFICIAL)', 'F2', 11.5, C_DARK));
 
-    // Cabecera de tabla
-    ops.push(rectOp(54, 384, 487, 20, C_BG_LIGHT, C_BORDER, 0.5));
-    ops.push(textOp(64, 390, 'Concepto / Servicio Referencial', 'F2', 9, C_MUTED));
-    ops.push(textOp(436, 390, 'Valor (CLP)', 'F2', 9, C_MUTED));
+    ops.push(rectOp(42, 246, 511, 114, C_WHITE, C_LINE, 0.6));
+    // Encabezado burdeo estilo Informe Técnico InterChile
+    ops.push(rectOp(42, 336, 511, 24, C_BRAND));
+    ops.push(textOp(54, 344, 'CONCEPTO / SERVICIO REFERENCIAL', 'F2', 8.5, C_WHITE));
+    ops.push(textRightOp(541, 344, 'MONTO (CLP)', 'F2', 8.5, C_WHITE));
 
-    // Fila detalle servicio
-    ops.push(textOp(64, 366, clipText(conceptoTarifa, 64), 'F1', 9.5, C_DARK));
-    ops.push(textOp(436, 366, formatearCLP(neto), 'F1', 9.5, C_DARK));
+    ops.push(textOp(54, 317, clipText(conceptoTarifa, 78), 'F1', 9.2, C_DARK));
+    ops.push(textRightOp(541, 317, formatearCLP(neto), 'F1', 9.5, C_DARK));
+    ops.push(lineOp(42, 308, 553, 308, C_LINE, 0.5));
 
-    // Subtotal Neto y IVA 19%
-    ops.push(textOp(64, 344, 'Subtotal Neto Estimado:', 'F1', 9.5, C_MUTED));
-    ops.push(textOp(436, 344, formatearCLP(neto), 'F1', 9.5, C_DARK));
+    ops.push(textOp(54, 293, 'Subtotal Neto Estimado', 'F1', 9, C_MUTED));
+    ops.push(textRightOp(541, 293, formatearCLP(neto), 'F1', 9, C_DARK));
+    ops.push(lineOp(42, 285, 553, 285, C_LINE, 0.5));
 
-    ops.push(textOp(64, 326, 'IVA (19%):', 'F1', 9.5, C_MUTED));
-    ops.push(textOp(436, 326, formatearCLP(iva), 'F1', 9.5, C_DARK));
+    ops.push(textOp(54, 271, 'IVA (19%)', 'F1', 9, C_MUTED));
+    ops.push(textRightOp(541, 271, formatearCLP(iva), 'F1', 9, C_DARK));
 
-    // Total destacado
-    ops.push(rectOp(54, 292, 487, 24, C_BRAND_SOFT, C_BRAND, 0.8));
-    ops.push(textOp(64, 300, 'Total Estimado Referencial:', 'F2', 10.5, C_BRAND));
-    ops.push(textOp(436, 300, formatearCLP(total), 'F2', 10.5, C_BRAND));
-
-    ops.push(
-      textOp(54, 274, 'Contacto comercial: Benjamin Yanez (Benjamin@interchileclima.cl / +56 9 9440 2632)', 'F1', 8.5, C_MUTED)
-    );
+    // Fila Total destacada en burdeo suave
+    ops.push(rectOp(42, 246, 511, 21, C_BRAND_SOFT, C_BRAND, 0.6));
+    ops.push(textOp(54, 253, 'TOTAL ESTIMADO REFERENCIAL', 'F2', 9.5, C_BRAND));
+    ops.push(textRightOp(541, 253, formatearCLP(total), 'F2', 10, C_BRAND));
   }
 
-  // Pie de página corporativo
-  ops.push(rectOp(42, 74, 511, 0.7, C_BORDER));
-  ops.push(textOp(42, 58, 'InterChile Clima SpA - Soluciones Ambientales | Bot de Triage Comercial WhatsApp', 'F2', 8, C_BRAND));
+  // 7. BLOQUE DE FIRMA / CONTACTO COMERCIAL (Estilo Carta Oferta InterChile)
+  ops.push(textOp(42, 206, 'Atentamente,', 'F1', 9.5, C_TEXT));
+  ops.push(textOp(42, 184, 'Benjamín Yáñez Lasalvia', 'F2', 10.5, C_DARK));
+  ops.push(lineOp(42, 178, 236, 178, C_DARK, 0.6));
+  ops.push(textOp(42, 165, 'INTERCHILE CLIMA SpA  ·  Contacto Comercial', 'F2', 9, C_BRAND));
+  ops.push(textOp(42, 152, 'Correo: Benjamin@interchileclima.cl  |  WhatsApp: +56 9 9440 2632', 'F1', 9, C_MUTED));
+
+  // Nota legal sutil encima del footer
   ops.push(
     textOp(
       42,
-      45,
-      'Nota: Los importes indicados corresponden a una estimacion automatizada de triage.',
+      78,
+      'Nota: Los valores y datos mostrados corresponden a una estimación automatizada de triage.',
       'F1',
       8,
       C_MUTED
@@ -303,13 +333,19 @@ function generarFichaCotizacionPDF(ticket = {}) {
   ops.push(
     textOp(
       42,
-      34,
-      'No constituyen diagnostico validado ni presupuesto oficial de InterChile Climatizacion.',
+      67,
+      'No constituyen diagnóstico técnico definitivo ni presupuesto oficial de InterChile Clima SpA.',
       'F1',
       8,
       C_MUTED
     )
   );
+
+  // 8. FOOTER INSTITUCIONAL DE 3 COLUMNAS (Exacto al estándar de Benjamín)
+  ops.push(lineOp(42, 52, 553, 52, C_LINE, 0.6));
+  ops.push(textOp(42, 36, 'INTERCHILE CLIMA SpA', 'F1', 8, C_MUTED));
+  ops.push(textOp(268, 36, 'interchileclima.cl', 'F1', 8, C_MUTED));
+  ops.push(textRightOp(553, 36, `FOLIO #${id} · TRIAGE COMERCIAL`, 'F1', 8, C_MUTED));
 
   const contentStream = ops.join('\n');
   const xobjResource = LOGO_ZLIB && LOGO_META ? '/XObject << /Im1 7 0 R >> ' : '';
