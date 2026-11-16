@@ -28,7 +28,7 @@ const state = {
  * @param {number} ms
  */
 function registrarLatencia(ms) {
-  if (typeof ms !== 'number' || Number.isNaN(ms) || ms < 0) return;
+  if (!Number.isFinite(ms) || ms < 0) return;
   const rounded = Math.round(ms);
   state.latenciasMs.push(rounded);
   if (state.latenciasMs.length > MAX_SAMPLES) {
