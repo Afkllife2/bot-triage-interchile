@@ -135,7 +135,7 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -168,6 +168,7 @@
     .stat-card.humano .stat-value { color: var(--orange); }
     .stat-card.normal .stat-value { color: var(--green); }
     .stat-card.sla .stat-value { color: var(--purple); }
+    .stat-card.pdf .stat-value { color: #38bdf8; }
 
     #alert-banner, #auth-banner {
       display: none;
@@ -380,14 +381,19 @@
       <span class="stat-sub">Derivados a ejecutivo</span>
     </div>
     <div class="stat-card sla">
-      <span class="stat-label">Latencia Promedio Bot</span>
+      <span class="stat-label">Latencia y SLA Bot</span>
       <span class="stat-value" id="stat-latencia">—</span>
-      <span class="stat-sub" id="stat-sla-badge">Meta SLA &lt; 4000 ms</span>
+      <span class="stat-sub" id="stat-sla-badge">100% SLA (&lt; 4.0s)</span>
     </div>
     <div class="stat-card normal">
       <span class="stat-label">Arnés Anti-Alucinación</span>
       <span class="stat-value" id="stat-arnes">100%</span>
       <span class="stat-sub" id="stat-arnes-sub">Validación catálogo Kronos</span>
+    </div>
+    <div class="stat-card pdf">
+      <span class="stat-label">Fichas PDF Generadas</span>
+      <span class="stat-value" id="stat-pdfs">0</span>
+      <span class="stat-sub" id="stat-pdfs-sub">100% tasa de éxito</span>
     </div>
   </div>
 
@@ -502,13 +508,34 @@
       const json = await res.json();
       if (!json.ok || !json.data) return;
       const m = json.data;
-      document.getElementById('stat-latencia').textContent = (m.sla?.latencia_promedio_ms ?? 0) + ' ms';
-      document.getElementById('stat-sla-badge').textContent = m.sla?.cumple_sla
-        ? '✅ Cumple SLA (< 4.0s)'
-        : '⚠️ Sobre umbral SLA';
-      document.getElementById('stat-arnes').textContent = (m.arnes?.tasa_intercepcion_pct ?? 100) + '%';
+      const latMs = m.latencia_promedio_ms ?? m.sla?.latencia_promedio_ms ?? 0;
+      const slaPct = m.porcentaje_sla_cumplido ?? m.sla?.cumplimiento_sla_pct ?? 100;
+      const alertasSla = m.sla?.alertas_sla ?? 0;
+      const cumpleSla = m.sla?.cumple_sla ?? (latMs <= 4000);
+      const bloqueadas = m.total_alucinaciones_bloqueadas ?? m.arnes?.alucinaciones_interceptadas ?? 0;
+      const totalEval = m.arnes?.total_validaciones ?? 0;
+      const totalPdfs = m.total_pdfs_generados ?? m.pdf?.generados ?? 0;
+      const pdfExitoPct = m.pdf?.tasa_exito_pct ?? 100;
+
+      document.getElementById('stat-latencia').textContent = `${latMs} ms`;
+      const badgeEl = document.getElementById('stat-sla-badge');
+      if (!cumpleSla) {
+        badgeEl.textContent = `⚠️ ${slaPct}% SLA · Promedio > 4.0s (${alertasSla} al.)`;
+        badgeEl.style.color = 'var(--red)';
+      } else if (alertasSla > 0) {
+        badgeEl.textContent = `⚠️ ${slaPct}% SLA · ${alertasSla} alerta(s) > 4.0s`;
+        badgeEl.style.color = 'var(--orange)';
+      } else {
+        badgeEl.textContent = `✅ ${slaPct}% SLA (< 4.0s)`;
+        badgeEl.style.color = 'var(--green)';
+      }
+
+      document.getElementById('stat-arnes').textContent = `${m.arnes?.tasa_intercepcion_pct ?? 100}%`;
       document.getElementById('stat-arnes-sub').textContent =
-        `${m.arnes?.alucinaciones_interceptadas ?? 0} interceptadas / ${m.arnes?.total_validaciones ?? 0} eval.`;
+        `${bloqueadas} bloqueadas / ${totalEval} eval.`;
+
+      document.getElementById('stat-pdfs').textContent = String(totalPdfs);
+      document.getElementById('stat-pdfs-sub').textContent = `${pdfExitoPct}% tasa de éxito`;
     } catch (_) {}
   }
 
