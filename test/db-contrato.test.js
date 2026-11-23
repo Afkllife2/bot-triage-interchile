@@ -74,6 +74,7 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
         id: 2,
         created_at: '2026-11-09T09:00:00.000Z',
         updated_at: '2026-11-09T11:00:00.000Z',
+        cursor_updated_at: '2026-11-09T11:00:00.000789Z',
         nombre_completo: 'Cliente 2',
         telefono: '56900000002',
         motivo_principal: 'Mantención',
@@ -105,6 +106,7 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
     // Página 2 usando nextCursor
     mockQuery.mockResolvedValueOnce({ rows: [page1Rows[2]] });
     const page2 = await db.getTicketsPaginados({ limit: 2, cursor: page1.nextCursor });
+    expect(mockQuery.mock.calls.at(-1)[1]).toEqual(['2026-11-09T11:00:00.000789Z', 2, 3]);
 
     expect(page2.data).toHaveLength(1);
     expect(page2.data[0].id).toBe(1);

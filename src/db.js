@@ -158,7 +158,8 @@ function decodeCursor(cursorStr) {
   if (Number.isNaN(parsedDate.getTime()) || !Number.isInteger(idPart) || idPart <= 0) {
     return null;
   }
-  return { updatedAt: parsedDate.toISOString(), id: idPart };
+  // PostgreSQL compara el cursor con precisión de microsegundos.
+  return { updatedAt: tsPart, id: idPart };
 }
 
 /**
@@ -348,6 +349,7 @@ const BASE_SELECT_TICKETS = `
     ct.id,
     ct.created_at,
     COALESCE(ct.updated_at, ct.created_at) AS updated_at,
+    to_char(COALESCE(ct.updated_at, ct.created_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_updated_at,
     cl.telefono,
     cl.nombre_completo,
     cl.nombre_completo AS cliente_nombre,
@@ -427,7 +429,7 @@ async function getTicketsPaginados({ limit = 50, cursor = null } = {}) {
     const slice = hasMore ? result.rows.slice(0, limitNum) : result.rows;
     const normalized = slice.map(normalizarTicketRow);
     const last = normalized[normalized.length - 1];
-    const nextCursor = hasMore && last ? encodeCursor(last.updated_at, last.id) : null;
+    const nextCursor = hasMore && last ? encodeCursor(slice[slice.length - 1].cursor_updated_at, last.id) : null;
 
     return {
       data: normalized,
@@ -528,18 +530,25 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
 
     const currentTicket = normalizarTicketRow(currentRes.rows[0]);
 
-    if (expected_updated_at) {
-      const expectedTime = new Date(expected_updated_at).getTime();
-      const currentTime = new Date(currentTicket.updated_at).getTime();
-      if (Number.isNaN(expectedTime) || expectedTime !== currentTime) {
-        await client.query('ROLLBACK');
-        return {
-          error: 'conflict',
-          status: 409,
-          message: 'Conflicto de versión: el ticket fue modificado recientemente',
-          current: currentTicket,
-        };
-      }
+    if (!expected_updated_at) {
+      await client.query('ROLLBACK');
+      return {
+        error: 'missing_expected_updated_at',
+        status: 400,
+        message: 'El campo expected_updated_at es obligatorio para control de concurrencia y versiones',
+      };
+    }
+
+    const expectedTime = new Date(expected_updated_at).getTime();
+    const currentTime = new Date(currentTicket.updated_at).getTime();
+    if (Number.isNaN(expectedTime) || expectedTime !== currentTime) {
+      await client.query('ROLLBACK');
+      return {
+        error: 'conflict',
+        status: 409,
+        message: 'Conflicto de versión: el ticket fue modificado recientemente',
+        current: currentTicket,
+      };
     }
 
     const nuevaFechaVisita = estadoNorm === 'agendado'
