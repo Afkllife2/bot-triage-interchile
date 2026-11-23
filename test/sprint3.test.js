@@ -48,8 +48,14 @@ jest.mock('../src/db', () => {
 const app = require('../src/server');
 const db = require('../src/db');
 const { extraerFichaTriage } = require('../src/brain');
-const { calcularCotizacionBorrador } = require('../src/cotizador');
+const {
+  calcularCotizacionBorrador,
+  enriquecerRespuestaConCotizacion,
+  normalizarCategoriaEquipo,
+  formatearCLP,
+} = require('../src/cotizador');
 const { generarFichaCotizacionPDF } = require('../src/pdfGenerator');
+const { enviarMensajeWhatsApp } = require('../src/whatsapp');
 const {
   configurarClienteKronos,
   resetClienteKronos,
@@ -183,6 +189,180 @@ describe('[INT-HU-05] (AAI-25) — Motor de Cotización Borrador y Ficha PDF', (
     expect(res.headers['content-type']).toMatch(/application\/pdf/);
     expect(res.headers['content-disposition']).toContain('ficha-triage-15.pdf');
     expect(res.body.slice(0, 8).toString('latin1')).toBe('%PDF-1.4');
+    expect(res.body.toString('latin1')).toContain('$142.800 CLP');
+  });
+
+  test('CA-1 (Aliases y bordes): normaliza fancoil/vrf/ventana y retorna null ante motivos inválidos', () => {
+    expect(normalizarCategoriaEquipo('Fancoil cielo')).toBe('ducto');
+    expect(normalizarCategoriaEquipo('Sistema VRF central')).toBe('vrv');
+    expect(normalizarCategoriaEquipo('Equipo Ventana')).toBe('split');
+    expect(normalizarCategoriaEquipo(null)).toBeNull();
+    expect(normalizarCategoriaEquipo('Equipo Desconocido XYZ')).toBeNull();
+    expect(formatearCLP(NaN)).toBe('Sin estimacion');
+    expect(formatearCLP(undefined)).toBe('Sin estimacion');
+
+    expect(
+      calcularCotizacionBorrador({
+        tipo_solicitud: 'ServicioInexistente',
+        equipo_tipo: 'Split',
+      })
+    ).toBeNull();
+
+    expect(calcularCotizacionBorrador()).toBeNull();
+    expect(
+      calcularCotizacionBorrador({
+        tipo_solicitud: 'Proyecto Comercial',
+        equipo_tipo: 'Chiller',
+      })
+    ).toBeNull();
+  });
+
+  test('CA-2 (Kronos, tiempo < 3s y manejo de errores 400/404/500 en GET /api/tickets/:id/pdf)', async () => {
+    const t0 = Date.now();
+    const pdfVerificado = generarFichaCotizacionPDF({
+      id: 77,
+      cliente_nombre: 'Empresa Austral',
+      motivo_principal: 'Mantención',
+      equipo_tipo: 'Split',
+      equipo_marca: 'Midea',
+      catalogo_verificado: true,
+    });
+    expect(Date.now() - t0).toBeLessThan(3000);
+    const txt = pdfVerificado.toString('latin1').replace(/\\([()])/g, '$1');
+    expect(txt).toContain('SI (Equipo verificado en catalogo)');
+    expect(txt).toContain('$53.550 CLP');
+
+    const badId = await request(app).get('/api/tickets/no_valido/pdf').set('Authorization', AUTH);
+    expect(badId.status).toBe(400);
+
+    db.getTicketById.mockResolvedValueOnce(null);
+    const notFound = await request(app).get('/api/tickets/9999/pdf').set('Authorization', AUTH);
+    expect(notFound.status).toBe(404);
+
+    db.getTicketById.mockRejectedValueOnce(new Error('Falla transitoria BD'));
+    const serverErr = await request(app).get('/api/tickets/15/pdf').set('Authorization', AUTH);
+    expect(serverErr.status).toBe(500);
+  });
+
+  test('CA-3 (Excepción proyectos complejos y [dato por confirmar]): emite Ficha Técnica de Levantamiento sin precios inventados', () => {
+    const pdfProyecto = generarFichaCotizacionPDF(
+      db.normalizarTicketRow({
+        id: 88,
+        nombre_completo: 'Mall Plaza Sur',
+        motivo_principal: 'Proyecto Comercial',
+        equipo_tipo: 'Chiller',
+        equipo_marca: 'Trane',
+      })
+    ).toString('latin1');
+
+    expect(pdfProyecto).toContain('FICHA TECNICA DE LEVANTAMIENTO');
+    expect(pdfProyecto).toContain('Valor sujeto a evaluacion y visita tecnica por ejecutivo comercial');
+    expect(pdfProyecto).not.toContain('$450.000 CLP');
+    expect(pdfProyecto).not.toContain('Subtotal Neto Estimado');
+
+    const pdfPorConfirmar = generarFichaCotizacionPDF(
+      db.normalizarTicketRow({
+        id: 89,
+        nombre_completo: 'Juan Pérez',
+        motivo_principal: 'Falla Técnica',
+        equipo_tipo: '[dato por confirmar]',
+        equipo_marca: '[dato por confirmar]',
+      })
+    ).toString('latin1');
+
+    expect(pdfPorConfirmar).toContain('FICHA TECNICA DE LEVANTAMIENTO');
+    expect(pdfPorConfirmar).toContain('Valor sujeto a evaluacion y visita tecnica por ejecutivo comercial');
+  });
+
+  test('CA-4 (Unitaria + Integración WhatsApp): inyecta valor referencial y contacto comercial al confirmar solicitud', async () => {
+    expect(enriquecerRespuestaConCotizacion(null)).toBe('');
+    expect(enriquecerRespuestaConCotizacion('', { _noPersistir: false })).toBe('');
+    expect(
+      enriquecerRespuestaConCotizacion('Hola', { _noPersistir: true, cliente_nombre: 'Ana', sucursal_comuna: 'Ñuñoa' })
+    ).toBe('Hola');
+    expect(
+      enriquecerRespuestaConCotizacion('Confirmado', {
+        tipo_solicitud: 'Mantención',
+        equipo_tipo: 'Split',
+        cliente_nombre: 'Ana',
+        sucursal_comuna: 'Ñuñoa',
+      })
+    ).toContain('$53.550 CLP');
+
+    // Pipeline completo POST /webhooks/meta → Arnés → DB → WhatsApp con estimación CLP + contacto
+    db.guardarCasoTriage.mockResolvedValueOnce(321);
+    extraerFichaTriage.mockResolvedValueOnce({
+      tipo_solicitud: 'Mantención',
+      cliente_nombre: 'Camila Rojas',
+      sucursal_comuna: 'Providencia',
+      sucursal_direccion: 'Av. Suecia 450',
+      equipo_tipo: 'Split',
+      equipo_marca: 'Samsung',
+      sintoma_observacion: 'Mantención anual preventiva',
+      prioridad: 'Normal',
+      disponibilidad_cliente: 'Viernes AM',
+      tiene_fotos: false,
+      requiere_derivacion: true,
+      opciones_botones: [],
+      respuesta_cliente: 'Hemos registrado tu solicitud en InterChile.',
+    });
+
+    const bodyOk = {
+      object: 'whatsapp_business_account',
+      entry: [{
+        changes: [{
+          value: {
+            contacts: [{ wa_id: '56944445555' }],
+            messages: [{ type: 'text', text: { body: 'Confirmo mantención Split Samsung en Providencia' } }],
+          },
+        }],
+      }],
+    };
+    const { raw, sig } = firmarWebhook(bodyOk);
+    const resOk = await request(app)
+      .post('/webhooks/meta')
+      .set('Content-Type', 'application/json')
+      .set('x-hub-signature-256', sig)
+      .send(raw);
+
+    expect(resOk.status).toBe(200);
+    expect(enviarMensajeWhatsApp).toHaveBeenCalledTimes(1);
+    const textoEnviado = enviarMensajeWhatsApp.mock.calls[0][1];
+    expect(textoEnviado).toContain('Folio #321');
+    expect(textoEnviado).toContain('$53.550 CLP');
+    expect(textoEnviado).toContain('Benjamin@interchileclima.cl');
+
+    // Caso Proyecto Comercial / dato por confirmar: NO inventa monto CLP y avisa evaluación comercial
+    jest.clearAllMocks();
+    db.guardarCasoTriage.mockResolvedValueOnce(322);
+    extraerFichaTriage.mockResolvedValueOnce({
+      tipo_solicitud: 'Proyecto Comercial',
+      cliente_nombre: 'Constructora Norte',
+      sucursal_comuna: 'Las Condes',
+      sucursal_direccion: '',
+      equipo_tipo: 'Chiller',
+      equipo_marca: 'MarcaInventada',
+      sintoma_observacion: 'Climatización edificio 6 pisos',
+      prioridad: 'Normal',
+      disponibilidad_cliente: 'Lunes',
+      tiene_fotos: false,
+      requiere_derivacion: true,
+      opciones_botones: [],
+      respuesta_cliente: 'Tu requerimiento comercial fue ingresado.',
+    });
+
+    const { raw: rawProy, sig: sigProy } = firmarWebhook(bodyOk);
+    const resProy = await request(app)
+      .post('/webhooks/meta')
+      .set('Content-Type', 'application/json')
+      .set('x-hub-signature-256', sigProy)
+      .send(rawProy);
+
+    expect(resProy.status).toBe(200);
+    const textoProy = enviarMensajeWhatsApp.mock.calls[0][1];
+    expect(textoProy).toContain('Valor sujeto a evaluación y visita técnica por ejecutivo comercial');
+    expect(textoProy).toContain('Benjamin@interchileclima.cl');
+    expect(textoProy).not.toContain('Total estimado $');
   });
 });
 
@@ -337,6 +517,89 @@ describe('[INT-HU-19] (AAI-90) & KRON2-152 — Seguridad Bearer, Paginación Cur
     expect(res200.status).toBe(200);
     expect(res200.body.data.estado).toBe('agendado');
     expect(res200.body.data.fecha_visita).toBe('2026-11-12T14:00:00.000Z');
+  });
+
+  test('CA-1 / CA-2 / CA-4 (AAI-93): soporta los 4 estados, valida ID/estado/404/500 y verifica UI Dashboard', async () => {
+    // 1. Transición secuencial por estados operativos (en_proceso -> derivado -> agendado -> resuelto)
+    for (const est of ['en_proceso', 'derivado', 'agendado', 'resuelto']) {
+      db.actualizarEstadoTicket.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        data: {
+          id: 30,
+          estado: est,
+          fecha_visita: est === 'agendado' ? '2026-11-20T17:00:00.000Z' : null,
+          updated_at: '2026-11-16T15:00:00.000Z',
+        },
+      });
+      const r = await request(app)
+        .patch('/api/tickets/30')
+        .set('Authorization', AUTH)
+        .send({
+          estado: est,
+          ...(est === 'agendado' ? { fecha_visita: '2026-11-20T17:00:00.000Z' } : {}),
+        });
+      expect(r.status).toBe(200);
+      expect(r.body.data.estado).toBe(est);
+    }
+
+    // 2. CA-3: PDF de ticket agendado refleja fecha_visita programada
+    db.getTicketById.mockResolvedValueOnce(
+      db.normalizarTicketRow({
+        id: 30,
+        created_at: '2026-11-16T10:00:00.000Z',
+        updated_at: '2026-11-16T15:00:00.000Z',
+        nombre_completo: 'Hotel Pacífico',
+        motivo_principal: 'Mantención',
+        equipo_tipo: 'Cassette',
+        equipo_marca: 'LG',
+        estado: 'agendado',
+        fecha_visita: '2026-11-20T17:00:00.000Z',
+      })
+    );
+    const pdfAgendado = await request(app).get('/api/tickets/30/pdf').set('Authorization', AUTH);
+    expect(pdfAgendado.status).toBe(200);
+    expect(pdfAgendado.body.toString('latin1')).toContain('2026-11-20 17:00 UTC');
+
+    // 3. CA-4: Validaciones 400 (ID inválido / estado no permitido), 404 y 500 controlado sin botar el server
+    const getBadId = await request(app).get('/api/tickets/abc').set('Authorization', AUTH);
+    expect(getBadId.status).toBe(400);
+
+    const patchZeroId = await request(app).patch('/api/tickets/0').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patchZeroId.status).toBe(400);
+
+    db.actualizarEstadoTicket.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      error: 'invalid_state',
+      message: 'Estado inválido',
+    });
+    const patchBadState = await request(app).patch('/api/tickets/30').set('Authorization', AUTH).send({ estado: 'cerrado_x' });
+    expect(patchBadState.status).toBe(400);
+
+    db.actualizarEstadoTicket.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      error: 'not_found',
+      message: 'Ticket no encontrado',
+    });
+    const patch404 = await request(app).patch('/api/tickets/9999').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patch404.status).toBe(404);
+
+    db.actualizarEstadoTicket.mockRejectedValueOnce(new Error('Falla transitoria PG'));
+    const patch500 = await request(app).patch('/api/tickets/30').set('Authorization', AUTH).send({ estado: 'resuelto' });
+    expect(patch500.status).toBe(500);
+
+    const health = await request(app).get('/healthz');
+    expect(health.status).toBe(200);
+
+    // 4. Dashboard HTML contiene controles HU-19 y logo corporativo sin exponer secreto
+    const dashRes = await request(app).get('/dashboard');
+    expect(dashRes.status).toBe(200);
+    expect(dashRes.text).toContain('/assets/logo-interchile.png');
+    expect(dashRes.text).toContain('datetime-local');
+    expect(dashRes.text).toContain('descargarPdfTicket');
+    expect(dashRes.text).not.toContain('triage_bearer_token_exclusivo_sprint3');
   });
 });
 

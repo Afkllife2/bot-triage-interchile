@@ -2,6 +2,15 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 const { calcularCotizacionBorrador } = require('./cotizador');
+const {
+  ESTADOS_REUNION_VALIDOS,
+  fechaHoyChile,
+  normalizarFechaReunion,
+  normalizarHoraReunion,
+  normalizarModalidad,
+  calcularDisponibilidadDia,
+  sugerirHorariosCercanos,
+} = require('./agenda');
 require('dotenv').config();
 
 // ============================================================
@@ -34,6 +43,7 @@ const pool = new Pool({
 const ESTADOS_VALIDOS = new Set(['en_proceso', 'derivado', 'agendado', 'resuelto']);
 
 let schemaEnsured = false;
+let reunionesSchemaEnsured = false;
 
 /**
  * Asegura de forma idempotente las columnas de Sprint 3 y KRON2-152 en `casos_triage`.
@@ -50,6 +60,37 @@ async function ensureSchema(client) {
       ADD COLUMN IF NOT EXISTS catalogo_verificado BOOLEAN DEFAULT FALSE;
   `);
   schemaEnsured = true;
+}
+
+/**
+ * Asegura de forma idempotente la tabla `reuniones` y su índice anti-topones ([INT-HU-23]).
+ */
+async function ensureReunionesSchema(client) {
+  if (reunionesSchemaEnsured) return;
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS public.reuniones (
+      id SERIAL PRIMARY KEY,
+      cliente_id INTEGER NULL REFERENCES public.clientes(id) ON DELETE SET NULL,
+      cliente_nombre VARCHAR(255) NOT NULL,
+      telefono VARCHAR(30) NULL,
+      fecha_reunion DATE NOT NULL,
+      hora_reunion VARCHAR(5) NOT NULL,
+      modalidad VARCHAR(30) NOT NULL CHECK (modalidad IN ('Presencial', 'Online')),
+      motivo TEXT NOT NULL DEFAULT 'Evaluación comercial con Benjamín Yáñez',
+      origen VARCHAR(30) NOT NULL DEFAULT 'dashboard' CHECK (origen IN ('whatsapp', 'dashboard')),
+      estado VARCHAR(30) NOT NULL DEFAULT 'confirmada' CHECK (estado IN ('confirmada', 'reagendada', 'cancelada', 'completada')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_reuniones_slot_activo
+      ON public.reuniones (fecha_reunion, hora_reunion)
+      WHERE estado <> 'cancelada';
+    CREATE INDEX IF NOT EXISTS idx_reuniones_fecha_hora
+      ON public.reuniones (fecha_reunion ASC, hora_reunion ASC);
+    CREATE INDEX IF NOT EXISTS idx_reuniones_cliente_id
+      ON public.reuniones (cliente_id);
+  `);
+  reunionesSchemaEnsured = true;
 }
 
 /**
@@ -433,7 +474,8 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
   if (!Number.isInteger(numId) || numId <= 0) {
     return { error: 'invalid_id', status: 400, message: 'ID de ticket inválido' };
   }
-  if (!estado || !ESTADOS_VALIDOS.has(estado)) {
+  const estadoNorm = typeof estado === 'string' ? estado.trim().toLowerCase() : '';
+  if (!estadoNorm || !ESTADOS_VALIDOS.has(estadoNorm)) {
     return {
       error: 'invalid_state',
       status: 400,
@@ -442,7 +484,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
   }
 
   let fechaVisitaIso = null;
-  if (estado === 'agendado') {
+  if (estadoNorm === 'agendado') {
     if (!fecha_visita) {
       return {
         error: 'missing_fecha_visita',
@@ -509,7 +551,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
       };
     }
 
-    const nuevaFechaVisita = estado === 'agendado'
+    const nuevaFechaVisita = estadoNorm === 'agendado'
       ? fechaVisitaIso
       : (fecha_visita === null ? null : (fechaVisitaIso || currentTicket.fecha_visita));
 
@@ -519,7 +561,7 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
            fecha_visita = $2,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $3`,
-      [estado, nuevaFechaVisita, numId]
+      [estadoNorm, nuevaFechaVisita, numId]
     );
 
     const updatedRes = await client.query(`${BASE_SELECT_TICKETS} WHERE ct.id = $1`, [numId]);
@@ -539,6 +581,286 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
   }
 }
 
+function normalizarReunionRow(row) {
+  if (!row) return null;
+  let fechaStr = null;
+  if (row.fecha_reunion instanceof Date) {
+    fechaStr = row.fecha_reunion.toISOString().slice(0, 10);
+  } else if (typeof row.fecha_reunion === 'string') {
+    fechaStr = row.fecha_reunion.slice(0, 10);
+  }
+  return {
+    id: Number(row.id),
+    cliente_id: row.cliente_id ? Number(row.cliente_id) : null,
+    cliente_nombre: row.cliente_nombre || row.nombre_completo || 'Cliente InterChile',
+    telefono: row.telefono || null,
+    fecha_reunion: fechaStr,
+    hora_reunion: row.hora_reunion || null,
+    modalidad: row.modalidad || 'Online',
+    motivo: row.motivo || 'Evaluación comercial con Benjamín Yáñez',
+    origen: row.origen || 'dashboard',
+    estado: row.estado || 'confirmada',
+    created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
+    updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : null,
+  };
+}
+
+/**
+ * Lista reuniones agendadas con Benjamín y calcula bloques disponibles para la fecha consultada (CA-2, CA-4).
+ */
+async function listarReuniones({ fecha, incluirCanceladas = false, todos = false } = {}) {
+  let fechaObjetivo = fechaHoyChile();
+  let filtrarPorFecha = false;
+
+  if (fecha !== undefined && fecha !== null && String(fecha).trim() !== '') {
+    const norm = normalizarFechaReunion(String(fecha));
+    if (!norm) {
+      return {
+        ok: false,
+        error: 'invalid_fecha',
+        status: 400,
+        message: 'El parámetro fecha debe tener formato YYYY-MM-DD válido',
+      };
+    }
+    fechaObjetivo = norm;
+    filtrarPorFecha = !todos;
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await ensureReunionesSchema(client);
+
+    const conditions = [];
+    const params = [];
+    if (!incluirCanceladas) {
+      conditions.push(`r.estado <> 'cancelada'`);
+    }
+    if (filtrarPorFecha) {
+      params.push(fechaObjetivo);
+      conditions.push(`r.fecha_reunion = $${params.length}::date`);
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const listQuery = `
+      SELECT
+        r.id,
+        r.cliente_id,
+        COALESCE(NULLIF(r.cliente_nombre, ''), c.nombre_completo, 'Cliente InterChile') AS cliente_nombre,
+        COALESCE(NULLIF(r.telefono, ''), c.telefono) AS telefono,
+        TO_CHAR(r.fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
+        r.hora_reunion,
+        r.modalidad,
+        r.motivo,
+        r.origen,
+        r.estado,
+        r.created_at,
+        r.updated_at
+      FROM public.reuniones r
+      LEFT JOIN public.clientes c ON r.cliente_id = c.id
+      ${whereClause}
+      ORDER BY r.fecha_reunion ASC, r.hora_reunion ASC, r.id ASC
+    `;
+    const resList = await client.query(listQuery, params);
+
+    const resDia = await client.query(
+      `SELECT hora_reunion FROM public.reuniones WHERE fecha_reunion = $1::date AND estado <> 'cancelada'`,
+      [fechaObjetivo]
+    );
+    const horasOcupadas = resDia.rows.map((r) => r.hora_reunion);
+    const disponibilidad = calcularDisponibilidadDia(fechaObjetivo, horasOcupadas);
+
+    return {
+      ok: true,
+      status: 200,
+      data: resList.rows.map(normalizarReunionRow),
+      disponibilidad,
+    };
+  } catch (error) {
+    logError('db.listarReuniones', error);
+    throw error;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Crea una reserva de reunión con Benjamín Yáñez validando atómicamente topones (HTTP 409) y vinculando cliente (CA-1..CA-3).
+ */
+async function crearReservaReunion(payload = {}) {
+  const nombreRaw = typeof payload.cliente_nombre === 'string' ? payload.cliente_nombre.trim() : '';
+  const telefonoRaw = payload.telefono ? String(payload.telefono).trim() : null;
+  const fechaNorm = normalizarFechaReunion(String(payload.fecha_reunion || payload.fecha || ''));
+  const horaNorm = normalizarHoraReunion(String(payload.hora_reunion || payload.hora || ''));
+  const modStrict = payload.modalidad !== undefined && payload.modalidad !== '';
+  const modalidadNorm = normalizarModalidad(payload.modalidad, { estricto: modStrict, defecto: 'Online' });
+  const motivoNorm = (typeof payload.motivo === 'string' && payload.motivo.trim())
+    ? payload.motivo.trim()
+    : 'Evaluación comercial con Benjamín Yáñez';
+  const origenNorm = payload.origen === 'whatsapp' ? 'whatsapp' : 'dashboard';
+
+  if (!nombreRaw) {
+    return {
+      ok: false,
+      error: 'missing_cliente_nombre',
+      status: 400,
+      message: 'El campo cliente_nombre es obligatorio para reservar la reunión',
+    };
+  }
+  if (!fechaNorm) {
+    return {
+      ok: false,
+      error: 'invalid_fecha_reunion',
+      status: 400,
+      message: 'El campo fecha_reunion debe tener formato YYYY-MM-DD válido',
+    };
+  }
+  if (!horaNorm) {
+    return {
+      ok: false,
+      error: 'invalid_hora_reunion',
+      status: 400,
+      message: 'El campo hora_reunion debe estar entre 08:00 y 19:00 en formato HH:mm',
+    };
+  }
+  if (!modalidadNorm) {
+    return {
+      ok: false,
+      error: 'invalid_modalidad',
+      status: 400,
+      message: 'Modalidad inválida. Valores permitidos: Presencial u Online',
+    };
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await ensureReunionesSchema(client);
+    await client.query('BEGIN');
+
+    // Resolver o registrar cliente si se provee teléfono (CA-1 trazabilidad)
+    let clienteId = null;
+    if (telefonoRaw) {
+      const resCli = await client.query(
+        'SELECT id FROM public.clientes WHERE telefono = $1',
+        [telefonoRaw]
+      );
+      if (resCli.rows.length > 0) {
+        clienteId = resCli.rows[0].id;
+      } else {
+        const insCli = await client.query(
+          `INSERT INTO public.clientes (telefono, nombre_completo)
+           VALUES ($1, $2)
+           RETURNING id`,
+          [telefonoRaw, nombreRaw]
+        );
+        clienteId = insCli.rows[0].id;
+      }
+    }
+
+    // Verificar bloques ocupados del día y prevenir topón (CA-3)
+    const ocupadasRes = await client.query(
+      `SELECT hora_reunion FROM public.reuniones
+       WHERE fecha_reunion = $1::date AND estado <> 'cancelada'
+       FOR UPDATE`,
+      [fechaNorm]
+    );
+    const horasOcupadas = ocupadasRes.rows.map((r) => r.hora_reunion);
+    if (horasOcupadas.includes(horaNorm)) {
+      await client.query('ROLLBACK');
+      const sugerencias = sugerirHorariosCercanos(horaNorm, horasOcupadas, 3);
+      return {
+        ok: false,
+        error: 'horario_ocupado',
+        codigo: 'HORARIO_OCUPADO',
+        status: 409,
+        message: `El bloque ${fechaNorm} a las ${horaNorm} hrs ya se encuentra reservado con Benjamín Yáñez`,
+        sugerencias,
+      };
+    }
+
+    const insertRes = await client.query(
+      `INSERT INTO public.reuniones (
+        cliente_id, cliente_nombre, telefono, fecha_reunion, hora_reunion,
+        modalidad, motivo, origen, estado
+      ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, 'confirmada')
+      RETURNING id, cliente_id, cliente_nombre, telefono,
+                TO_CHAR(fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
+                hora_reunion, modalidad, motivo, origen, estado, created_at, updated_at`,
+      [clienteId, nombreRaw, telefonoRaw, fechaNorm, horaNorm, modalidadNorm, motivoNorm, origenNorm]
+    );
+
+    await client.query('COMMIT');
+    console.log(`📅 Reunión agendada con Benjamín: #R-${insertRes.rows[0].id} (${fechaNorm} ${horaNorm}, ${modalidadNorm})`);
+    return {
+      ok: true,
+      status: 201,
+      data: normalizarReunionRow(insertRes.rows[0]),
+    };
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (error && error.code === '23505') {
+      // Colisión concurrente atrapada por índice único parcial
+      let sugerencias = sugerirHorariosCercanos(horaNorm, [horaNorm], 3);
+      return {
+        ok: false,
+        error: 'horario_ocupado',
+        codigo: 'HORARIO_OCUPADO',
+        status: 409,
+        message: `El bloque ${fechaNorm} a las ${horaNorm} hrs ya se encuentra reservado con Benjamín Yáñez`,
+        sugerencias,
+      };
+    }
+    logError('db.crearReservaReunion', error);
+    throw error;
+  } finally {
+    if (client) client.release();
+  }
+}
+
+/**
+ * Actualiza el estado de una reunión (confirmada, reagendada, cancelada, completada).
+ */
+async function actualizarEstadoReunion(id, { estado } = {}) {
+  const numId = Number(id);
+  if (!Number.isInteger(numId) || numId <= 0) {
+    return { ok: false, error: 'invalid_id', status: 400, message: 'ID de reunión inválido' };
+  }
+  const estadoNorm = typeof estado === 'string' ? estado.trim().toLowerCase() : '';
+  if (!ESTADOS_REUNION_VALIDOS.has(estadoNorm)) {
+    return {
+      ok: false,
+      error: 'invalid_estado',
+      status: 400,
+      message: `Estado inválido. Valores permitidos: ${[...ESTADOS_REUNION_VALIDOS].join(', ')}`,
+    };
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await ensureReunionesSchema(client);
+    const updRes = await client.query(
+      `UPDATE public.reuniones
+       SET estado = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING id, cliente_id, cliente_nombre, telefono,
+                 TO_CHAR(fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
+                 hora_reunion, modalidad, motivo, origen, estado, created_at, updated_at`,
+      [estadoNorm, numId]
+    );
+    if (updRes.rows.length === 0) {
+      return { ok: false, error: 'not_found', status: 404, message: 'Reunión no encontrada' };
+    }
+    return { ok: true, status: 200, data: normalizarReunionRow(updRes.rows[0]) };
+  } catch (error) {
+    logError('db.actualizarEstadoReunion', error);
+    throw error;
+  } finally {
+    if (client) client.release();
+  }
+}
+
 module.exports = {
   guardarCasoTriage,
   getTicketsDashboard,
@@ -546,6 +868,10 @@ module.exports = {
   getTicketById,
   actualizarEstadoTicket,
   normalizarTicketRow,
+  listarReuniones,
+  crearReservaReunion,
+  actualizarEstadoReunion,
+  normalizarReunionRow,
   encodeCursor,
   decodeCursor,
   ESTADOS_VALIDOS,

@@ -1,6 +1,6 @@
 # Matriz de Riesgos v1
 
-**Proyecto:** Bot Triage Comercial InterChile (Hito 1 y Hito 2)
+**Proyecto:** Bot Triage Comercial InterChile (Hitos 1, 2 y 3)
 **Metodología:** Análisis de Riesgo Cualitativo
 
 Esta matriz identifica los riesgos potenciales que podrían afectar el desarrollo y la implementación del bot, evaluando su probabilidad e impacto para generar un plan de mitigación y contingencia.
@@ -27,7 +27,7 @@ Esta matriz identifica los riesgos potenciales que podrían afectar el desarroll
 
 ---
 
-# Actualización de la Matriz de Riesgos — Cierre Sprint 2 (Hito 2)
+## Actualización de la Matriz de Riesgos — Cierre Sprint 2 (Hito 2)
 
 **Fecha de revisión:** 20 de Octubre 2026 · Revisión de los riesgos del Hito 1, alta de riesgos nuevos detectados durante el Sprint 2 e incorporación de planes de contingencia tras sesión de Review con Profesora Guía.
 
@@ -62,13 +62,14 @@ Esta matriz identifica los riesgos potenciales que podrían afectar el desarroll
 
 ---
 
-# Actualización de la Matriz de Riesgos — Inicio y Ejecución Sprint 3 (Hito 3)
+## D. Apertura de Gestión de Riesgos — Sprint 3 (Hito 3: Cierre de Titulación)
 
-**Fecha de revisión:** 09 de Noviembre 2026 · Evaluación de riesgos para el cierre de titulación e integración con Kronos 2.0 (`KRON2-152`).
+**Fecha de apertura y revisión:** 12 de Noviembre de 2026 · Evaluación inicial de riesgos abiertos para el Sprint 3, en seguimiento continuo junto a la Profesora Sarita González.
 
-| ID | Riesgo Sprint 3 | Categoría | Prob. | Impacto | Severidad | Estado y Mitigación Implementada en Sprint 3 |
+| ID | Riesgo Sprint 3 | Categoría | Prob. | Impacto | Severidad | Estado Actual y Plan de Mitigación en Ejecución |
 |---|---|---|---|---|---|---|
-| **R-15** | **Desarrollo paralelo del ERP Kronos 2.0** fuera de los plazos de defensa del Hito 3 | Dependencia Externa | 3 | 3 | **9 (Rojo)** | **Mitigado con Estrategia Dual:** (1) Se implementó en el propio Bot el agendamiento con `fecha_visita`, transición de los 4 estados, cotizador CLP y descarga de PDF en `public/dashboard.html` (`INT-HU-19`), garantizando operación 100% autónoma en Render; y (2) se implementó el contrato cerrado `KRON2-152` con Bearer Token (`TRIAGE_API_TOKEN`) y cliente `GET /api/kronos/catalogo` (`catalogo_verificado`). |
-| **R-16** | **Alucinación numérica del LLM al calcular cotizaciones e IVA (19%)** | IA / Financiero | 2 | 3 | **6 (Amarillo)** | **Mitigado (ADR-01):** El cálculo comercial se desacopló del LLM en `src/cotizador.js` mediante reglas deterministas puras y retorno `null` cuando el equipo es `[dato por confirmar]`. |
-| **R-17** | **Desborde de RAM en Render (512 MB) al generar documentos PDF** | Infraestructura | 2 | 3 | **6 (Amarillo)** | **Mitigado (ADR-02):** Se construyó `src/pdfGenerator.js` generando binarios `%PDF-1.4` nativos en memoria en `< 5 ms` sin depender de Chromium/Puppeteer. |
-| **R-18** | **Condiciones de carrera en actualizaciones simultáneas de tickets o ráfagas de WhatsApp** | Concurrencia / Datos | 2 | 2 | **4 (Amarillo)** | **Mitigado (ADR-03):** Bloqueo optimista en `PATCH /api/tickets/:id` (`expected_updated_at` -> `HTTP 409 Conflict`) y validación con prueba de estrés de 20 usuarios simultáneos (`100% PASS`). |
+| **R-15** | **Atraso externo del ERP Kronos 2.0** fuera de los plazos académicos del Hito 3 | Dependencia Externa | 3 | 3 | **9 (Rojo)** | **Abierto — En ejecución (Plan de Contingencia Activo):** Se planificó en Sprint 3 (`AAI-90`, `AAI-94`, `AAI-102`) la autonomía operativa total en `public/dashboard.html` y WhatsApp (estados, agendamiento de visitas/reuniones y descarga PDF), dejando el adaptador de contrato `KRON2-152` desacoplado en el backend. Pendiente de desarrollo y cierre E2E. |
+| **R-16** | **Alucinación numérica del LLM al calcular cotizaciones CLP e IVA (19%)** | IA / Financiero | 2 | 3 | **6 (Amarillo)** | **En mitigación (`AAI-25` en curso):** Reglas deterministas en `src/cotizador.js` (retorno `null` ante datos `[dato por confirmar]`) implementadas en `AAI-86`; pendiente finalizar integración en WhatsApp (`AAI-88`) y certificar pruebas unitarias/cobertura (`AAI-89`). |
+| **R-17** | **Sobrecarga de memoria RAM en Render (512 MB) o alta latencia al emitir documentos PDF** | Infraestructura / Rendimiento | 2 | 3 | **6 (Amarillo)** | **En mitigación (`AAI-25` en curso):** Generador nativo en memoria `src/pdfGenerator.js` sin Chromium implementado en `AAI-87`; pendiente validar bajo flujo completo de extremo a extremo y pruebas de descarga (`AAI-89`). |
+| **R-18** | **Condiciones de carrera bajo ráfagas de WhatsApp, colisiones de actualización en Dashboard o cobertura insuficiente de pruebas** | Concurrencia / Calidad | 2 | 2 | **4 (Amarillo)** | **Abierto — Planificado (`AAI-90` y `AAI-98`):** Plan de mitigación: control optimista en transición de estados, prueba de estrés de 20 usuarios simultáneos (`> 99%` éxito), medición formal de cobertura (`jest --coverage`) e Informe Separado de Pruebas. |
+| **R-19** | **Topones horarios o doble reserva de reuniones en el calendario de Benjamín** | Negocio / Reglas | 2 | 3 | **6 (Amarillo)** | **Abierto — Planificado (`AAI-102`):** Riesgo identificado al incorporar `[INT-HU-23]` en el Sprint 3. Plan de mitigación: validación determinista de disponibilidad horaria en BD y bloqueo atómico de franjas antes de confirmar la cita por WhatsApp. |

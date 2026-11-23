@@ -5,12 +5,17 @@ const { extraerFichaTriage } = require('./brain');
 const db = require('./db');
 const { enviarMensajeWhatsApp, enviarMensajeConBotones } = require('./whatsapp');
 const { aplicarArnes } = require('./arneses'); // HU-21
+const { enriquecerRespuestaConCotizacion } = require('./cotizador'); // HU-05 CA-4
 const { generarFichaCotizacionPDF } = require('./pdfGenerator'); // HU-05
 const {
   registrarLatencia,
   registrarGeneracionPdf,
   obtenerResumenMetricas,
 } = require('./metricsStore'); // HU-22
+const {
+  construirMensajeReunionWhatsApp,
+  normalizarModalidad,
+} = require('./agenda'); // HU-23
 require('dotenv').config();
 
 const app = express();
@@ -161,21 +166,57 @@ app.post('/webhooks/meta', async (req, res) => {
         const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
 
         if (fichaEstructurada) {
+          let casoId = null;
           if (!fichaEstructurada._noPersistir) {
-            await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);
+            casoId = await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);
           }
 
-          if (fichaEstructurada.respuesta_cliente) {
+          let resultadoReunion = null;
+          if (
+            fichaEstructurada.solicita_reunion &&
+            fichaEstructurada.reunion_fecha &&
+            fichaEstructurada.reunion_hora &&
+            typeof db.crearReservaReunion === 'function'
+          ) {
+            const modalidadRes = normalizarModalidad(fichaEstructurada.reunion_modalidad, { defecto: 'Online' });
+            resultadoReunion = await db.crearReservaReunion({
+              cliente_nombre: fichaEstructurada.cliente_nombre || `Cliente ${telefonoCliente}`,
+              telefono: telefonoCliente,
+              fecha_reunion: fichaEstructurada.reunion_fecha,
+              hora_reunion: fichaEstructurada.reunion_hora,
+              modalidad: modalidadRes,
+              motivo: fichaEstructurada.sintoma_observacion || 'Reunión comercial con Benjamín Yáñez',
+              origen: 'whatsapp',
+            });
+          }
+
+          if (fichaEstructurada.respuesta_cliente || resultadoReunion) {
+            let mensajeFinal = enriquecerRespuestaConCotizacion(
+              fichaEstructurada.respuesta_cliente || '',
+              fichaEstructurada,
+              casoId
+            );
+            if (resultadoReunion) {
+              mensajeFinal = construirMensajeReunionWhatsApp(mensajeFinal, resultadoReunion, {
+                fecha: fichaEstructurada.reunion_fecha,
+                hora: fichaEstructurada.reunion_hora,
+                modalidad: normalizarModalidad(fichaEstructurada.reunion_modalidad, { defecto: 'Online' }),
+              });
+            }
             if (fichaEstructurada.requiere_derivacion) {
-              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
-            } else if (fichaEstructurada.opciones_botones && fichaEstructurada.opciones_botones.length > 0) {
+              await enviarMensajeWhatsApp(telefonoCliente, mensajeFinal);
+            } else if (
+              resultadoReunion?.status !== 409 &&
+              fichaEstructurada.opciones_botones &&
+              fichaEstructurada.opciones_botones.length > 0
+            ) {
               await enviarMensajeConBotones(
                 telefonoCliente,
-                fichaEstructurada.respuesta_cliente,
+                mensajeFinal,
                 fichaEstructurada.opciones_botones
               );
             } else {
-              await enviarMensajeWhatsApp(telefonoCliente, fichaEstructurada.respuesta_cliente);
+              await enviarMensajeWhatsApp(telefonoCliente, mensajeFinal);
             }
           }
         }
@@ -346,6 +387,76 @@ app.get('/api/metricas', requireTriageAuth, async (req, res) => {
   } catch (error) {
     console.error('❌ Error en GET /api/metricas:', error.message);
     return res.status(500).json({ ok: false, error: 'Error al obtener métricas' });
+  }
+});
+
+/**
+ * 7B. GET /api/reuniones
+ * Lista las reuniones programadas con Benjamín Yáñez y bloques disponibles del día (HU-23 / AAI-102 CA-2, CA-4).
+ */
+app.get('/api/reuniones', requireTriageAuth, async (req, res) => {
+  try {
+    const incluirCanceladas = req.query.incluir_canceladas === 'true';
+    const todos = req.query.todos === 'true';
+    const resultado = await db.listarReuniones({
+      fecha: req.query.fecha,
+      incluirCanceladas,
+      todos,
+    });
+    if (!resultado.ok) {
+      return res.status(resultado.status || 400).json({ ok: false, error: resultado.message });
+    }
+    return res.status(200).json({
+      ok: true,
+      data: resultado.data,
+      disponibilidad: resultado.disponibilidad,
+    });
+  } catch (error) {
+    console.error('❌ Error en GET /api/reuniones:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al consultar calendario de reuniones' });
+  }
+});
+
+/**
+ * 7C. POST /api/reuniones
+ * Crea una reserva de reunión con Benjamín Yáñez previniendo topones horarios con HTTP 409 (CA-1..CA-3).
+ */
+app.post('/api/reuniones', requireTriageAuth, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const resultado = await db.crearReservaReunion({
+      ...body,
+      origen: body.origen === 'whatsapp' ? 'whatsapp' : 'dashboard',
+    });
+    if (!resultado.ok) {
+      return res.status(resultado.status || 400).json({
+        ok: false,
+        error: resultado.message,
+        ...(resultado.codigo ? { codigo: resultado.codigo } : {}),
+        ...(resultado.sugerencias ? { sugerencias: resultado.sugerencias } : {}),
+      });
+    }
+    return res.status(201).json({ ok: true, data: resultado.data });
+  } catch (error) {
+    console.error('❌ Error en POST /api/reuniones:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al registrar la reunión' });
+  }
+});
+
+/**
+ * 7D. PATCH /api/reuniones/:id
+ * Actualiza el estado de una reunión con Benjamín (confirmada, reagendada, cancelada, completada).
+ */
+app.patch('/api/reuniones/:id', requireTriageAuth, async (req, res) => {
+  try {
+    const resultado = await db.actualizarEstadoReunion(req.params.id, req.body || {});
+    if (!resultado.ok) {
+      return res.status(resultado.status || 400).json({ ok: false, error: resultado.message });
+    }
+    return res.status(200).json({ ok: true, data: resultado.data });
+  } catch (error) {
+    console.error('❌ Error en PATCH /api/reuniones/:id:', error.message);
+    return res.status(500).json({ ok: false, error: 'Error al actualizar la reunión' });
   }
 });
 

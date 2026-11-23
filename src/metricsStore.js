@@ -18,17 +18,32 @@ const state = {
   alucinacionesInterceptadas: 0,
   pdfsGenerados: 0,
   pdfsFallidos: 0,
+  alertasSla: 0,
+  ultimaAlertaSla: null,
 };
 
 /**
  * Registra una muestra de latencia de respuesta del bot en milisegundos.
+ * Si supera el umbral SLA (> 4000 ms), emite advertencia de auditoría sin interrumpir el flujo (CA-4).
  * @param {number} ms
  */
 function registrarLatencia(ms) {
-  if (typeof ms !== 'number' || Number.isNaN(ms) || ms < 0) return;
-  state.latenciasMs.push(Math.round(ms));
+  if (!Number.isFinite(ms) || ms < 0) return;
+  const rounded = Math.round(ms);
+  state.latenciasMs.push(rounded);
   if (state.latenciasMs.length > MAX_SAMPLES) {
     state.latenciasMs.shift();
+  }
+  if (rounded > SLA_THRESHOLD_MS) {
+    state.alertasSla += 1;
+    state.ultimaAlertaSla = {
+      timestamp: new Date().toISOString(),
+      latencia_ms: rounded,
+      umbral_ms: SLA_THRESHOLD_MS,
+    };
+    console.warn(
+      `⚠️ [HU-22 SLA] Respuesta sobre umbral (${rounded} ms > ${SLA_THRESHOLD_MS} ms). Descontando cumplimiento SLA.`
+    );
   }
 }
 
@@ -61,6 +76,8 @@ function resetMetricas() {
   state.alucinacionesInterceptadas = 0;
   state.pdfsGenerados = 0;
   state.pdfsFallidos = 0;
+  state.alertasSla = 0;
+  state.ultimaAlertaSla = null;
 }
 
 /**
@@ -92,6 +109,11 @@ function obtenerResumenMetricas(tickets = []) {
   };
 
   return {
+    // Campos planos requeridos por contrato AAI-94 CA-2
+    latencia_promedio_ms: latenciaPromedioMs,
+    porcentaje_sla_cumplido: cumplimientoSlaPct,
+    total_alucinaciones_bloqueadas: state.alucinacionesInterceptadas,
+    total_pdfs_generados: state.pdfsGenerados,
     sla: {
       umbral_ms: SLA_THRESHOLD_MS,
       latencia_promedio_ms: latenciaPromedioMs,
@@ -99,6 +121,8 @@ function obtenerResumenMetricas(tickets = []) {
       muestras_latencia: muestras,
       cumple_sla: latenciaPromedioMs < SLA_THRESHOLD_MS,
       cumplimiento_sla_pct: cumplimientoSlaPct,
+      alertas_sla: state.alertasSla,
+      ultima_alerta_sla: state.ultimaAlertaSla,
     },
     arnes: {
       total_validaciones: state.totalValidacionesArnes,
