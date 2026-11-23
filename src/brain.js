@@ -2,6 +2,7 @@ require('dotenv').config();
 const { ChatGoogleGenerativeAI } = require('@langchain/google-genai');
 const { HumanMessage, AIMessage, SystemMessage } = require('@langchain/core/messages');
 const { z } = require('zod');
+const { fechaHoyChile } = require('./agenda');
 
 // ==========================================
 // 🧠 MOTOR IA — NÚCLEO DEL SISTEMA
@@ -65,6 +66,28 @@ const FichaTriage = z.object({
     .max(10)
     .describe("Lista de opciones cortas para presentar como botones o lista en WhatsApp. Usar SOLO cuando el cliente necesita elegir entre opciones claras. Dejar vacío si no aplica."),
 
+  // HU-23 (AAI-102): Detección de solicitud de reunión con Benjamín Yáñez
+  solicita_reunion: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("True si el cliente solicita agendar, coordinar o reservar una reunión (presencial, online o evaluación comercial) con Benjamín Yáñez."),
+  reunion_fecha: z
+    .string()
+    .optional()
+    .default('')
+    .describe("Fecha solicitada para la reunión con Benjamín en formato exacto YYYY-MM-DD (ej. '2026-11-25'). Convertir expresiones como 'mañana' usando la fecha actual de Chile. Si no indica día concreto, dejar vacío."),
+  reunion_hora: z
+    .string()
+    .optional()
+    .default('')
+    .describe("Hora solicitada para la reunión con Benjamín en formato 24h HH:mm (ej. '10:00', '15:30'). Si no indica hora, dejar vacío."),
+  reunion_modalidad: z
+    .enum(['Presencial', 'Online', ''])
+    .optional()
+    .default('')
+    .describe("Modalidad de la reunión ('Presencial' u 'Online'). Dejar '' si aún no se especifica."),
+
   respuesta_cliente: z
     .string()
     .describe("Respuesta comercial, empática y breve para enviar al cliente. Si requiere_derivacion es true, confirmar que un ejecutivo lo contactará y despedirse. Si hay opciones_botones, redactar el texto que acompaña a los botones."),
@@ -94,6 +117,10 @@ REGLAS IMPORTANTES:
     3) Tipo de espacio o equipo requerido (ej: oficinas, local comercial, galpón, clínica, o equipo con marca/modelo).
   * Mientras falten estos datos básicos (especialmente la comuna/ciudad y nombre/empresa), mantén requiere_derivacion: false y pídele cordialmente esos detalles al cliente.
   * Una vez que el cliente haya proporcionado los datos completos de su solicitud (o si el cliente insiste explícitamente en hablar con un ejecutivo de inmediato sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
+- AGENDAMIENTO AUTOMÁTICO DE REUNIONES CON BENJAMÍN (HU-23):
+  * Si el cliente solicita agendar o reservar una reunión con Benjamín (presencial, online o de evaluación comercial), marca solicita_reunion: true y mantén requiere_derivacion: false mientras se coordina el bloque horario (para permitir confirmar o elegir otra hora si hay topón).
+  * Extrae reunion_fecha en formato YYYY-MM-DD, reunion_hora en formato 24h HH:mm (ej. "10:00") y reunion_modalidad ("Presencial" u "Online", por defecto "Online" si dice virtual/videollamada o no especifica modalidad).
+  * Si el cliente pidió reunión con Benjamín pero falta la fecha o la hora concreta, pídele cordialmente qué día y en qué bloque horario (09:00 a 18:00 hrs) prefiere reunirse y si desea modalidad Presencial u Online.
 - Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Instalación", "Cotización", "Proyecto Comercial", "Arriendo", "Otra Consulta"].
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
@@ -189,7 +216,7 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
   console.log(`💬 Historial: ${ctx.mensajes.length / 2} turno(s) anteriores en memoria`);
 
   const mensajes = [
-    new SystemMessage(SYSTEM_PROMPT),
+    new SystemMessage(`${SYSTEM_PROMPT}\n\nFecha actual de referencia en Chile: ${fechaHoyChile()}`),
     ...ctx.mensajes,
     new HumanMessage(mensajeCliente),
   ];
