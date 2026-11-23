@@ -22,3 +22,5 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      - key: TRIAGE_API_TOKEN
+        sync: false
