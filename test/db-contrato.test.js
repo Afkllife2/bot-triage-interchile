@@ -200,4 +200,159 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
     expect(okRes.data.estado).toBe('agendado');
     expect(okRes.data.fecha_visita).toBe('2026-11-18T14:30:00.000Z');
   });
+
+  test('[INT-HU-23] crearReservaReunion valida entrada (400), bloquea topón FOR UPDATE/23505 (409) y crea reserva (201)', async () => {
+    const missNombre = await db.crearReservaReunion({ fecha_reunion: '2026-12-01', hora_reunion: '10:00' });
+    expect(missNombre.status).toBe(400);
+
+    const badFecha = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica',
+      fecha_reunion: '2026-02-30',
+      hora_reunion: '10:00',
+    });
+    expect(badFecha.status).toBe(400);
+
+    const badHora = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica',
+      fecha_reunion: '2026-12-01',
+      hora_reunion: '22:00',
+    });
+    expect(badHora.status).toBe(400);
+
+    const badMod = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica',
+      fecha_reunion: '2026-12-01',
+      hora_reunion: '10:00',
+      modalidad: 'Telepatia',
+    });
+    expect(badMod.status).toBe(400);
+
+    // 1era llamada ejecuta ensureReunionesSchema + BEGIN + SELECT cliente + FOR UPDATE (ocupado -> 409)
+    mockQuery
+      .mockResolvedValueOnce({}) // ensureReunionesSchema (corre 1 vez)
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 8 }] }) // SELECT cliente existente
+      .mockResolvedValueOnce({ rows: [{ hora_reunion: '10:00' }] }) // SELECT FOR UPDATE ocupado
+      .mockResolvedValueOnce({}); // ROLLBACK
+
+    const topon = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica Test',
+      telefono: '56912345678',
+      fecha_reunion: '2026-12-01',
+      hora_reunion: '10',
+      modalidad: 'Presencial',
+      origen: 'whatsapp',
+    });
+    expect(topon.status).toBe(409);
+    expect(topon.codigo).toBe('HORARIO_OCUPADO');
+    expect(topon.sugerencias).toEqual(['09:00', '11:00', '12:00']);
+
+    // Colisión concurrente SQLSTATE 23505
+    const err23505 = new Error('duplicate key value violates unique constraint');
+    err23505.code = '23505';
+    mockQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // SELECT cliente no existe
+      .mockResolvedValueOnce({ rows: [{ id: 15 }] }) // INSERT cliente
+      .mockResolvedValueOnce({ rows: [] }) // FOR UPDATE vacío en race
+      .mockRejectedValueOnce(err23505) // INSERT public.reuniones choca 23505
+      .mockResolvedValueOnce({}); // ROLLBACK
+
+    const race409 = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica Race',
+      telefono: '56999887766',
+      fecha_reunion: '2026-12-01',
+      hora_reunion: '11:00',
+      modalidad: 'Online',
+    });
+    expect(race409.status).toBe(409);
+    expect(race409.codigo).toBe('HORARIO_OCUPADO');
+
+    // Creación exitosa (201)
+    mockQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ hora_reunion: '10:00' }] }) // sin teléfono, directo a FOR UPDATE
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 42,
+          cliente_id: null,
+          cliente_nombre: 'Hotel Regal',
+          telefono: null,
+          fecha_reunion: '2026-12-02',
+          hora_reunion: '15:00',
+          modalidad: 'Online',
+          motivo: 'Cotización VRF',
+          origen: 'dashboard',
+          estado: 'confirmada',
+          created_at: '2026-11-23T01:00:00.000Z',
+          updated_at: '2026-11-23T01:00:00.000Z',
+        }],
+      })
+      .mockResolvedValueOnce({}); // COMMIT
+
+    const okCrear = await db.crearReservaReunion({
+      cliente_nombre: 'Hotel Regal',
+      fecha_reunion: '2026-12-02',
+      hora_reunion: '15:00',
+      modalidad: 'zoom',
+      motivo: 'Cotización VRF',
+    });
+    expect(okCrear.status).toBe(201);
+    expect(okCrear.data).toMatchObject({
+      id: 42,
+      fecha_reunion: '2026-12-02',
+      hora_reunion: '15:00',
+      modalidad: 'Online',
+      origen: 'dashboard',
+      estado: 'confirmada',
+    });
+  });
+
+  test('[INT-HU-23] listarReuniones y actualizarEstadoReunion validan entrada, disponibilidad y transiciones', async () => {
+    const badList = await db.listarReuniones({ fecha: 'no-fecha' });
+    expect(badList.status).toBe(400);
+
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 1,
+          cliente_id: 2,
+          cliente_nombre: 'Clinica Sur',
+          telefono: '56911112222',
+          fecha_reunion: new Date('2026-12-01T00:00:00.000Z'),
+          hora_reunion: '10:00',
+          modalidad: 'Presencial',
+          motivo: 'Evaluación Chiller',
+          origen: 'whatsapp',
+          estado: 'confirmada',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ hora_reunion: '10:00' }] });
+
+    const listado = await db.listarReuniones({ fecha: '2026-12-01', todos: true });
+    expect(listado.status).toBe(200);
+    expect(listado.data).toHaveLength(1);
+    expect(listado.disponibilidad.ocupados).toEqual(['10:00']);
+    expect(listado.disponibilidad.disponibles).not.toContain('10:00');
+
+    expect((await db.actualizarEstadoReunion('abc', { estado: 'cancelada' })).status).toBe(400);
+    expect((await db.actualizarEstadoReunion(1, { estado: 'inventado' })).status).toBe(400);
+
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    expect((await db.actualizarEstadoReunion(999, { estado: 'cancelada' })).status).toBe(404);
+
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        fecha_reunion: '2026-12-01',
+        hora_reunion: '10:00',
+        modalidad: 'Presencial',
+        origen: 'whatsapp',
+        estado: 'cancelada',
+      }],
+    });
+    const upd = await db.actualizarEstadoReunion(1, { estado: 'Cancelada' });
+    expect(upd.status).toBe(200);
+    expect(upd.data.estado).toBe('cancelada');
+  });
 });
