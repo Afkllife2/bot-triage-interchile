@@ -166,6 +166,13 @@ app.post('/webhooks/meta', async (req, res) => {
         const fichaEstructurada = fichaIA ? await aplicarArnes(fichaIA, telefonoCliente) : null;
 
         if (fichaEstructurada) {
+          if (
+            fichaEstructurada._reiniciarSesionDb &&
+            typeof db.cerrarCasosEnProcesoPorTelefono === 'function'
+          ) {
+            await db.cerrarCasosEnProcesoPorTelefono(telefonoCliente);
+          }
+
           let casoId = null;
           if (!fichaEstructurada._noPersistir) {
             casoId = await db.guardarCasoTriage(fichaEstructurada, telefonoCliente);

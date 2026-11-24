@@ -180,6 +180,7 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
     limpiarHistorial(telefono);
     return {
       _noPersistir: true,
+      _reiniciarSesionDb: true,
       tipo_solicitud: 'Otra Consulta',
       cliente_nombre: '', sucursal_comuna: '', sucursal_direccion: '',
       equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Reinicio de sesión',
