@@ -265,9 +265,9 @@ async function guardarCasoTriage(ficha, telefonoCliente) {
             tiene_fotos = COALESCE($7, tiene_fotos),
             requiere_humano = $8,
             estado = $9,
-            cotizacion_neto = COALESCE($10, cotizacion_neto),
-            cotizacion_iva = COALESCE($11, cotizacion_iva),
-            cotizacion_total = COALESCE($12, cotizacion_total),
+            cotizacion_neto = $10,
+            cotizacion_iva = $11,
+            cotizacion_total = $12,
             catalogo_verificado = $13,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $14
@@ -861,8 +861,41 @@ async function actualizarEstadoReunion(id, { estado } = {}) {
   }
 }
 
+/**
+ * Cierra los casos `en_proceso` vigentes de un teléfono cuando el usuario ejecuta `/reset`,
+ * asegurando que el siguiente flujo cree un Ticket nuevo limpio en el Dashboard.
+ */
+async function cerrarCasosEnProcesoPorTelefono(telefonoCliente) {
+  if (!telefonoCliente) return 0;
+  let client;
+  try {
+    client = await pool.connect();
+    await ensureSchema(client);
+    const res = await client.query(
+      `UPDATE casos_triage ct
+       SET estado = 'resuelto',
+           updated_at = CURRENT_TIMESTAMP
+       FROM clientes cl
+       WHERE ct.cliente_id = cl.id
+         AND cl.telefono = $1
+         AND ct.estado = 'en_proceso'`,
+      [telefonoCliente]
+    );
+    if (res.rowCount > 0) {
+      console.log(`🔄 [Reset] ${res.rowCount} caso(s) en_proceso cerrado(s) para ${telefonoCliente}`);
+    }
+    return res.rowCount || 0;
+  } catch (error) {
+    logError('db.cerrarCasosEnProcesoPorTelefono', error);
+    return 0;
+  } finally {
+    if (client) client.release();
+  }
+}
+
 module.exports = {
   guardarCasoTriage,
+  cerrarCasosEnProcesoPorTelefono,
   getTicketsDashboard,
   getTicketsPaginados,
   getTicketById,
