@@ -5,7 +5,7 @@
 **Profesora Metodológica:** Sarita González Catalán  
 **Profesor Guía Técnico:** Matías Vargas  
 **Fecha de Consolidación:** `2026-11-23T21:10:00-03:00` (`America/Santiago`)  
-**Rama de Cierre:** `feat/AAI-98-TSK-03-concurrencia-informe-pruebas` $\longrightarrow$ `develop` / `main` (`v3.0.0-sprint3`)  
+**Rama de Cierre:** `feat/AAI-98-TSK-03-concurrencia-informe-pruebas` $\longrightarrow$ `develop` / `main` (`v3.1.0-sprint3-cierre`)  
 
 ---
 
