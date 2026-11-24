@@ -289,23 +289,74 @@
       font-size: 0.75rem;
       font-weight: 600;
     }
+    button.hero-chip-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(77, 157, 196, 0.45);
+      color: #edf3f5;
+      padding: 0.38rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      box-shadow: none;
+    }
+    button.hero-chip-btn:hover, button.hero-chip-btn.active {
+      background: var(--hero-sky);
+      border-color: var(--accent-cyan);
+      color: #091520;
+      box-shadow: none;
+    }
     #last-update {
       font-size: 0.75rem;
       color: rgba(237, 243, 245, 0.82);
     }
 
-    /* Tarjetas KPI estilo /servicios + /empresa (sin filas huérfanas) */
+    /* Tarjetas KPI Operativas de Negocio (4 columnas simétricas) + Panel Técnico ISO 25010 separado */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 0.9rem;
       margin-bottom: 1.35rem;
     }
-    @media (max-width: 1200px) {
-      .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .qa-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.9rem;
     }
-    @media (max-width: 680px) {
+    .qa-panel {
+      display: none;
+      background: #f8fafc;
+      border: 1px dashed var(--line);
+      border-radius: 20px;
+      padding: 1rem 1.15rem 1.15rem;
+      margin-bottom: 1.35rem;
+    }
+    .qa-panel.visible { display: block; }
+    .qa-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .qa-panel-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .qa-panel-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    @media (max-width: 1100px) {
       .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .stats-grid, .qa-grid { grid-template-columns: 1fr; }
     }
     .stat-card {
       background: var(--sheet);
@@ -830,12 +881,12 @@
 <main>
   <section class="hero-strip" aria-label="Resumen operativo">
     <div>
-      <div class="hero-eyebrow">Climatización Comercial e Industrial · Supervisión en Vivo</div>
-      <div class="hero-title">Centro de Control de Triage, Cotización Referencial y SLA</div>
-      <div class="hero-sub">Monitoreo de tiempos de respuesta (&lt; 4.0 s), validación de catálogo Kronos y generación de fichas técnicas PDF.</div>
+      <div class="hero-eyebrow">Climatización Comercial e Industrial · Gestión Comercial</div>
+      <div class="hero-title">Centro Operativo de Triage, Cotizaciones y Agenda</div>
+      <div class="hero-sub">Seguimiento comercial de solicitudes WhatsApp, fichas PDF referenciales y calendario de Benjamín Yáñez.</div>
     </div>
     <div class="hero-meta">
-      <span class="hero-chip">🛡️ Arnés Anti-Alucinaciones Activo</span>
+      <button type="button" id="btn-toggle-qa" class="hero-chip-btn" aria-expanded="false" onclick="togglePanelCalidad()">🔬 Auditoría QA (ISO 25010)</button>
       <span id="last-update">Sincronizando bandeja...</span>
     </div>
   </section>
@@ -853,11 +904,11 @@
     <button class="btn-secondary btn-row" onclick="ocultarToast()">✕</button>
   </div>
 
-  <!-- TARJETAS DE TICKETS Y MÉTRICAS SLA (HU-14 + HU-22) -->
-  <div class="stats-grid">
+  <!-- KPIs OPERATIVOS DE GESTIÓN COMERCIAL (Vista Negocio para Gerencia) -->
+  <div class="stats-grid" aria-label="Indicadores de gestión comercial">
     <div class="stat-card total">
       <div class="stat-top">
-        <span class="stat-label">Total tickets</span>
+        <span class="stat-label">Solicitudes Ingresadas</span>
         <span class="stat-num">01</span>
       </div>
       <span class="stat-value" id="stat-total">—</span>
@@ -865,45 +916,66 @@
     </div>
     <div class="stat-card alta">
       <div class="stat-top">
-        <span class="stat-label">Prioridad Alta</span>
+        <span class="stat-label">Urgencias / Prioridad Alta</span>
         <span class="stat-num">02</span>
       </div>
       <span class="stat-value" id="stat-alta">—</span>
-      <span class="stat-sub">Atención prioritaria</span>
+      <span class="stat-sub">Fallas críticas en curso</span>
     </div>
     <div class="stat-card humano">
       <div class="stat-top">
-        <span class="stat-label">Requieren Humano</span>
+        <span class="stat-label">Requieren Evaluación Humana</span>
         <span class="stat-num">03</span>
       </div>
       <span class="stat-value" id="stat-humano">—</span>
-      <span class="stat-sub">Derivados a ejecutivo</span>
+      <span class="stat-sub">Proyectos o datos por confirmar</span>
     </div>
-    <div class="stat-card sla">
+    <div class="stat-card normal" style="cursor:pointer" onclick="document.getElementById('calendario-reuniones').scrollIntoView({behavior:'smooth'})" title="Ir al calendario de reuniones">
       <div class="stat-top">
-        <span class="stat-label">Latencia y SLA Bot</span>
+        <span class="stat-label">Reuniones con Benjamín</span>
         <span class="stat-num">04</span>
       </div>
-      <span class="stat-value" id="stat-latencia">—</span>
-      <span class="stat-sub" id="stat-sla-badge">100% SLA (&lt; 4.0s)</span>
-    </div>
-    <div class="stat-card normal">
-      <div class="stat-top">
-        <span class="stat-label">Arnés Anti-Alucinación</span>
-        <span class="stat-num">05</span>
-      </div>
-      <span class="stat-value" id="stat-arnes">100%</span>
-      <span class="stat-sub" id="stat-arnes-sub">Validación catálogo Kronos</span>
-    </div>
-    <div class="stat-card pdf">
-      <div class="stat-top">
-        <span class="stat-label">Fichas PDF Generadas</span>
-        <span class="stat-num">06</span>
-      </div>
-      <span class="stat-value" id="stat-pdfs">0</span>
-      <span class="stat-sub" id="stat-pdfs-sub">100% tasa de éxito</span>
+      <span class="stat-value" id="stat-reuniones">0</span>
+      <span class="stat-sub" id="stat-reuniones-sub">9 / 9 bloques libres hoy</span>
     </div>
   </div>
+
+  <!-- PANEL SEPARADO: AUDITORÍA TÉCNICA Y CALIDAD DE SOFTWARE (ISO/IEC 25010 · Vista Ingeniería) -->
+  <section id="panel-calidad-iso" class="qa-panel" aria-label="Auditoría técnica y calidad ISO/IEC 25010">
+    <div class="qa-panel-header">
+      <div>
+        <div class="qa-panel-title">Observabilidad Técnica y Atributos de Calidad (ISO/IEC 25010)</div>
+        <div class="qa-panel-sub">Panel de verificación de ingeniería separado de la gestión comercial · Eficiencia (&lt; 4.0s), Fiabilidad (Arnés) y Trazabilidad</div>
+      </div>
+      <button type="button" class="btn-secondary btn-row" onclick="togglePanelCalidad(false)">Ocultar panel técnico</button>
+    </div>
+    <div class="qa-grid">
+      <div class="stat-card sla">
+        <div class="stat-top">
+          <span class="stat-label">Eficiencia · Latencia Bot</span>
+          <span class="stat-num">QA-01</span>
+        </div>
+        <span class="stat-value" id="stat-latencia">En espera</span>
+        <span class="stat-sub" id="stat-sla-badge">✅ 100% SLA (&lt; 4.0s)</span>
+      </div>
+      <div class="stat-card normal">
+        <div class="stat-top">
+          <span class="stat-label">Fiabilidad · Arnés Kronos</span>
+          <span class="stat-num">QA-02</span>
+        </div>
+        <span class="stat-value" id="stat-arnes">100%</span>
+        <span class="stat-sub" id="stat-arnes-sub">Validación anti-alucinación</span>
+      </div>
+      <div class="stat-card pdf">
+        <div class="stat-top">
+          <span class="stat-label">Trazabilidad · Fichas PDF</span>
+          <span class="stat-num">QA-03</span>
+        </div>
+        <span class="stat-value" id="stat-pdfs">0</span>
+        <span class="stat-sub" id="stat-pdfs-sub">100% tasa de éxito (%PDF-1.4)</span>
+      </div>
+    </div>
+  </section>
 
   <div class="toolbar">
     <span class="section-title">Bandeja de Casos de Triage y Cotizaciones Referenciales</span>
@@ -1123,6 +1195,17 @@
     await Promise.all([cargarTickets(), cargarMetricas(), cargarReuniones()]);
   }
 
+  function togglePanelCalidad(forceState) {
+    const panel = document.getElementById('panel-calidad-iso');
+    const btn = document.getElementById('btn-toggle-qa');
+    if (!panel || !btn) return;
+    const abrir = typeof forceState === 'boolean' ? forceState : !panel.classList.contains('visible');
+    panel.classList.toggle('visible', abrir);
+    btn.classList.toggle('active', abrir);
+    btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    btn.textContent = abrir ? '🔬 Ocultar Auditoría QA' : '🔬 Auditoría QA (ISO 25010)';
+  }
+
   async function cargarMetricas() {
     try {
       const res = await fetch('/api/metricas', { headers: headersAutenticados() });
@@ -1131,6 +1214,7 @@
       if (!json.ok || !json.data) return;
       const m = json.data;
       const latMs = m.latencia_promedio_ms ?? m.sla?.latencia_promedio_ms ?? 0;
+      const muestrasLat = m.sla?.muestras_latencia ?? 0;
       const slaPct = m.porcentaje_sla_cumplido ?? m.sla?.cumplimiento_sla_pct ?? 100;
       const alertasSla = m.sla?.alertas_sla ?? 0;
       const cumpleSla = m.sla?.cumple_sla ?? (latMs <= 4000);
@@ -1139,16 +1223,19 @@
       const totalPdfs = m.total_pdfs_generados ?? m.pdf?.generados ?? 0;
       const pdfExitoPct = m.pdf?.tasa_exito_pct ?? 100;
 
-      document.getElementById('stat-latencia').textContent = `${latMs} ms`;
+      document.getElementById('stat-latencia').textContent = muestrasLat === 0 ? 'En espera' : `${latMs} ms`;
       const badgeEl = document.getElementById('stat-sla-badge');
-      if (!cumpleSla) {
+      if (muestrasLat === 0) {
+        badgeEl.textContent = '✅ Listo · Meta SLA < 4.0s';
+        badgeEl.style.color = 'var(--green)';
+      } else if (!cumpleSla) {
         badgeEl.textContent = `⚠️ ${slaPct}% SLA · Promedio > 4.0s (${alertasSla} al.)`;
         badgeEl.style.color = 'var(--red)';
       } else if (alertasSla > 0) {
         badgeEl.textContent = `⚠️ ${slaPct}% SLA · ${alertasSla} alerta(s) > 4.0s`;
         badgeEl.style.color = 'var(--orange)';
       } else {
-        badgeEl.textContent = `✅ ${slaPct}% SLA (< 4.0s)`;
+        badgeEl.textContent = `✅ ${slaPct}% SLA (< 4.0s · ${muestrasLat} resp.)`;
         badgeEl.style.color = 'var(--green)';
       }
 
@@ -1438,6 +1525,10 @@
       dispBadge.textContent = `${libresCount} / ${totales.length} bloques libres`;
       dispBadge.className = 'badge ' + (libresCount > 0 ? 'badge-normal' : 'badge-alta');
     }
+    const statReuSub = document.getElementById('stat-reuniones-sub');
+    if (statReuSub) {
+      statReuSub.textContent = `${libresCount} / ${totales.length} bloques libres`;
+    }
 
     if (horaSeleccionadaReunion && ocupadosSet.has(horaSeleccionadaReunion)) {
       seleccionarBloqueHorario('');
@@ -1469,6 +1560,8 @@
 
     const activas = reuniones.filter(r => r.estado !== 'cancelada').length;
     if (pillEl) pillEl.textContent = `${activas} activa(s) · ${reuniones.length} total`;
+    const statReu = document.getElementById('stat-reuniones');
+    if (statReu) statReu.textContent = String(activas);
 
     tbody.innerHTML = '';
     if (!reuniones.length) {

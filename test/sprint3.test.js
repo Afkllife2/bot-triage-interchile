@@ -833,5 +833,72 @@ describe('[INT-HU-23] (AAI-98) — Estrés y Concurrencia sobre 20 Usuarios Simu
     expect(db.guardarCasoTriage).toHaveBeenCalledTimes(N);
     const telefonosPersistidos = new Set(db.guardarCasoTriage.mock.calls.map(call => call[1]));
     expect(telefonosPersistidos.size).toBe(N);
+
+    // Verificar impacto directo de la ráfaga en /api/metricas (SLA < 4.0s)
+    const metRes = await request(app).get('/api/metricas').set('Authorization', AUTH);
+    expect(metRes.status).toBe(200);
+    expect(metRes.body.data.sla.muestras_latencia).toBeGreaterThanOrEqual(N);
+    expect(metRes.body.data.latencia_promedio_ms).toBeLessThan(4000);
+    expect(metRes.body.data.porcentaje_sla_cumplido).toBe(100);
+  });
+
+  test('AAI-99 Integración S1+S2+S3: Flujo completo WhatsApp → Arnés → Cotización → PDF → Dashboard Negocio vs QA ISO 25010', async () => {
+    const tel = '56988887777';
+    extraerFichaTriage.mockResolvedValueOnce({
+      tipo_solicitud: 'Mantención',
+      cliente_nombre: 'Edificio Corporativo Alfa',
+      sucursal_comuna: 'Providencia',
+      sucursal_direccion: 'Av. Nueva Providencia 1900',
+      equipo_tipo: 'Split',
+      equipo_marca: 'Daikin',
+      sintoma_observacion: 'Mantención preventiva semestral',
+      prioridad: 'Baja',
+      disponibilidad_cliente: 'Jueves tarde',
+      tiene_fotos: false,
+      requiere_derivacion: false,
+      opciones_botones: [],
+      respuesta_cliente: 'Registramos su mantención preventiva.',
+    });
+
+    const body = {
+      object: 'whatsapp_business_account',
+      entry: [{
+        changes: [{
+          value: {
+            contacts: [{ wa_id: tel }],
+            messages: [{ type: 'text', text: { body: 'Necesito mantención Split Daikin en Providencia' } }],
+          },
+        }],
+      }],
+    };
+    const { raw, sig } = firmarWebhook(body);
+    const wh = await request(app)
+      .post('/webhooks/meta')
+      .set('Content-Type', 'application/json')
+      .set('x-hub-signature-256', sig)
+      .send(raw);
+    expect(wh.status).toBe(200);
+    expect(enviarMensajeWhatsApp).toHaveBeenCalledWith(tel, expect.stringContaining('$53.550 CLP'));
+
+    db.getTicketById.mockResolvedValueOnce(db.normalizarTicketRow({
+      id: 77,
+      created_at: '2026-11-23T18:00:00.000Z',
+      updated_at: '2026-11-23T18:00:00.000Z',
+      nombre_completo: 'Edificio Corporativo Alfa',
+      telefono: tel,
+      motivo_principal: 'Mantención',
+      equipo_tipo: 'Split',
+      equipo_marca: 'Daikin',
+      estado: 'en_proceso',
+    }));
+    const pdfRes = await request(app).get('/api/tickets/77/pdf').set('Authorization', AUTH);
+    expect(pdfRes.status).toBe(200);
+    expect(pdfRes.body.toString('latin1', 0, 8)).toContain('%PDF-1.4');
+
+    const dashRes = await request(app).get('/dashboard');
+    expect(dashRes.status).toBe(200);
+    expect(dashRes.text).toContain('id="stat-reuniones"');
+    expect(dashRes.text).toContain('id="btn-toggle-qa"');
+    expect(dashRes.text).toContain('id="panel-calidad-iso"');
   });
 });
