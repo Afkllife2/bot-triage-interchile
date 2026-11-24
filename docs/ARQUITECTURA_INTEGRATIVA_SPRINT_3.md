@@ -1,25 +1,28 @@
-# Arquitectura Integrativa End-to-End y ADRs — Sprint 3 (Cierre de Titulación)
+# Arquitectura Integrativa End-to-End, Calidad ISO/IEC 25010 y ADRs — Sprint 3 (Cierre de Titulación)
 
-**Proyecto:** Agente Autónomo de Triage Comercial e Integración ERP Kronos — InterChile Climatización  
+**Proyecto:** Agente Autónomo de Triage Comercial e Integración ERP Kronos — InterChile Clima SpA  
 **Autor:** Carlos Gabriel González Salgado  
 **Asignatura:** Proyecto de Título (UNAB) — Sprint 3 / Hito 3  
-**Fecha:** 09 de noviembre de 2026  
+**Fecha de Actualización:** 23 de noviembre de 2026  
 
 ---
 
-## 1. Visión Arquitectónica Integrativa (End-to-End)
+## 1. Visión Arquitectónica Integrativa (End-to-End S1 + S2 + S3)
 
-En el Sprint 3 se consolida la arquitectura completa del sistema, unificando en un flujo continuo y trazable:
-1. **Recepción Segura de Mensajería:** Webhook de Meta Cloud API validado criptográficamente con `HMAC-SHA256` (`x-hub-signature-256`).
-2. **Orquestación Cognitiva con Memoria:** Motor conversacional en `src/brain.js` con LangChain y Google Gemini (`gemini-2.5-flash`) + validación de esquema con `Zod`.
-3. **Arnés Anti-Alucinaciones y Contrato de Catálogo (`src/arneses.js` + `src/kronos.js`):** Validación previa al guardado y envío al cliente contra `GET /api/kronos/catalogo` (timeout de 5 s) o lista local de respaldo (`catalogo_verificado: false`), reemplazando cualquier entidad no confirmada por `[dato por confirmar]`.
-4. **Motor Determinista de Cotización y PDF (`src/cotizador.js` + `src/pdfGenerator.js`):** Cálculo exacto en CLP (Subtotal Neto + IVA 19% + Total) fuera del LLM para impedir alucinaciones aritméticas, y generación nativa de ficha técnica en formato estándar `%PDF-1.4`.
-5. **Persistencia Transaccional y Contrato API (`src/db.js` + `src/server.js`):** Almacenamiento en PostgreSQL (Supabase) con `created_at` inmutable, `updated_at`, paginación por cursor estable (`updated_at+id`), control de concurrencia optimista (`409 Conflict`) y protección mediante Bearer Token privado (`TRIAGE_API_TOKEN`).
-6. **Gestión Operativa Dual (Dashboard Web Autónomo + Bandeja Nativa en Kronos 2.0):** Visualización de KPIs de calidad/SLA (`< 4.0 s`), agendamiento con `fecha_visita` obligatoria, descarga de PDF y sincronización paginada hacia `/modulos/triage` en Kronos 2.0 (`KRON2-152`).
+En el Sprint 3 se consolida la arquitectura completa del sistema unificando en un flujo continuo, seguro y trazable:
+1. **Recepción Segura de Mensajería (`HU-16` / Webhooks):** Webhook de Meta Cloud API validado criptográficamente en tiempo constante mediante firma `HMAC-SHA256` (`x-hub-signature-256`).
+2. **Orquestación Cognitiva con Memoria (`HU-01` a `HU-04`, `HU-20`):** Motor conversacional en `src/brain.js` con LangChain y Google Gemini (`gemini-2.5-flash`) + validación estricta de esquema mediante `Zod`.
+3. **Arnés Anti-Alucinaciones y Contrato de Catálogo (`HU-18` / `HU-21` / `KRON2-152`):** Validación previa al guardado en `src/arneses.js` y `src/kronos.js` contra `GET /api/kronos/catalogo` (timeout de `5 s`) o respaldo local controlado (`catalogo_verificado: false`), reemplazando cualquier entidad no verificada por `[dato por confirmar]`.
+4. **Motor Determinista de Cotización y PDF (`HU-05` / `AAI-25`):** Cálculo exacto en CLP (Subtotal Neto + IVA `19%` + Total) fuera del LLM en `src/cotizador.js` (impidiendo alucinaciones aritméticas), y generación nativa de ficha técnica corporativa en estándar `%PDF-1.4` (`src/pdfGenerator.js`).
+5. **Agendamiento Automático de Reuniones y Prevención de Topones (`HU-23` / `AAI-102`):** Detección de intención `solicita_reunion` desde WhatsApp y motor de bloques horarios (`09:00`–`18:00`) en `src/agenda.js`, respaldado por la tabla `public.reuniones` en Supabase con índice único parcial `uq_reuniones_slot_activo`, bloqueo transaccional `FOR UPDATE` y respuesta `HTTP 409 HORARIO_OCUPADO` con sugerencias de horas libres cercanas.
+6. **Persistencia Transaccional y Contrato API (`HU-19` / `KRON2-152`):** Almacenamiento en PostgreSQL (Supabase) con `created_at` inmutable, paginación por cursor estable (`updated_at+id` con preservación de microsegundos), control de concurrencia optimista (`409 Conflict`) y protección mediante Bearer Token privado (`TRIAGE_API_TOKEN`).
+7. **Gestión Operativa Separada de Observabilidad ISO 25010 (`HU-14`, `HU-22`, Feedback Sprint Review):** Dashboard corporativo (`public/dashboard.html`) alineado con `interchileclima.cl` que muestra en portada **4 KPIs comerciales de negocio**, bandeja operativa, descarga PDF y **Calendario Interactivo de Reuniones con Benjamín**, aislando los **3 KPIs técnicos de ingeniería** en el panel colapsable **Auditoría QA (ISO/IEC 25010)**.
 
 ---
 
 ## 2. Diagrama de Secuencia Integrativo E2E
+
+![Diagrama de Secuencia Integrativo E2E Sprint 3](./diagramas_png/Diagrama_Secuencia_Integrativo_Sprint3_E2E.png)
 
 ```mermaid
 sequenceDiagram
@@ -30,9 +33,9 @@ sequenceDiagram
     participant Brain as Motor IA LangChain+Gemini (src/brain.js)
     participant Arnes as Arnés Anti-Alucinación (src/arneses.js)
     participant KronosCat as Catálogo Kronos (src/kronos.js)
-    participant Cotizador as Cotizador CLP & PDF (src/cotizador.js / pdfGenerator.js)
+    participant Cotizador as Cotizador/PDF & Agenda (cotizador/agenda.js)
     participant DB as PostgreSQL Supabase (src/db.js)
-    participantMetrics as Metrics Store SLA (src/metricsStore.js)
+    participant Metrics as Metrics Store SLA (src/metricsStore.js)
     actor Admin as Administrador (Dashboard / Kronos 2.0)
 
     Cliente->>Meta: Envía mensaje o selecciona botón interactivo
@@ -42,43 +45,43 @@ sequenceDiagram
         Server-->>Meta: HTTP 401 / 403 (Bloqueado)
     else Firma válida
         Server->>Brain: extraerFichaTriage(textoCliente, telefonoCliente)
-        Brain-->>Server: Ficha estructurada validada con Zod
+        Brain-->>Server: Ficha Zod (+ solicita_reunion, fecha, hora, modalidad)
         Server->>Arnes: aplicarArnes(fichaIA, telefonoCliente)
         Arnes->>KronosCat: validarMarca / validarTipoEquipo / validarRepuesto (Timeout 5s)
         KronosCat-->>Arnes: { existe, catalogo_verificado, source }
-        Arnes->>participantMetrics: registrarEventoArnes(huboAlucinacion)
+        Arnes->>Metrics: registrarEventoArnes(huboAlucinacion)
         Arnes-->>Server: fichaCorregida ([dato por confirmar] si no verificado)
         Server->>DB: guardarCasoTriage(fichaCorregida, telefonoCliente)
         DB->>Cotizador: calcularCotizacionBorrador(fichaCorregida)
         Cotizador-->>DB: { subtotal_neto, iva (19%), total_clp } o null
-        DB->>DB: UPSERT transaccional (created_at inmutable, updated_at = NOW())
-        DB-->>Server: casoId persistido
-        Server->>Meta: Envía respuesta o botones interactivos a WhatsApp
-        Server->>participantMetrics: registrarLatencia(duracionMs)
+        DB->>DB: UPSERT transaccional casos_triage
+        alt solicita_reunion = true
+            Server->>DB: crearReservaReunion({ fecha_reunion, hora_reunion, modalidad, origen: 'whatsapp' })
+            DB->>DB: SELECT FOR UPDATE + uq_reuniones_slot_activo
+            DB-->>Server: 201 Reserva #R-id | 409 HORARIO_OCUPADO + sugerencias
+        end
+        Server->>Meta: Respuesta WhatsApp (+ Cotización Ref. + Cita #R-id o alternativas)
+        Server->>Metrics: registrarLatencia(duracionMs)
         Server-->>Meta: HTTP 200 EVENT_RECEIVED
     end
 
-    Note over Admin,DB: Flujo de Gestión Operativa, Agendamiento, PDF y Sincronización Kronos 2.0
-    Admin->>Server: GET /api/tickets?limit=50&cursor=... (Authorization: Bearer TRIAGE_API_TOKEN)
+    Note over Admin,DB: Flujo Operativo Comercial, Calendario de Reuniones, PDF y Auditoría QA ISO 25010
+    Admin->>Server: GET /api/tickets?limit=50&cursor=... (Bearer TRIAGE_API_TOKEN)
     Server->>DB: getTicketsPaginados({ limit, cursor })
     DB-->>Server: { data: ticketsNormalizados, nextCursor }
-    Server-->>Admin: HTTP 200 { ok: true, data, nextCursor }
+    Server-->>Admin: HTTP 200 (Bandeja + 4 KPIs Comerciales)
 
-    Admin->>Server: PATCH /api/tickets/:id { estado: 'agendado', fecha_visita, expected_updated_at }
-    Server->>DB: actualizarEstadoTicket(id, payload)
-    alt expected_updated_at desactualizado
-        DB-->>Server: { error: 'conflict', status: 409 }
-        Server-->>Admin: HTTP 409 Conflict
-    else Versión vigente y fecha_visita ISO UTC válida
-        DB-->>Server: { ok: true, data: ticketActualizado }
-        Server-->>Admin: HTTP 200 { ok: true, data }
-    end
+    Admin->>Server: POST /api/reuniones { cliente_nombre, fecha_reunion, hora_reunion, modalidad }
+    Server->>DB: crearReservaReunion(..., origen: 'dashboard')
+    DB-->>Server: 201 #R-id | 409 HORARIO_OCUPADO + sugerencias
 
     Admin->>Server: GET /api/tickets/:id/pdf (Bearer TRIAGE_API_TOKEN)
-    Server->>DB: getTicketById(id)
     Server->>Cotizador: generarFichaCotizacionPDF(ticket)
-    Cotizador-->>Server: Buffer %PDF-1.4 (Sello: Estimación del bot · No oficial)
-    Server-->>Admin: HTTP 200 application/pdf (ficha-triage-id.pdf)
+    Cotizador-->>Admin: Buffer %PDF-1.4 (Sello: Estimación del bot · No oficial)
+
+    Admin->>Server: Toggle "Auditoría QA (ISO 25010)" -> GET /api/metricas
+    Server->>Metrics: obtenerResumenMetricas(tickets)
+    Metrics-->>Admin: Latencia (< 4.0s), Arnés Kronos (100%), PDFs y Cobertura Jest
 ```
 
 ---
@@ -86,21 +89,54 @@ sequenceDiagram
 ## 3. Registros de Decisiones de Arquitectura (ADRs — Sprint 3)
 
 ### ADR-01: Motor Determinista de Cotización Desacoplado del LLM (`src/cotizador.js`)
-- **Contexto:** Los modelos generativos (LLMs) pueden cometer errores de redondeo o inventar tarifas al calcular montos netos e impuestos (IVA 19%).
-- **Decisión:** El LLM únicamente clasifica `tipo_solicitud`, `equipo_tipo` y `prioridad`. El cálculo comercial en pesos chilenos (`subtotal_neto`, `iva = Math.round(neto * 0.19)`, `total_clp`) se ejecuta en un módulo determinista puro (`src/cotizador.js`). Cuando el equipo no está confirmado (`[dato por confirmar]`), los campos de cotización se almacenan como `null` (nunca `0` supuesto).
-- **Consecuencia:** Precisión aritmética del 100%, cero alucinaciones de precios y cumplimiento estricto del contrato financiero de Kronos 2.0 (`KRON2-152`).
+- **Contexto:** Los LLMs pueden cometer errores aritméticos o inventar tarifas al calcular montos netos e IVA (`19%`).
+- **Decisión:** El LLM únicamente clasifica intención, equipo y prioridad. Todo cálculo en CLP (`subtotal_neto`, `iva`, `total_clp`) ocurre de manera determinista en `src/cotizador.js`. Si falta equipo (`[dato por confirmar]`) o el servicio requiere levantamiento en terreno, se retorna `null` (nunca `0`).
+- **Consecuencia:** Precisión aritmética de `100%` y cero alucinaciones de precios.
 
 ### ADR-02: Generación Nativa de PDF `%PDF-1.4` en Memoria (`src/pdfGenerator.js`)
-- **Contexto:** Librerías basadas en Chromium headless (Puppeteer) consumen >300 MB de RAM y exceden los límites del plan gratuito/estándar en Render.
-- **Decisión:** Construir un generador nativo de flujos PDF 1.4 en Node.js (`src/pdfGenerator.js`) que ensambla la tabla de objetos, fuentes estándar Type1 (`Helvetica` / `Helvetica-Bold`) y tabla `xref` en un `Buffer` en memoria en `< 5 ms`.
-- **Consecuencia:** Tasa de éxito del 100% en generación y descarga de PDFs sin dependencias nativas externas ni riesgo de `Out-Of-Memory` en producción.
+- **Contexto:** Chromium headless consume >300 MB de RAM y arriesga caídas `OOM` en el plan Free de Render.
+- **Decisión:** Ensamblador binario `%PDF-1.4` puro en Node.js con la línea gráfica corporativa validada con Benjamín Yáñez (membrete oficial, secciones `01/02/03`, tabla burdeo `#9e1046` y aviso referencial no oficial).
+- **Consecuencia:** Generación en `< 5 ms` y `100%` de éxito en descarga sin dependencias nativas externas.
 
-### ADR-03: Paginación por Cursor Estable (`updated_at+id`) y Control de Concurrencia Optimista (`409 Conflict`)
-- **Contexto:** La paginación por `OFFSET` sufre duplicados o saltos cuando un ticket existente se actualiza mientras un operador o el sincronizador de Kronos 2.0 recorre páginas.
-- **Decisión:** Implementar paginación por keyset/cursor compuesto `(COALESCE(updated_at, created_at), id) < ($1, $2)` codificado en `base64url`, conservar `created_at` inmutable y exigir `expected_updated_at` en `PATCH /api/tickets/:id` respondiendo `HTTP 409 Conflict` ante escrituras concurrentes sobre una versión obsoleta.
-- **Consecuencia:** Sincronización idempotente sin pérdida ni duplicación de casos entre el Bot y Kronos 2.0.
+### ADR-03: Paginación por Cursor Estable (`updated_at+id`) y Concurrencia Optimista (`409 Conflict`)
+- **Contexto:** Evitar duplicados/saltos al sincronizar con Kronos 2.0 y prevenir sobrescrituras simultáneas entre operadores.
+- **Decisión:** Keyset cursor con preservación de microsegundos PostgreSQL (`cursor_updated_at`), `created_at` inmutable y campo `expected_updated_at` obligatorio en `PATCH /api/tickets/:id` (`HTTP 409 Conflict` ante versión antigua).
 
 ### ADR-04: Autenticación Bearer Privada de Integración (`TRIAGE_API_TOKEN`)
-- **Contexto:** Las rutas administrativas (`/api/tickets`, `/api/tickets/:id`, `/api/metricas`, `/api/tickets/:id/pdf`) no deben quedar expuestas públicamente ni compartir secretos con Meta o Gemini.
-- **Decisión:** Implementar el middleware `requireTriageAuth` con comparación en tiempo constante (`crypto.timingSafeEqual`), rechazando con `401` peticiones sin token, con `503` si el token no está configurado o si reutiliza credenciales de Meta/Gemini, y eliminando cualquier token del código fuente del frontend.
-- **Consecuencia:** Cumplimiento total de los requisitos de seguridad de `KRON2-152` y protección de datos personales de clientes.
+- **Contexto:** Proteger rutas `/api/*` con credencial aislada de los secretos de Meta, Gemini y Kronos Catálogo.
+- **Decisión:** Middleware `requireTriageAuth` con comparación `crypto.timingSafeEqual` en tiempo constante, bloqueando con `401` ausencia/invalidez de token y con `503` si falta configuración o reutiliza secretos externos.
+
+### ADR-05: Agenda Atómica de Reuniones con Bloqueo Anti-Topones (`HU-23` / Contingency Plan R-15)
+- **Contexto:** Ante el desarrollo paralelo de Kronos 2.0, la gestión comercial necesitaba cerrar el ciclo cliente-ejecutivo reservando reuniones online/presenciales directamente sin colisiones entre WhatsApp y el Dashboard.
+- **Decisión:** Tabla `public.reuniones` en Supabase con índice único parcial `uq_reuniones_slot_activo(fecha_reunion, hora_reunion) WHERE estado <> 'cancelada'`, bloqueo `SELECT ... FOR UPDATE`, captura de SQLSTATE `23505` devolviendo `HTTP 409 HORARIO_OCUPADO` + 3 sugerencias cercanas desde `src/agenda.js`, y widget de calendario sincronizado en el Dashboard.
+- **Consecuencia:** Cero reservas superpuestas aun bajo concurrencia simultánea y trazabilidad completa por `origen` (`whatsapp` / `dashboard`).
+
+### ADR-06: Separación de Indicadores Comerciales vs. Panel de Auditoría Técnica ISO/IEC 25010
+- **Contexto:** Durante la revisión metodológica del Sprint 3 se observó que mostrar indicadores técnicos de QA (latencia bot en `ms`, tasa del arnés, PDFs emitidos) mezclados con KPIs comerciales genera ruido visual para la gerencia del negocio.
+- **Decisión:** Mostrar en la vista principal únicamente **4 KPIs operativos de negocio** (`Solicitudes Ingresadas`, `Urgencias / Prioridad Alta`, `Requieren Evaluación Humana`, `Reuniones con Benjamín`), trasladando los **3 KPIs técnicos** a un panel colapsable independiente (**`Observabilidad Técnica y Atributos de Calidad (ISO/IEC 25010)`**) activado mediante `#btn-toggle-qa`, mostrando `"En espera"` en lugar de `"0 ms"` cuando aún no han ingresado turnos en la instancia.
+
+---
+
+## 4. Matriz de Calidad de Software (ISO/IEC 25010 — evolución de ISO/IEC 9126) y Justificación UX/UI
+
+| Característica ISO/IEC 25010 | Subcaracterística | Cómo se implementa en el proyecto | Métrica y Verificación Real |
+| :--- | :--- | :--- | :--- |
+| **1. Eficiencia de Desempeño** | *Comportamiento temporal* | Pipeline asíncrono en `src/server.js`, generación PDF en memoria (`< 5 ms`), timeout acotado de 5 s al catálogo Kronos (`src/kronos.js`) y medición por turno en `src/metricsStore.js`. | **Meta `< 4.0 s` (`4000 ms`)** justificada por umbral de atención en chat WhatsApp y límite de respuesta HTTP de Meta Cloud API. Verificada en ráfaga de concurrencia **`N=20`** (`100%` respuestas exitosas, SLA `100%`). |
+| **2. Fiabilidad y Seguridad** | *Tolerancia a fallos / Integridad* | Arnés determinista (`src/arneses.js`), cálculos CLP fuera del LLM (`src/cotizador.js`), HMAC-SHA256 en webhook, Bearer token en tiempo constante y bloqueo `409` en BD. | **`100%`** de marcas/tipos/repuestos no confirmados interceptados hacia `[dato por confirmar]`, impidiendo alucinaciones de catálogo o precios inventados. |
+| **3. Mantenibilidad** | *Capacidad de ser probado (Testabilidad)* | Arquitectura modular desacoplada (`agenda.js`, `arneses.js`, `cotizador.js`, `pdfGenerator.js`, `metricsStore.js`, `db.js`) con suite Jest + Supertest automatizada y regresiva S1+S2+S3. | **`7/7` suites (`84/84` tests PASS)** en `9.019 s`. Cobertura global: **`90.11% Stmts` · `91.2% Líneas`** (`agenda.js`, `cotizador.js`, `metricsStore.js` al **`100%`** de líneas; `pdfGenerator.js` `98.46%`; `arneses.js` `96.92%`; `server.js` `93.62%`). |
+| **4. Usabilidad (UX/UI)** | *Operabilidad, Estética de interfaz y Protección contra errores* | Rediseño basado en guía oficial de `interchileclima.cl` y formato de ficha validado con Benjamín Yáñez; separación de vista Comercial vs. QA; prevención de errores en calendario y estados. | **Fundamentos UX aplicados:** Heurística de Nielsen #4 (*Consistencia corporativa*: burdeo `#a6083c` en CTAs, azul `#0d1e2e` en cabecera, fondo hielo `#edf3f5`), #1 (*Visibilidad de estado*: badges y disponibilidad de bloques) y #5 (*Prevención de errores*: horarios ocupados deshabilitados, `fecha_visita` obligatoria al agendar). Contraste WCAG AA (`#222c31` sobre `#ffffff`) y filtros por píldoras (Ley de Hick). |
+
+---
+
+## 5. Justificación de Reglas de Negocio: Prioridades, `Requiere Humano` e Indicadores
+
+1. **¿Por qué existe `Requiere Humano` si ya hay cotización borrador y agenda?**
+   - El bot **sí cierra el ciclo completo** en servicios estandarizados (triage + borrador CLP referencial + Ficha PDF + agenda con Benjamín).
+   - Marca **`requiere_humano = true`** exclusivamente en **3 escenarios de control**: (a) solicitud explícita de hablar con una persona (`HU-06`), (b) proyectos comerciales complejos / levantamientos a medida sin tarifario unitario automático, o (c) equipos cuyo modelo/marca quedó en **`[dato por confirmar]`** tras el arnés Kronos. Así se evita prometer precios oficiales erróneos y se entrega el caso al ejecutivo con la ficha PDF ya armada y el calendario disponible.
+
+2. **¿Por qué los 4 KPIs visibles arriba y no otros?**
+   - **`01 Solicitudes Ingresadas` (`agendados / resueltos`):** Mide demanda total capturada y avance de conversión operativa.
+   - **`02 Urgencias / Prioridad Alta`:** Permite al jefe técnico priorizar de inmediato fallas críticas activas (ej. caída de climatización en clínicas o salas de servidores).
+   - **`03 Requieren Evaluación Humana`:** Bandeja de acción inmediata para Benjamín (cotizaciones complejas o casos escalados).
+   - **`04 Reuniones con Benjamín` (`bloques libres hoy`):** Vincula el Dashboard directamente con el cierre comercial en agenda (`HU-23`).
+   - Los indicadores de ingeniería (**Latencia SLA `< 4.0s`**, **Arnés Anti-Alucinación `100%`**, **Fichas PDF `%PDF-1.4`**) responden al monitoreo técnico/académico ISO 25010 y por ello operan desacoplados en el panel **`Auditoría QA (ISO 25010)`**.
