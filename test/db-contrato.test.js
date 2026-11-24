@@ -187,6 +187,7 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
           updated_at: '2026-11-09T12:00:00.000Z',
         }],
       })
+      .mockResolvedValueOnce({ rows: [] }) // SELECT choque de horario visita técnica (libre)
       .mockResolvedValueOnce({}) // UPDATE casos_triage
       .mockResolvedValueOnce({ rows: [updatedRow] }) // SELECT actualizado
       .mockResolvedValueOnce({}); // COMMIT
@@ -201,6 +202,28 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
     expect(okRes.ok).toBe(true);
     expect(okRes.data.estado).toBe('agendado');
     expect(okRes.data.fecha_visita).toBe('2026-11-18T14:30:00.000Z');
+
+    // Choque de visita técnica con otro ticket agendado en la misma ventana (< 60 min) -> 409
+    mockQuery
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 11,
+          created_at: '2026-11-09T10:00:00.000Z',
+          updated_at: '2026-11-09T12:00:00.000Z',
+          estado: 'en_proceso',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ id: 10, fecha_visita: '2026-11-18T14:30:00.000Z' }] })
+      .mockResolvedValueOnce({}); // ROLLBACK
+
+    const choqueVisita = await db.actualizarEstadoTicket(11, {
+      estado: 'agendado',
+      fecha_visita: '2026-11-18T14:45:00.000Z',
+      expected_updated_at: '2026-11-09T12:00:00.000Z',
+    });
+    expect(choqueVisita.status).toBe(409);
+    expect(choqueVisita.error).toBe('horario_visita_ocupado');
   });
 
   test('[INT-HU-23] crearReservaReunion valida entrada (400), bloquea topón FOR UPDATE/23505 (409) y crea reserva (201)', async () => {
@@ -285,7 +308,7 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
           modalidad: 'Online',
           motivo: 'Cotización VRF',
           origen: 'dashboard',
-          estado: 'confirmada',
+          estado: 'ingresada',
           created_at: '2026-11-23T01:00:00.000Z',
           updated_at: '2026-11-23T01:00:00.000Z',
         }],
@@ -306,7 +329,7 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
       hora_reunion: '15:00',
       modalidad: 'Online',
       origen: 'dashboard',
-      estado: 'confirmada',
+      estado: 'ingresada',
     });
   });
 
@@ -350,11 +373,29 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
         hora_reunion: '10:00',
         modalidad: 'Presencial',
         origen: 'whatsapp',
+        estado: 'confirmada',
+      }],
+    });
+    const updConf = await db.actualizarEstadoReunion(1, { estado: 'Confirmada' });
+    expect(updConf.status).toBe(200);
+    expect(updConf.data.estado).toBe('confirmada');
+
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        fecha_reunion: '2026-12-01',
+        hora_reunion: '10:00',
+        modalidad: 'Presencial',
+        origen: 'whatsapp',
         estado: 'cancelada',
       }],
     });
     const upd = await db.actualizarEstadoReunion(1, { estado: 'Cancelada' });
     expect(upd.status).toBe(200);
     expect(upd.data.estado).toBe('cancelada');
+
+    expect(await db.cerrarCasosEnProcesoPorTelefono('')).toBe(0);
+    mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+    expect(await db.cerrarCasosEnProcesoPorTelefono('56964361272')).toBe(1);
   });
 });

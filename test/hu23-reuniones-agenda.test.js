@@ -41,7 +41,7 @@ jest.mock('../src/db', () => ({
       modalidad: 'Presencial',
       motivo: 'Evaluación Chiller',
       origen: 'whatsapp',
-      estado: 'confirmada',
+      estado: 'ingresada',
     },
   }),
   actualizarEstadoReunion: jest.fn().mockResolvedValue({
@@ -143,7 +143,58 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
     expect(sugs).toEqual(['09:00', '12:00', '14:00']);
   });
 
-  test('construirMensajeReunionWhatsApp formatea confirmación (201), colisión con sugerencias (409) y día lleno', () => {
+  test('validarReglaHorarioBenjamin bloquea madrugadas (04:00), colación (13:00), fines de semana y fechas pasadas', () => {
+    expect(agenda.esDiaHabilReunion('2026-12-01')).toBe(true); // Martes
+    expect(agenda.esDiaHabilReunion('2026-11-28')).toBe(false); // Sábado
+    expect(agenda.esDiaHabilReunion('2026-11-29')).toBe(false); // Domingo
+    expect(agenda.esDiaHabilReunion('no-es-fecha')).toBe(false);
+    expect(agenda.siguienteDiaHabil('2026-11-28')).toBe('2026-11-30');
+    expect(agenda.validarReglaHorarioBenjamin({ fecha: 'invalida', hora: '10:00' }).codigo).toBe('FECHA_INVALIDA');
+
+    const madrugada = agenda.validarReglaHorarioBenjamin({
+      fecha: '2026-12-01',
+      hora: '04:00',
+      hoy: '2026-11-24',
+    });
+    expect(madrugada.ok).toBe(false);
+    expect(madrugada.status).toBe(400);
+    expect(madrugada.codigo).toBe('FUERA_DE_HORARIO');
+    expect(madrugada.sugerencias).toEqual(['09:00', '10:00', '11:00']);
+
+    const colacion = agenda.validarReglaHorarioBenjamin({
+      fecha: '2026-12-01',
+      hora: '13:00',
+      hoy: '2026-11-24',
+    });
+    expect(colacion.ok).toBe(false);
+    expect(colacion.codigo).toBe('FUERA_DE_HORARIO');
+
+    const domingo = agenda.validarReglaHorarioBenjamin({
+      fecha: '2026-11-29',
+      hora: '10:00',
+      hoy: '2026-11-24',
+    });
+    expect(domingo.ok).toBe(false);
+    expect(domingo.codigo).toBe('DIA_INHABIL');
+    expect(domingo.proximo_dia_habil).toBe('2026-11-30');
+
+    const pasada = agenda.validarReglaHorarioBenjamin({
+      fecha: '2026-11-20',
+      hora: '10:00',
+      hoy: '2026-11-24',
+    });
+    expect(pasada.ok).toBe(false);
+    expect(pasada.codigo).toBe('FECHA_PASADA');
+
+    const ok = agenda.validarReglaHorarioBenjamin({
+      fecha: '2026-12-01',
+      hora: '10:00',
+      hoy: '2026-11-24',
+    });
+    expect(ok).toEqual({ ok: true, fecha: '2026-12-01', hora: '10:00' });
+  });
+
+  test('construirMensajeReunionWhatsApp formatea ingreso (201), colisión (409), fuera de regla (400) y día lleno', () => {
     const okMsg = agenda.construirMensajeReunionWhatsApp('Perfecto, lo coordino.', {
       ok: true,
       data: {
@@ -151,12 +202,25 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
         fecha_reunion: '2026-12-01',
         hora_reunion: '10:00',
         modalidad: 'Presencial',
+        estado: 'ingresada',
       },
     });
     expect(okMsg).toContain('#R-7');
+    expect(okMsg).toContain('Ingresada');
     expect(okMsg).toContain('2026-12-01 a las 10:00 hrs');
     expect(okMsg).toContain('Presencial');
     expect(okMsg).toContain('Benjamin@interchileclima.cl');
+
+    const regla400Msg = agenda.construirMensajeReunionWhatsApp('Quedó agendada a las 4 AM', {
+      ok: false,
+      status: 400,
+      codigo: 'FUERA_DE_HORARIO',
+      message: 'El horario solicitado (04:00) está fuera de los bloques de atención.',
+      sugerencias: ['09:00', '10:00', '11:00'],
+    }, { fecha: '2026-12-01', hora: '04:00', modalidad: 'Online' });
+    expect(regla400Msg).toContain('No fue posible agendar');
+    expect(regla400Msg).not.toContain('Quedó agendada a las 4 AM');
+    expect(regla400Msg).toContain('09:00 hrs, 10:00 hrs, 11:00 hrs');
 
     const colMsg = agenda.construirMensajeReunionWhatsApp('Base', {
       status: 409,
@@ -275,6 +339,52 @@ describe('[INT-HU-23] (AAI-102) — Integración WhatsApp + API /api/reuniones +
     expect(aviso).toContain('09:00 hrs, 11:00 hrs, 12:00 hrs');
   });
 
+  test('CA-3B Integración WhatsApp: ante horario inválido (04:00 AM / fin de semana -> 400), rechaza y sugiere horario hábil', async () => {
+    extraerFichaTriage.mockResolvedValue({
+      tipo_solicitud: 'Proyecto Comercial',
+      cliente_nombre: 'Cliente Nocturno',
+      sucursal_comuna: 'Santiago',
+      sucursal_direccion: '',
+      equipo_tipo: 'Split',
+      equipo_marca: 'Daikin',
+      sintoma_observacion: 'Reunión madrugada',
+      prioridad: 'Normal',
+      disponibilidad_cliente: '04:00',
+      tiene_fotos: false,
+      requiere_derivacion: false,
+      solicita_reunion: true,
+      reunion_fecha: '2026-12-01',
+      reunion_hora: '04:00',
+      reunion_modalidad: 'Online',
+      opciones_botones: ['Opción 1'],
+      respuesta_cliente: 'Revisando agenda...',
+    });
+
+    db.crearReservaReunion.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      codigo: 'FUERA_DE_HORARIO',
+      message: 'El horario solicitado (04:00) está fuera de los bloques de atención de Benjamín Yáñez.',
+      sugerencias: ['09:00', '10:00', '11:00'],
+    });
+
+    const payload = crearPayloadWhatsApp('Quiero reunión con Benjamín el 2026-12-01 a las 4 de la mañana');
+    const { raw, sig } = firmarWebhook(payload);
+
+    const res = await request(app)
+      .post('/webhooks/meta')
+      .set('X-Hub-Signature-256', sig)
+      .set('Content-Type', 'application/json')
+      .send(raw);
+
+    expect(res.status).toBe(200);
+    expect(enviarMensajeConBotones).not.toHaveBeenCalled();
+    expect(enviarMensajeWhatsApp).toHaveBeenCalledTimes(1);
+    const msg = enviarMensajeWhatsApp.mock.calls[0][1];
+    expect(msg).toContain('No fue posible agendar');
+    expect(msg).toContain('09:00 hrs, 10:00 hrs, 11:00 hrs');
+  });
+
   test('CA-2 + CA-4 API: GET /api/reuniones requiere Bearer, lista reservas sincronizadas y maneja errores', async () => {
     const unauth = await request(app).get('/api/reuniones');
     expect(unauth.status).toBe(401);
@@ -390,6 +500,8 @@ describe('[INT-HU-23] (AAI-102) — Integración WhatsApp + API /api/reuniones +
     expect(res.text).toContain('/api/reuniones');
     expect(res.text).toContain('crearReservaDashboard');
     expect(res.text).toContain('cambiarEstadoReunion');
+    expect(res.text).toContain('badge-ingresada');
+    expect(res.text).toContain('Confirmar');
     expect(res.text).not.toContain(process.env.TRIAGE_API_TOKEN);
   });
 });
