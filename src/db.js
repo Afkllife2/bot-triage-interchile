@@ -8,6 +8,7 @@ const {
   normalizarFechaReunion,
   normalizarHoraReunion,
   normalizarModalidad,
+  validarReglaHorarioBenjamin,
   calcularDisponibilidadDia,
   sugerirHorariosCercanos,
 } = require('./agenda');
@@ -78,10 +79,14 @@ async function ensureReunionesSchema(client) {
       modalidad VARCHAR(30) NOT NULL CHECK (modalidad IN ('Presencial', 'Online')),
       motivo TEXT NOT NULL DEFAULT 'Evaluación comercial con Benjamín Yáñez',
       origen VARCHAR(30) NOT NULL DEFAULT 'dashboard' CHECK (origen IN ('whatsapp', 'dashboard')),
-      estado VARCHAR(30) NOT NULL DEFAULT 'confirmada' CHECK (estado IN ('confirmada', 'reagendada', 'cancelada', 'completada')),
+      estado VARCHAR(30) NOT NULL DEFAULT 'ingresada' CHECK (estado IN ('ingresada', 'confirmada', 'reagendada', 'cancelada', 'completada')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE public.reuniones DROP CONSTRAINT IF EXISTS reuniones_estado_check;
+    ALTER TABLE public.reuniones ADD CONSTRAINT reuniones_estado_check
+      CHECK (estado IN ('ingresada', 'confirmada', 'reagendada', 'cancelada', 'completada'));
+    ALTER TABLE public.reuniones ALTER COLUMN estado SET DEFAULT 'ingresada';
     CREATE UNIQUE INDEX IF NOT EXISTS uq_reuniones_slot_activo
       ON public.reuniones (fecha_reunion, hora_reunion)
       WHERE estado <> 'cancelada';
@@ -555,6 +560,28 @@ async function actualizarEstadoTicket(id, { estado, fecha_visita, expected_updat
       ? fechaVisitaIso
       : (fecha_visita === null ? null : (fechaVisitaIso || currentTicket.fecha_visita));
 
+    if (estadoNorm === 'agendado' && nuevaFechaVisita) {
+      const choqueVisita = await client.query(
+        `SELECT id, fecha_visita
+         FROM casos_triage
+         WHERE id <> $1
+           AND estado = 'agendado'
+           AND fecha_visita IS NOT NULL
+           AND ABS(EXTRACT(EPOCH FROM (fecha_visita - $2::timestamptz))) < 3600
+         LIMIT 1`,
+        [numId, nuevaFechaVisita]
+      );
+      if (Array.isArray(choqueVisita?.rows) && choqueVisita.rows.length > 0) {
+        const otroId = choqueVisita.rows[0].id;
+        await client.query('ROLLBACK');
+        return {
+          error: 'horario_visita_ocupado',
+          status: 409,
+          message: `Choque de horario: el Ticket #${otroId} ya tiene visita técnica agendada en ese bloque horario. Elige otra hora.`,
+        };
+      }
+    }
+
     await client.query(
       `UPDATE casos_triage
        SET estado = $1,
@@ -599,7 +626,7 @@ function normalizarReunionRow(row) {
     modalidad: row.modalidad || 'Online',
     motivo: row.motivo || 'Evaluación comercial con Benjamín Yáñez',
     origen: row.origen || 'dashboard',
-    estado: row.estado || 'confirmada',
+    estado: row.estado || 'ingresada',
     created_at: row.created_at ? new Date(row.created_at).toISOString() : null,
     updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : null,
   };
@@ -690,8 +717,6 @@ async function listarReuniones({ fecha, incluirCanceladas = false, todos = false
 async function crearReservaReunion(payload = {}) {
   const nombreRaw = typeof payload.cliente_nombre === 'string' ? payload.cliente_nombre.trim() : '';
   const telefonoRaw = payload.telefono ? String(payload.telefono).trim() : null;
-  const fechaNorm = normalizarFechaReunion(String(payload.fecha_reunion || payload.fecha || ''));
-  const horaNorm = normalizarHoraReunion(String(payload.hora_reunion || payload.hora || ''));
   const modStrict = payload.modalidad !== undefined && payload.modalidad !== '';
   const modalidadNorm = normalizarModalidad(payload.modalidad, { estricto: modStrict, defecto: 'Online' });
   const motivoNorm = (typeof payload.motivo === 'string' && payload.motivo.trim())
@@ -707,22 +732,6 @@ async function crearReservaReunion(payload = {}) {
       message: 'El campo cliente_nombre es obligatorio para reservar la reunión',
     };
   }
-  if (!fechaNorm) {
-    return {
-      ok: false,
-      error: 'invalid_fecha_reunion',
-      status: 400,
-      message: 'El campo fecha_reunion debe tener formato YYYY-MM-DD válido',
-    };
-  }
-  if (!horaNorm) {
-    return {
-      ok: false,
-      error: 'invalid_hora_reunion',
-      status: 400,
-      message: 'El campo hora_reunion debe estar entre 08:00 y 19:00 en formato HH:mm',
-    };
-  }
   if (!modalidadNorm) {
     return {
       ok: false,
@@ -731,6 +740,18 @@ async function crearReservaReunion(payload = {}) {
       message: 'Modalidad inválida. Valores permitidos: Presencial u Online',
     };
   }
+
+  const reglaHorario = validarReglaHorarioBenjamin({
+    fecha: String(payload.fecha_reunion || payload.fecha || ''),
+    hora: String(payload.hora_reunion || payload.hora || ''),
+    hoy: payload.hoy_referencia || null,
+  });
+  if (!reglaHorario.ok) {
+    return reglaHorario;
+  }
+
+  const fechaNorm = reglaHorario.fecha;
+  const horaNorm = reglaHorario.hora;
 
   let client;
   try {
@@ -783,7 +804,7 @@ async function crearReservaReunion(payload = {}) {
       `INSERT INTO public.reuniones (
         cliente_id, cliente_nombre, telefono, fecha_reunion, hora_reunion,
         modalidad, motivo, origen, estado
-      ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, 'confirmada')
+      ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, 'ingresada')
       RETURNING id, cliente_id, cliente_nombre, telefono,
                 TO_CHAR(fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
                 hora_reunion, modalidad, motivo, origen, estado, created_at, updated_at`,

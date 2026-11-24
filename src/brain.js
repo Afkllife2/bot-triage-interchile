@@ -118,10 +118,14 @@ REGLAS IMPORTANTES:
   * Mientras falten estos datos básicos (especialmente la comuna/ciudad y nombre/empresa), mantén requiere_derivacion: false y pídele cordialmente esos detalles al cliente.
   * Una vez que el cliente haya proporcionado los datos completos de su solicitud (o si el cliente insiste explícitamente en hablar con un ejecutivo de inmediato sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
 - AGENDAMIENTO AUTOMÁTICO DE REUNIONES CON BENJAMÍN (HU-23):
-  * Si el cliente solicita agendar o reservar una reunión con Benjamín (presencial, online o de evaluación comercial), marca solicita_reunion: true y mantén requiere_derivacion: false mientras se coordina el bloque horario (para permitir confirmar o elegir otra hora si hay topón).
-  * Extrae reunion_fecha en formato YYYY-MM-DD, reunion_hora en formato 24h HH:mm (ej. "10:00") y reunion_modalidad ("Presencial" u "Online", por defecto "Online" si dice virtual/videollamada o no especifica modalidad).
-  * Si el cliente pidió reunión con Benjamín pero falta la fecha o la hora concreta, pídele cordialmente qué día y en qué bloque horario (09:00 a 18:00 hrs) prefiere reunirse y si desea modalidad Presencial u Online.
-- Usar opciones_botones SOLO cuando el cliente necesita elegir entre opciones limitadas y claras (máx 10, máx 24 caracteres cada una). Ejemplo inicial: ["Falla Técnica", "Mantención", "Instalación", "Cotización", "Proyecto Comercial", "Arriendo", "Otra Consulta"].
+  * HORARIO OFICIAL DE BENJAMÍN YÁÑEZ: Exclusivamente días hábiles (Lunes a Viernes), en bloques cerrados de 1 hora de 09:00 a 12:00 hrs y de 14:00 a 18:00 hrs (09:00, 10:00, 11:00, 12:00, 14:00, 15:00, 16:00, 17:00, 18:00). NO se agendan fines de semana (sábado/domingo), fechas pasadas, madrugadas (ej. 04:00 AM), noches ni el bloque de colación (13:00 hrs).
+  * Si el cliente solicita agendar o reservar una reunión con Benjamín (presencial, online o de evaluación comercial), marca solicita_reunion: true y mantén requiere_derivacion: false mientras se coordina el bloque horario.
+  * Extrae siempre reunion_fecha en formato YYYY-MM-DD, reunion_hora en formato 24h HH:mm (ej. "10:00" o "04:00" si pidió madrugada) y reunion_modalidad ("Presencial" u "Online", por defecto "Online" si dice virtual/videollamada o no especifica modalidad).
+  * Si el cliente pide un horario fuera de regla (fin de semana, madrugada, noche, 13:00 o pasado), igual extrae reunion_fecha y reunion_hora tal cual los pidió para que el validador determinista de agenda devuelva los bloques reales sugeridos, y en respuesta_cliente NUNCA afirmes que esa hora inválida quedó confirmada.
+  * Si el cliente pidió reunión con Benjamín pero falta la fecha o la hora concreta, pídele cordialmente qué día hábil (lunes a viernes) y en qué bloque (09:00–12:00 o 14:00–18:00 hrs) prefiere reunirse y si desea modalidad Presencial u Online.
+- ESTILO CONVERSACIONAL NATURAL (SIN MENÚS RÍGIDOS DE CALL-CENTER):
+  * Responde con lenguaje natural, directo y empático, permitiendo siempre que el cliente exprese todo libremente en texto abierto sin sentirse en un menú telefónico ("presiona 1, presiona 2").
+  * Mantén opciones_botones vacío [] en la gran mayoría de los turnos; incluye opciones cortas ÚNICAMENTE ante una ambigüedad total donde el cliente no haya indicado motivo alguno.
 - NUNCA inventar datos. Si no se sabe, dejar vacío.`;
 
 // --- 🛡️ ARNÉS DE MEMORIA CONVERSACIONAL (HU-02) ---
@@ -186,16 +190,8 @@ async function extraerFichaTriage(mensajeCliente, telefono = 'test') {
       equipo_tipo: '', equipo_marca: '', sintoma_observacion: 'Reinicio de sesión',
       prioridad: 'Normal', disponibilidad_cliente: '', tiene_fotos: false,
       requiere_derivacion: false,
-      opciones_botones: [
-        'Falla Técnica',
-        'Mantención',
-        'Instalación',
-        'Cotización',
-        'Proyecto Comercial',
-        'Arriendo',
-        'Otra Consulta',
-      ],
-      respuesta_cliente: '🔄 Sesión reiniciada. ¡Hola! Bienvenido a InterChile. ¿En qué podemos ayudarte hoy?',
+      opciones_botones: [],
+      respuesta_cliente: '🔄 Sesión reiniciada. ¡Hola! Bienvenido a InterChile Clima SpA. Cuéntame libremente qué equipo o servicio necesitas hoy (mantención, falla técnica, instalación, cotización o agendar reunión con Benjamín).',
     };
   }
 

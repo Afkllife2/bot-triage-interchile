@@ -213,7 +213,7 @@ app.post('/webhooks/meta', async (req, res) => {
             if (fichaEstructurada.requiere_derivacion) {
               await enviarMensajeWhatsApp(telefonoCliente, mensajeFinal);
             } else if (
-              resultadoReunion?.status !== 409 &&
+              (!resultadoReunion || resultadoReunion.ok) &&
               fichaEstructurada.opciones_botones &&
               fichaEstructurada.opciones_botones.length > 0
             ) {
@@ -441,6 +441,7 @@ app.post('/api/reuniones', requireTriageAuth, async (req, res) => {
         error: resultado.message,
         ...(resultado.codigo ? { codigo: resultado.codigo } : {}),
         ...(resultado.sugerencias ? { sugerencias: resultado.sugerencias } : {}),
+        ...(resultado.proximo_dia_habil ? { proximo_dia_habil: resultado.proximo_dia_habil } : {}),
       });
     }
     return res.status(201).json({ ok: true, data: resultado.data });

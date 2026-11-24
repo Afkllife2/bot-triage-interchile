@@ -18,7 +18,13 @@ const BLOQUES_HORARIOS_BENJAMIN = [
 ];
 
 const MODALIDADES_VALIDAS = new Set(['Presencial', 'Online']);
-const ESTADOS_REUNION_VALIDOS = new Set(['confirmada', 'reagendada', 'cancelada', 'completada']);
+const ESTADOS_REUNION_VALIDOS = new Set([
+  'ingresada',
+  'confirmada',
+  'reagendada',
+  'cancelada',
+  'completada',
+]);
 
 /**
  * Obtiene la fecha actual en zona horaria de Chile (`America/Santiago`) en formato `YYYY-MM-DD`.
@@ -102,6 +108,97 @@ function horaAMinutos(hhmm) {
 }
 
 /**
+ * Determina si una fecha `YYYY-MM-DD` cae en día hábil laboral (lunes=1 a viernes=5).
+ */
+function esDiaHabilReunion(fechaStr) {
+  const norm = normalizarFechaReunion(fechaStr);
+  if (!norm) return false;
+  const [y, m, d] = norm.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return dow >= 1 && dow <= 5;
+}
+
+/**
+ * Retorna el próximo día hábil (`YYYY-MM-DD`) posterior a la fecha indicada.
+ */
+function siguienteDiaHabil(fechaStr) {
+  const norm = normalizarFechaReunion(fechaStr) || fechaHoyChile();
+  const [y, m, d] = norm.split('-').map(Number);
+  const cursor = new Date(Date.UTC(y, m - 1, d));
+  do {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  } while (cursor.getUTCDay() === 0 || cursor.getUTCDay() === 6);
+  return cursor.toISOString().slice(0, 10);
+}
+
+/**
+ * Valida reglas operativas reales de la agenda de Benjamín Yáñez:
+ * - Solo días hábiles (lunes a viernes).
+ * - Sin fechas pasadas respecto a `hoy` (zona Chile).
+ * - Exclusivamente dentro de `BLOQUES_HORARIOS_BENJAMIN` (09:00–12:00 y 14:00–18:00; 13:00 colación).
+ */
+function validarReglaHorarioBenjamin({ fecha, hora, hoy = null } = {}) {
+  const fechaNorm = normalizarFechaReunion(String(fecha || ''));
+  if (!fechaNorm) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'invalid_fecha_reunion',
+      codigo: 'FECHA_INVALIDA',
+      message: 'El campo fecha_reunion debe tener formato YYYY-MM-DD válido',
+    };
+  }
+
+  const hoyRef = hoy ? normalizarFechaReunion(String(hoy)) : fechaHoyChile();
+  if (hoyRef && fechaNorm < hoyRef) {
+    const proximo = esDiaHabilReunion(hoyRef) ? hoyRef : siguienteDiaHabil(hoyRef);
+    return {
+      ok: false,
+      status: 400,
+      error: 'fecha_pasada',
+      codigo: 'FECHA_PASADA',
+      proximo_dia_habil: proximo,
+      sugerencias: ['09:00', '10:00', '11:00'],
+      message: `No es posible agendar reuniones en fechas pasadas (${fechaNorm}). Próximo día hábil disponible: ${proximo}.`,
+    };
+  }
+
+  if (!esDiaHabilReunion(fechaNorm)) {
+    const proximo = siguienteDiaHabil(fechaNorm);
+    return {
+      ok: false,
+      status: 400,
+      error: 'dia_inhabil',
+      codigo: 'DIA_INHABIL',
+      proximo_dia_habil: proximo,
+      sugerencias: ['09:00', '10:00', '11:00'],
+      message: `Benjamín Yáñez atiende reuniones exclusivamente de lunes a viernes (09:00–12:00 y 14:00–18:00 hrs). El ${fechaNorm} es fin de semana; próximo día hábil: ${proximo}.`,
+    };
+  }
+
+  const horaNorm = normalizarHoraReunion(String(hora || ''));
+  if (!horaNorm || !BLOQUES_HORARIOS_BENJAMIN.includes(horaNorm)) {
+    const rawMatch = /^(\d{1,2})(?::(\d{2}))?/.exec(String(hora || '').trim());
+    const minSolicitado = rawMatch
+      ? Math.min(Number(rawMatch[1]), 23) * 60 + Math.min(Number(rawMatch[2] || 0), 59)
+      : 9 * 60;
+    const sugs = [...BLOQUES_HORARIOS_BENJAMIN]
+      .sort((a, b) => Math.abs(horaAMinutos(a) - minSolicitado) - Math.abs(horaAMinutos(b) - minSolicitado))
+      .slice(0, 3);
+    return {
+      ok: false,
+      status: 400,
+      error: 'fuera_de_horario',
+      codigo: 'FUERA_DE_HORARIO',
+      sugerencias: sugs,
+      message: `El horario solicitado (${String(hora || '').trim() || 'inválido'}) está fuera de los bloques de atención de Benjamín Yáñez (lunes a viernes de 09:00 a 12:00 y 14:00 a 18:00 hrs; 13:00 colación).`,
+    };
+  }
+
+  return { ok: true, fecha: fechaNorm, hora: horaNorm };
+}
+
+/**
  * Calcula bloques disponibles y ocupados para una fecha determinada.
  */
 function calcularDisponibilidadDia(fecha, horasOcupadas = []) {
@@ -141,8 +238,12 @@ function construirMensajeReunionWhatsApp(respuestaBase, resultadoReserva, { fech
 
   if (resultadoReserva.ok && resultadoReserva.data) {
     const r = resultadoReserva.data;
+    const estadoLegible = r.estado === 'confirmada'
+      ? 'Confirmada'
+      : 'Ingresada (pendiente de confirmación comercial)';
     const bloqueConfirmacion = [
-      `📅 *Reunión agendada con Benjamín Yáñez* (Reserva #R-${r.id})`,
+      `📅 *Solicitud de reunión registrada con Benjamín Yáñez* (Reserva #R-${r.id})`,
+      `• Estado: ${estadoLegible}`,
       `• Fecha: ${r.fecha_reunion} a las ${r.hora_reunion} hrs`,
       `• Modalidad: ${r.modalidad}`,
       `• Contacto directo: Benjamin@interchileclima.cl / +56 9 9440 2632`,
@@ -161,7 +262,22 @@ function construirMensajeReunionWhatsApp(respuestaBase, resultadoReserva, { fech
     return (
       `⚠️ El horario ${fecha} a las ${hora} hrs (${modalidad || 'Online'}) con Benjamín Yáñez ya se encuentra ocupado.\n` +
       `${opcionesTxt}\n` +
-      `Indícame cuál prefieres para confirmar tu reserva.`
+      `Indícame cuál prefieres para registrar tu solicitud.`
+    );
+  }
+
+  if (resultadoReserva.status === 400) {
+    const detalle = resultadoReserva.message || 'El horario indicado está fuera de la jornada hábil de atención.';
+    const sugerencias = Array.isArray(resultadoReserva.sugerencias) ? resultadoReserva.sugerencias : [];
+    const diaSug = resultadoReserva.proximo_dia_habil || fecha || 'un día hábil';
+    const sugTxt = sugerencias.length > 0
+      ? `\nBloques disponibles sugeridos (${diaSug}): ${sugerencias.map((h) => `${h} hrs`).join(', ')}.`
+      : '';
+
+    return (
+      `⚠️ No fue posible agendar la reunión para ${fecha || 'la fecha indicada'} a las ${hora || 'la hora indicada'}.\n` +
+      `${detalle}${sugTxt}\n` +
+      `Indícame qué día hábil (lunes a viernes) y bloque horario prefieres para dejar ingresada tu reunión.`
     );
   }
 
@@ -176,6 +292,9 @@ module.exports = {
   normalizarFechaReunion,
   normalizarHoraReunion,
   normalizarModalidad,
+  esDiaHabilReunion,
+  siguienteDiaHabil,
+  validarReglaHorarioBenjamin,
   calcularDisponibilidadDia,
   sugerirHorariosCercanos,
   construirMensajeReunionWhatsApp,
