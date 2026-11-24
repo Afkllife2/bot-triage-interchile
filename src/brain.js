@@ -83,10 +83,10 @@ const FichaTriage = z.object({
     .default('')
     .describe("Hora solicitada para la reunión con Benjamín en formato 24h HH:mm (ej. '10:00', '15:30'). Si no indica hora, dejar vacío."),
   reunion_modalidad: z
-    .enum(['Presencial', 'Online', ''])
+    .enum(['Presencial', 'Online', 'No especificada'])
     .optional()
-    .default('')
-    .describe("Modalidad de la reunión ('Presencial' u 'Online'). Dejar '' si aún no se especifica."),
+    .default('No especificada')
+    .describe("Modalidad de la reunión ('Presencial' u 'Online'). Usar 'No especificada' si aún no se especifica."),
 
   respuesta_cliente: z
     .string()
