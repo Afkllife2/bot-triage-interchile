@@ -828,6 +828,57 @@
     .badge-cancelada { background: var(--red-soft); color: var(--red); border: 1px solid #fecdd3; }
     .badge-origen-wa { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
     .badge-origen-dash { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
+    .badge-mod-online { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
+    .badge-mod-presencial { background: var(--amber-soft); color: var(--orange); border: 1px solid var(--amber-border); }
+    .modalidad-banner {
+      border-radius: 12px;
+      padding: 0.58rem 0.78rem;
+      font-size: 0.74rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 0.85rem;
+    }
+    .modalidad-banner.online {
+      background: var(--sky-soft);
+      color: var(--sky-ink);
+      border: 1px solid var(--sky-border);
+    }
+    .modalidad-banner.presencial {
+      background: var(--amber-soft);
+      color: #92400e;
+      border: 1px solid var(--amber-border);
+    }
+    .modalidad-filter-wrap {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .mod-filter-btn {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.73rem;
+      font-weight: 700;
+      box-shadow: none;
+    }
+    .mod-filter-btn.active {
+      background: var(--brand);
+      color: #ffffff;
+      border-color: var(--brand);
+    }
+    .modalidad-detalle-linea {
+      font-size: 0.73rem;
+      color: var(--ink);
+      margin-top: 3px;
+      font-weight: 600;
+    }
+    .modalidad-detalle-linea a {
+      color: var(--sky-ink);
+      text-decoration: underline;
+    }
 
     @media (max-width: 1080px) {
       .agenda-grid { grid-template-columns: 1fr; }
@@ -1044,10 +1095,25 @@
           </div>
           <div class="agenda-field">
             <label for="reunion-modalidad">Modalidad</label>
-            <select id="reunion-modalidad" class="agenda-select">
-              <option value="Online">Online (Videollamada)</option>
-              <option value="Presencial">Presencial (Terreno / Oficina)</option>
+            <select id="reunion-modalidad" class="agenda-select" onchange="actualizarUISegunModalidad()">
+              <option value="Online">💻 Online (Videollamada)</option>
+              <option value="Presencial">📍 Presencial (Terreno / Oficina)</option>
             </select>
+          </div>
+        </div>
+
+        <div id="agenda-modalidad-info" class="modalidad-banner online">
+          💻 <strong>Sesión Remota (30–45 min · sin traslado):</strong> Ideal para evaluación comercial o revisar cotizaciones. El enlace se envía al confirmar.
+        </div>
+
+        <div class="agenda-form-row">
+          <div class="agenda-field">
+            <label id="lbl-reunion-subtipo" for="reunion-subtipo">Plataforma</label>
+            <select id="reunion-subtipo" class="agenda-select" onchange="aplicarSubtipoModalidad()"></select>
+          </div>
+          <div class="agenda-field">
+            <label id="lbl-reunion-detalle" for="reunion-detalle-modalidad">Enlace Videollamada (Opcional)</label>
+            <input type="text" id="reunion-detalle-modalidad" class="agenda-input" placeholder="Ej: https://meet.google.com/abc-defg-hij" />
           </div>
         </div>
 
@@ -1083,7 +1149,12 @@
       <div class="table-wrap" id="tabla-reuniones-wrap">
         <div class="agenda-table-header">
           <span class="agenda-card-title">Reuniones Programadas (WhatsApp + Dashboard)</span>
-          <span id="reunion-total-pill" class="badge badge-derivado">0 registradas</span>
+          <div class="modalidad-filter-wrap">
+            <button type="button" class="mod-filter-btn active" onclick="filtrarReunionesPorModalidad('todas', this)">Todas</button>
+            <button type="button" class="mod-filter-btn" onclick="filtrarReunionesPorModalidad('Online', this)">💻 Online</button>
+            <button type="button" class="mod-filter-btn" onclick="filtrarReunionesPorModalidad('Presencial', this)">📍 Presencial</button>
+            <span id="reunion-total-pill" class="badge badge-derivado">0 registradas</span>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table id="tabla-reuniones">
@@ -1486,6 +1557,85 @@
 
   const BLOQUES_POR_DEFECTO = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
   let horaSeleccionadaReunion = '';
+  let todasLasReuniones = [];
+  let filtroModalidadReunion = 'todas';
+
+  function actualizarUISegunModalidad() {
+    const mod = document.getElementById('reunion-modalidad')?.value || 'Online';
+    const infoEl = document.getElementById('agenda-modalidad-info');
+    const lblSub = document.getElementById('lbl-reunion-subtipo');
+    const selSub = document.getElementById('reunion-subtipo');
+    const lblDet = document.getElementById('lbl-reunion-detalle');
+    const inpDet = document.getElementById('reunion-detalle-modalidad');
+    if (!infoEl || !selSub || !inpDet) return;
+
+    if (mod === 'Presencial') {
+      infoEl.className = 'modalidad-banner presencial';
+      infoEl.innerHTML = '📍 <strong>Reunión Física (60 min + traslado):</strong> Levantamiento en terreno o reunión en oficina. <strong>Exige dirección exacta.</strong>';
+      lblSub.textContent = 'Tipo Presencial';
+      selSub.innerHTML = `
+        <option value="terreno">En Terreno (Visita al cliente)</option>
+        <option value="oficina">En Oficina InterChile Clima SpA</option>
+      `;
+      lblDet.textContent = 'Dirección / Lugar (Obligatorio)';
+      inpDet.placeholder = 'Ej: Av. Apoquindo 4500, Las Condes';
+      if (inpDet.value.includes('meet.google') || inpDet.value.includes('Google Meet') || inpDet.value.includes('Zoom') || inpDet.value.includes('Teams')) {
+        inpDet.value = '';
+      }
+    } else {
+      infoEl.className = 'modalidad-banner online';
+      infoEl.innerHTML = '💻 <strong>Sesión Remota (30–45 min · sin traslado):</strong> Evaluación comercial rápida o revisión de cotización. Enlace al confirmar.';
+      lblSub.textContent = 'Plataforma';
+      selSub.innerHTML = `
+        <option value="Google Meet">Google Meet</option>
+        <option value="Zoom">Zoom</option>
+        <option value="Microsoft Teams">Microsoft Teams</option>
+        <option value="WhatsApp Video">Videollamada WhatsApp</option>
+      `;
+      lblDet.textContent = 'Enlace Videollamada (Opcional)';
+      inpDet.placeholder = 'Ej: https://meet.google.com/abc-defg-hij (o se envía al confirmar)';
+      if (inpDet.value === 'Oficina InterChile Clima SpA (Santiago)') {
+        inpDet.value = '';
+      }
+    }
+  }
+
+  function aplicarSubtipoModalidad() {
+    const mod = document.getElementById('reunion-modalidad')?.value || 'Online';
+    const sub = document.getElementById('reunion-subtipo')?.value || '';
+    const inpDet = document.getElementById('reunion-detalle-modalidad');
+    if (!inpDet) return;
+
+    if (mod === 'Presencial') {
+      if (sub === 'oficina') {
+        inpDet.value = 'Oficina InterChile Clima SpA (Santiago)';
+      } else if (inpDet.value === 'Oficina InterChile Clima SpA (Santiago)') {
+        inpDet.value = '';
+        inpDet.focus();
+      }
+    }
+  }
+
+  function filtrarReunionesPorModalidad(mod, btn) {
+    filtroModalidadReunion = mod;
+    document.querySelectorAll('.mod-filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderizarTablaReuniones(todasLasReuniones);
+  }
+
+  function formatearDetalleModalidadHTML(reunion) {
+    const raw = (reunion.detalle_modalidad || '').trim();
+    if (reunion.modalidad === 'Presencial') {
+      const texto = raw || 'Por confirmar ubicación (Terreno / Oficina InterChile)';
+      const esOficina = texto.toLowerCase().includes('oficina interchile');
+      return `<div class="modalidad-detalle-linea">📌 ${esc(texto)} <span style="color:var(--text-muted);font-weight:500">(${esOficina ? 'Sede InterChile' : 'Terreno · requiere traslado'})</span></div>`;
+    }
+    const acceso = raw || 'Google Meet (enlace se envía al confirmar)';
+    if (/^https?:\/\//i.test(acceso)) {
+      return `<div class="modalidad-detalle-linea">🔗 <a href="${esc(acceso)}" target="_blank" rel="noopener noreferrer">${esc(acceso)}</a></div>`;
+    }
+    return `<div class="modalidad-detalle-linea">🔗 ${esc(acceso)}</div>`;
+  }
 
   function fechaHoyChileUI() {
     try {
@@ -1568,19 +1718,24 @@
   }
 
   function renderizarTablaReuniones(reuniones) {
+    todasLasReuniones = Array.isArray(reuniones) ? reuniones : [];
     const tbody = document.getElementById('tbody-reuniones');
     const emptyEl = document.getElementById('reuniones-empty');
     const tablaEl = document.getElementById('tabla-reuniones');
     const pillEl = document.getElementById('reunion-total-pill');
     if (!tbody || !emptyEl || !tablaEl) return;
 
-    const activas = reuniones.filter(r => r.estado !== 'cancelada').length;
-    if (pillEl) pillEl.textContent = `${activas} activa(s) · ${reuniones.length} total`;
+    const listaFiltrada = filtroModalidadReunion === 'todas'
+      ? todasLasReuniones
+      : todasLasReuniones.filter(r => r.modalidad === filtroModalidadReunion);
+
+    const activas = todasLasReuniones.filter(r => r.estado !== 'cancelada').length;
+    if (pillEl) pillEl.textContent = `${activas} activa(s) · ${todasLasReuniones.length} total`;
     const statReu = document.getElementById('stat-reuniones');
     if (statReu) statReu.textContent = String(activas);
 
     tbody.innerHTML = '';
-    if (!reuniones.length) {
+    if (!listaFiltrada.length) {
       tablaEl.style.display = 'none';
       emptyEl.style.display = 'block';
       return;
@@ -1589,9 +1744,10 @@
     tablaEl.style.display = 'table';
     emptyEl.style.display = 'none';
 
-    reuniones.forEach(r => {
+    listaFiltrada.forEach(r => {
       const idNum = Number(r.id);
       const esWa = r.origen === 'whatsapp';
+      const esPresencial = r.modalidad === 'Presencial';
       const estadoClass =
         r.estado === 'cancelada' ? 'badge-cancelada' :
         r.estado === 'ingresada' ? 'badge-ingresada' :
@@ -1613,8 +1769,9 @@
           <span style="font-family:monospace;font-size:0.74rem;color:var(--text-sub)">${esc(r.telefono || '—')}</span>
         </td>
         <td>
-          <span class="badge ${r.modalidad === 'Presencial' ? 'badge-humano' : 'badge-derivado'}">${esc(r.modalidad)}</span>
-          <div style="font-size:0.74rem;color:var(--text-muted);margin-top:3px">${esc(r.motivo || 'Evaluación comercial')}</div>
+          <span class="badge ${esPresencial ? 'badge-mod-presencial' : 'badge-mod-online'}">${esPresencial ? '📍 Presencial' : '💻 Online'}</span>
+          ${formatearDetalleModalidadHTML(r)}
+          <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px">${esc(r.motivo || 'Evaluación comercial')}</div>
         </td>
         <td>
           <span class="badge ${esWa ? 'badge-origen-wa' : 'badge-origen-dash'}">${esWa ? '📱 WhatsApp' : '🖥️ Dashboard'}</span>
@@ -1707,6 +1864,8 @@
   async function crearReservaDashboard() {
     const fecha = (document.getElementById('reunion-fecha')?.value || '').trim();
     const modalidad = document.getElementById('reunion-modalidad')?.value || 'Online';
+    const subtipo = document.getElementById('reunion-subtipo')?.value || 'Google Meet';
+    const detalleInput = (document.getElementById('reunion-detalle-modalidad')?.value || '').trim();
     const cliente_nombre = (document.getElementById('reunion-cliente')?.value || '').trim();
     const telefono = (document.getElementById('reunion-telefono')?.value || '').trim();
     const motivo = (document.getElementById('reunion-motivo')?.value || '').trim();
@@ -1724,6 +1883,20 @@
       return;
     }
 
+    let detalle_modalidad = detalleInput;
+    if (modalidad === 'Presencial') {
+      if (!detalle_modalidad && subtipo === 'oficina') {
+        detalle_modalidad = 'Oficina InterChile Clima SpA (Santiago)';
+      }
+      if (!detalle_modalidad || detalle_modalidad.length < 4) {
+        mostrarFeedbackAgenda('⚠️ Para una reunión Presencial debes indicar la dirección exacta en terreno o seleccionar Oficina InterChile.', 'err');
+        document.getElementById('reunion-detalle-modalidad')?.focus();
+        return;
+      }
+    } else if (!detalle_modalidad) {
+      detalle_modalidad = `${subtipo} (enlace se envía al confirmar)`;
+    }
+
     try {
       const res = await fetch('/api/reuniones', {
         method: 'POST',
@@ -1734,6 +1907,8 @@
           fecha_reunion: fecha,
           hora_reunion: horaSeleccionadaReunion,
           modalidad,
+          detalle_modalidad,
+          requerir_detalle_presencial: true,
           motivo: motivo || 'Evaluación comercial con Benjamín Yáñez',
         }),
       });
@@ -1741,7 +1916,7 @@
 
       if (res.status === 409 || res.status === 400) {
         mostrarFeedbackAgenda('⚠️ ' + (json.error || 'Horario no disponible con Benjamín.'), 'err', json.sugerencias || []);
-        mostrarToast('⚠️ ' + (json.error || 'Horario ocupado o fuera de regla'), 'err');
+        mostrarToast('⚠️ ' + (json.error || 'Horario ocupado o datos incompletos'), 'err');
         await cargarReuniones();
         return;
       }
@@ -1750,11 +1925,16 @@
       }
 
       const r = json.data;
-      mostrarFeedbackAgenda(`✅ Solicitud #R-${r.id} ingresada para el ${r.fecha_reunion} a las ${r.hora_reunion} (${r.modalidad}) — pendiente de confirmar asistencia.`, 'ok');
-      mostrarToast(`✅ Reunión #R-${r.id} ingresada con Benjamín (${r.fecha_reunion} ${r.hora_reunion})`, 'ok');
+      const detalleTxt = r.modalidad === 'Presencial'
+        ? `📍 Lugar: ${r.detalle_modalidad}`
+        : `💻 Canal: ${r.detalle_modalidad}`;
+      mostrarFeedbackAgenda(`✅ Solicitud #R-${r.id} ingresada para el ${r.fecha_reunion} a las ${r.hora_reunion} (${r.modalidad} · ${detalleTxt}) — pendiente de confirmar asistencia.`, 'ok');
+      mostrarToast(`✅ Reunión #R-${r.id} ${r.modalidad} ingresada (${r.fecha_reunion} ${r.hora_reunion})`, 'ok');
       document.getElementById('reunion-cliente').value = '';
       document.getElementById('reunion-telefono').value = '';
       document.getElementById('reunion-motivo').value = '';
+      document.getElementById('reunion-detalle-modalidad').value = '';
+      actualizarUISegunModalidad();
       seleccionarBloqueHorario('');
       await cargarReuniones();
     } catch (err) {
@@ -1786,6 +1966,7 @@
     reunionFechaInit.min = fechaHoyChileUI();
     reunionFechaInit.value = proximoDiaHabilUI(fechaHoyChileUI());
   }
+  actualizarUISegunModalidad();
   cargarTodo();
 </script>
 </body>

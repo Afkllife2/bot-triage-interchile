@@ -70,7 +70,7 @@ KRONOS_CATALOGO_TOKEN=<opcional_bearer_kronos>
 # Instalar dependencias
 npm install
 
-# Ejecutar suite completa de pruebas + cobertura (7 suites / 86 tests PASS, 91.37% líneas)
+# Ejecutar suite completa de pruebas + cobertura (7 suites / 87 tests PASS, 91.58% líneas)
 npx jest --coverage --runInBand --detectOpenHandles
 
 # Ejecutar prueba reproducible de carga HTTP (N=50 VUs, 500 reqs + 20 probes de seguridad)

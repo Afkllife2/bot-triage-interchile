@@ -8,6 +8,8 @@ const {
   normalizarFechaReunion,
   normalizarHoraReunion,
   normalizarModalidad,
+  construirDetalleModalidad,
+  validarDetalleModalidad,
   validarReglaHorarioBenjamin,
   calcularDisponibilidadDia,
   sugerirHorariosCercanos,
@@ -77,12 +79,15 @@ async function ensureReunionesSchema(client) {
       fecha_reunion DATE NOT NULL,
       hora_reunion VARCHAR(5) NOT NULL,
       modalidad VARCHAR(30) NOT NULL CHECK (modalidad IN ('Presencial', 'Online')),
+      detalle_modalidad TEXT NULL,
       motivo TEXT NOT NULL DEFAULT 'Evaluación comercial con Benjamín Yáñez',
       origen VARCHAR(30) NOT NULL DEFAULT 'dashboard' CHECK (origen IN ('whatsapp', 'dashboard')),
       estado VARCHAR(30) NOT NULL DEFAULT 'ingresada' CHECK (estado IN ('ingresada', 'confirmada', 'reagendada', 'cancelada', 'completada')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    ALTER TABLE public.reuniones
+      ADD COLUMN IF NOT EXISTS detalle_modalidad TEXT NULL;
     ALTER TABLE public.reuniones DROP CONSTRAINT IF EXISTS reuniones_estado_check;
     ALTER TABLE public.reuniones ADD CONSTRAINT reuniones_estado_check
       CHECK (estado IN ('ingresada', 'confirmada', 'reagendada', 'cancelada', 'completada'));
@@ -616,6 +621,7 @@ function normalizarReunionRow(row) {
   } else if (typeof row.fecha_reunion === 'string') {
     fechaStr = row.fecha_reunion.slice(0, 10);
   }
+  const modalidad = row.modalidad || 'Online';
   return {
     id: Number(row.id),
     cliente_id: row.cliente_id ? Number(row.cliente_id) : null,
@@ -623,7 +629,12 @@ function normalizarReunionRow(row) {
     telefono: row.telefono || null,
     fecha_reunion: fechaStr,
     hora_reunion: row.hora_reunion || null,
-    modalidad: row.modalidad || 'Online',
+    modalidad,
+    detalle_modalidad: construirDetalleModalidad({
+      modalidad,
+      detalle_modalidad: row.detalle_modalidad,
+      usarDefectoPresencial: true,
+    }),
     motivo: row.motivo || 'Evaluación comercial con Benjamín Yáñez',
     origen: row.origen || 'dashboard',
     estado: row.estado || 'ingresada',
@@ -678,6 +689,7 @@ async function listarReuniones({ fecha, incluirCanceladas = false, todos = false
         TO_CHAR(r.fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
         r.hora_reunion,
         r.modalidad,
+        r.detalle_modalidad,
         r.motivo,
         r.origen,
         r.estado,
@@ -741,6 +753,17 @@ async function crearReservaReunion(payload = {}) {
     };
   }
 
+  const detalleCheck = validarDetalleModalidad({
+    modalidad: modalidadNorm,
+    detalle_modalidad: payload.detalle_modalidad || payload.lugar_reunion || payload.enlace_reunion || '',
+    origen: origenNorm,
+    requerirDetallePresencial: Boolean(payload.requerir_detalle_presencial),
+  });
+  if (!detalleCheck.ok) {
+    return detalleCheck;
+  }
+  const detalleModalidadNorm = detalleCheck.detalle_modalidad;
+
   const reglaHorario = validarReglaHorarioBenjamin({
     fecha: String(payload.fecha_reunion || payload.fecha || ''),
     hora: String(payload.hora_reunion || payload.hora || ''),
@@ -803,12 +826,12 @@ async function crearReservaReunion(payload = {}) {
     const insertRes = await client.query(
       `INSERT INTO public.reuniones (
         cliente_id, cliente_nombre, telefono, fecha_reunion, hora_reunion,
-        modalidad, motivo, origen, estado
-      ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, 'ingresada')
+        modalidad, detalle_modalidad, motivo, origen, estado
+      ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, 'ingresada')
       RETURNING id, cliente_id, cliente_nombre, telefono,
                 TO_CHAR(fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
-                hora_reunion, modalidad, motivo, origen, estado, created_at, updated_at`,
-      [clienteId, nombreRaw, telefonoRaw, fechaNorm, horaNorm, modalidadNorm, motivoNorm, origenNorm]
+                hora_reunion, modalidad, detalle_modalidad, motivo, origen, estado, created_at, updated_at`,
+      [clienteId, nombreRaw, telefonoRaw, fechaNorm, horaNorm, modalidadNorm, detalleModalidadNorm, motivoNorm, origenNorm]
     );
 
     await client.query('COMMIT');
@@ -867,7 +890,7 @@ async function actualizarEstadoReunion(id, { estado } = {}) {
        WHERE id = $2
        RETURNING id, cliente_id, cliente_nombre, telefono,
                  TO_CHAR(fecha_reunion, 'YYYY-MM-DD') AS fecha_reunion,
-                 hora_reunion, modalidad, motivo, origen, estado, created_at, updated_at`,
+                 hora_reunion, modalidad, detalle_modalidad, motivo, origen, estado, created_at, updated_at`,
       [estadoNorm, numId]
     );
     if (updRes.rows.length === 0) {

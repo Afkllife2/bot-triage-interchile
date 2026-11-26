@@ -107,6 +107,71 @@ function horaAMinutos(hhmm) {
   return h * 60 + m;
 }
 
+const DETALLE_ONLINE_DEFECTO = 'Google Meet (enlace se envía al confirmar)';
+const DETALLE_PRESENCIAL_OFICINA = 'Oficina InterChile Clima SpA (Santiago)';
+const DETALLE_PRESENCIAL_DEFECTO = 'Por confirmar dirección en terreno / Oficina InterChile';
+
+/**
+ * Construye el detalle operativo según la modalidad (`Online` -> enlace/plataforma; `Presencial` -> dirección o sede).
+ */
+function construirDetalleModalidad({
+  modalidad,
+  detalle_modalidad,
+  direccion,
+  comuna,
+  usarDefectoPresencial = true,
+} = {}) {
+  const mod = normalizarModalidad(modalidad, { defecto: 'Online' });
+  const rawDetalle = typeof detalle_modalidad === 'string' ? detalle_modalidad.trim() : '';
+  if (rawDetalle) return rawDetalle;
+
+  if (mod === 'Presencial') {
+    const ubicacionCliente = [direccion, comuna]
+      .map((v) => (typeof v === 'string' ? v.trim() : ''))
+      .filter(Boolean)
+      .join(', ');
+    if (ubicacionCliente) return ubicacionCliente;
+    return usarDefectoPresencial ? DETALLE_PRESENCIAL_DEFECTO : '';
+  }
+
+  return DETALLE_ONLINE_DEFECTO;
+}
+
+/**
+ * Valida reglas específicas según modalidad: una reserva `Presencial` creada desde
+ * Dashboard exige dirección en terreno o confirmación de Oficina InterChile.
+ */
+function validarDetalleModalidad({
+  modalidad,
+  detalle_modalidad,
+  origen = 'dashboard',
+  requerirDetallePresencial = false,
+} = {}) {
+  const mod = normalizarModalidad(modalidad, { defecto: 'Online' });
+  const detalleTrim = typeof detalle_modalidad === 'string' ? detalle_modalidad.trim() : '';
+
+  if (mod === 'Presencial' && (origen === 'dashboard' || requerirDetallePresencial)) {
+    if (!detalleTrim || detalleTrim.length < 4 || detalleTrim === DETALLE_PRESENCIAL_DEFECTO) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'missing_detalle_presencial',
+        codigo: 'LUGAR_PRESENCIAL_REQUERIDO',
+        message: 'Para una reunión Presencial debes indicar la dirección exacta en terreno o seleccionar Oficina InterChile.',
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    detalle_modalidad: construirDetalleModalidad({
+      modalidad: mod,
+      detalle_modalidad: detalleTrim,
+      usarDefectoPresencial: true,
+    }),
+  };
+}
+
 /**
  * Determina si una fecha `YYYY-MM-DD` cae en día hábil laboral (lunes=1 a viernes=5).
  */
@@ -241,11 +306,28 @@ function construirMensajeReunionWhatsApp(respuestaBase, resultadoReserva, { fech
     const estadoLegible = r.estado === 'confirmada'
       ? 'Confirmada'
       : 'Ingresada (pendiente de confirmación comercial)';
+    const modNorm = normalizarModalidad(r.modalidad, { defecto: 'Online' });
+    const detalleMod = construirDetalleModalidad({
+      modalidad: modNorm,
+      detalle_modalidad: r.detalle_modalidad,
+      usarDefectoPresencial: true,
+    });
+    const lineasModalidad = modNorm === 'Presencial'
+      ? [
+          `• Modalidad: 📍 Presencial (Terreno / Oficina)`,
+          `• Lugar / Dirección: ${detalleMod}`,
+          `• Logística: Visita o reunión física (requiere confirmar traslado)`,
+        ]
+      : [
+          `• Modalidad: 💻 Online (Videollamada)`,
+          `• Acceso: ${detalleMod}`,
+          `• Logística: Sesión remota sin traslado (30–45 min)`,
+        ];
     const bloqueConfirmacion = [
       `📅 *Solicitud de reunión registrada con Benjamín Yáñez* (Reserva #R-${r.id})`,
       `• Estado: ${estadoLegible}`,
       `• Fecha: ${r.fecha_reunion} a las ${r.hora_reunion} hrs`,
-      `• Modalidad: ${r.modalidad}`,
+      ...lineasModalidad,
       `• Contacto directo: Benjamin@interchileclima.cl / +56 9 9440 2632`,
     ].join('\n');
 
@@ -288,10 +370,15 @@ module.exports = {
   BLOQUES_HORARIOS_BENJAMIN,
   MODALIDADES_VALIDAS,
   ESTADOS_REUNION_VALIDOS,
+  DETALLE_ONLINE_DEFECTO,
+  DETALLE_PRESENCIAL_OFICINA,
+  DETALLE_PRESENCIAL_DEFECTO,
   fechaHoyChile,
   normalizarFechaReunion,
   normalizarHoraReunion,
   normalizarModalidad,
+  construirDetalleModalidad,
+  validarDetalleModalidad,
   esDiaHabilReunion,
   siguienteDiaHabil,
   validarReglaHorarioBenjamin,

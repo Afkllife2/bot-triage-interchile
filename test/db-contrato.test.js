@@ -252,6 +252,16 @@ describe('Capa de Datos `src/db.js` — Contrato KRON2-152 y Sprint 3', () => {
     });
     expect(badMod.status).toBe(400);
 
+    const badPresencialSinLugar = await db.crearReservaReunion({
+      cliente_nombre: 'Clinica Terreno',
+      fecha_reunion: '2026-12-01',
+      hora_reunion: '10:00',
+      modalidad: 'Presencial',
+      origen: 'dashboard',
+    });
+    expect(badPresencialSinLugar.status).toBe(400);
+    expect(badPresencialSinLugar.codigo).toBe('LUGAR_PRESENCIAL_REQUERIDO');
+
     // 1era llamada ejecuta ensureReunionesSchema + BEGIN + SELECT cliente + FOR UPDATE (ocupado -> 409)
     mockQuery
       .mockResolvedValueOnce({}) // ensureReunionesSchema (corre 1 vez)
