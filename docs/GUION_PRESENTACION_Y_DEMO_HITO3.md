@@ -66,7 +66,7 @@
 4. **En Dashboard (clic en `↻ Actualizar`):**
    - Aparece arriba el ticket con **`Mantención · Split · Daikin`** y **`$53.550 CLP`**.
    - Clic en **`📄 PDF`** -> abre/descarga **`ficha-triage-<id>.pdf`** (`02 COTIZACIÓN BORRADOR REFERENCIAL`).
-   - En ese mismo ticket, cambiar el estado a **`Agendado`** **sin ingresar fecha** y presionar **`Guardar`** -> mostrar la validación que impide agendar sin fecha/hora exacta.
+   - En ese mismo ticket, cambiar el estado a **`Agendado`** (al seleccionarlo aparecerá al instante el campo de fecha/hora, antes oculto para mantener limpia la tabla) y presionar **`Guardar`** sin fecha -> mostrar la validación controlada.
    - Luego elegir una fecha/hora (ej. **hoy `26-11-2026 15:00`**) -> **`Guardar`** -> pasa a **`agendado`** sin recargar la página.
 
 ---
@@ -111,11 +111,11 @@
    ```
    *(Nota: usa otro bloque verde como `15:00` o `16:00` si en tu revisión previa viste el de las `11:00` ocupado).*
    - **Qué señalar:** Confirma reserva ingresada para evaluación humana.
-4. **En Dashboard (`↻ Actualizar` y bajar a `Agenda de Reuniones con Benjamín Yáñez`):**
-   - Seleccionar fecha **`2026-11-27`** -> mostrar que el bloque reservado ya aparece en rojo como **`(Ocupado)`** (y si cambias a sábado **`2026-11-28`**, muestra la alerta de fin de semana).
-   - **Mostrar diferenciación `Online` vs `Presencial`:**
-     - Con **`💻 Online (Videollamada)`** seleccionado: explicar que muestra plataformas (`Google Meet` / `Zoom` / `Teams`) + enlace opcional sin exigir traslado ni dirección física.
-     - Cambiar el selector a **`📍 Presencial (Terreno / Oficina)`**: el formulario cambia en vivo, pide obligatoriamente **Tipo Presencial (`En Terreno` vs `Oficina InterChile`) + Dirección exacta** (si intentas reservar vacío bloquea con alerta), y considera coordinación de traslado.
+4. **En Dashboard (`↻ Actualizar` y clic en la pestaña superior `📅 Agenda Benjamín` — sin scroll):**
+   - Seleccionar fecha **`2026-11-27`** -> mostrar que el bloque reservado ya aparece marcado **`Ocup.`** en rojo (y si cambias a sábado **`2026-11-28`**, muestra la alerta de fin de semana).
+   - **Mostrar diferenciación simple `Online` vs `Presencial`:**
+     - En el switch superior **`[ 💻 Online | 📍 Presencial ]`**, con **`💻 Online`** seleccionado basta elegir día y hora (enlace Google Meet es opcional).
+     - Al pulsar **`📍 Presencial`**, aparece el campo obligatorio **Dirección o Sede** con el botón rápido **`Usar Oficina InterChile`** (1 clic) o escritura directa de dirección en terreno.
    - En la tabla **`Reuniones Programadas`**, señalar la cita creada desde **`📱 WhatsApp`** en estado **`⏳ ingresada`** (mostrando su badge `💻 Online` + acceso `🔗 Google Meet` o `📍 Presencial` + `📌 Dirección`, además de los filtros `Todas / 💻 Online / 📍 Presencial`).
    - Presionar **`✓ Confirmar`** -> pasa a **`✓ confirmada`** -> presionar **`✔ Completar`** -> pasa a **`✔ completada`**.
 

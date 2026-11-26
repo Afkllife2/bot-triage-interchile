@@ -265,9 +265,9 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
         estado: 'ingresada',
       },
     });
-    expect(okOnlineMsg).toContain('Online (Videollamada)');
+    expect(okOnlineMsg).toContain('Online');
     expect(okOnlineMsg).toContain('https://meet.google.com/demo-123');
-    expect(okOnlineMsg).toContain('Sesión remota sin traslado');
+    expect(okMsg).toContain('Lugar: Av. Providencia 2200, Providencia');
 
     const regla400Msg = agenda.construirMensajeReunionWhatsApp('Quedó agendada a las 4 AM', {
       ok: false,
@@ -553,9 +553,11 @@ describe('[INT-HU-23] (AAI-102) — Integración WhatsApp + API /api/reuniones +
     expect(res.text).toContain('id="reunion-fecha"');
     expect(res.text).toContain('id="reunion-slots"');
     expect(res.text).toContain('id="reunion-modalidad"');
-    expect(res.text).toContain('id="agenda-modalidad-info"');
-    expect(res.text).toContain('id="reunion-subtipo"');
+    expect(res.text).toContain('id="btn-mod-online"');
+    expect(res.text).toContain('id="btn-mod-presencial"');
     expect(res.text).toContain('id="reunion-detalle-modalidad"');
+    expect(res.text).toContain('seleccionarModalidad');
+    expect(res.text).toContain('usarOficinaInterChile');
     expect(res.text).toContain('actualizarUISegunModalidad');
     expect(res.text).toContain('filtrarReunionesPorModalidad');
     expect(res.text).toContain('id="tabla-reuniones"');

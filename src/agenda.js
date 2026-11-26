@@ -312,23 +312,15 @@ function construirMensajeReunionWhatsApp(respuestaBase, resultadoReserva, { fech
       detalle_modalidad: r.detalle_modalidad,
       usarDefectoPresencial: true,
     });
-    const lineasModalidad = modNorm === 'Presencial'
-      ? [
-          `• Modalidad: 📍 Presencial (Terreno / Oficina)`,
-          `• Lugar / Dirección: ${detalleMod}`,
-          `• Logística: Visita o reunión física (requiere confirmar traslado)`,
-        ]
-      : [
-          `• Modalidad: 💻 Online (Videollamada)`,
-          `• Acceso: ${detalleMod}`,
-          `• Logística: Sesión remota sin traslado (30–45 min)`,
-        ];
+    const lineaModalidad = modNorm === 'Presencial'
+      ? `• Modalidad: 📍 Presencial — Lugar: ${detalleMod}`
+      : `• Modalidad: 💻 Online — ${detalleMod}`;
     const bloqueConfirmacion = [
       `📅 *Solicitud de reunión registrada con Benjamín Yáñez* (Reserva #R-${r.id})`,
       `• Estado: ${estadoLegible}`,
       `• Fecha: ${r.fecha_reunion} a las ${r.hora_reunion} hrs`,
-      ...lineasModalidad,
-      `• Contacto directo: Benjamin@interchileclima.cl / +56 9 9440 2632`,
+      lineaModalidad,
+      `• Contacto: Benjamin@interchileclima.cl / +56 9 9440 2632`,
     ].join('\n');
 
     const base = (respuestaBase || '').trim();
