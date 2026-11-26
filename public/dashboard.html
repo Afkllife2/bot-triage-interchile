@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Control — InterChile Clima SpA · Bot Triage</title>
+  <title>Panel Operativo — InterChile Clima SpA · Bot Triage</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -11,43 +11,35 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Sistema Cromático Oficial — interchileclima.cl */
       --brand: #a6083c;
       --brand-deep: #77082e;
       --brand-soft: #fdf1f4;
       --brand-border: #f5c2d1;
 
       --sheet: #ffffff;
-      --ice: #edf3f5;
-      --panel: #f4f6f7;
-      --ink: #222c31;
-      --muted: #3c4a52;
-      --text-muted: #5a6a73;
-      --text-sub: #3c4a52;
-      --line: #dce3e6;
-      --line-soft: #e8eef0;
+      --ice: #f1f5f7;
+      --panel: #f8fafb;
+      --ink: #1e293b;
+      --muted: #475569;
+      --text-muted: #64748b;
+      --line: #e2e8f0;
+      --line-soft: #eef2f6;
 
-      --hero-navy: #0d1e2e;
-      --hero-navy-dark: #091520;
-      --hero-sky: #4d9dc4;
-      --accent-cyan: #22d3ee;
-
-      --green: #008040;
-      --green-soft: #e7f6ee;
-      --green-border: #b7e4c7;
+      --navy: #0f172a;
+      --green: #047857;
+      --green-soft: #ecfdf5;
+      --green-border: #a7f3d0;
       --orange: #b45309;
-      --amber-soft: #fef3c7;
+      --amber-soft: #fffbeb;
       --amber-border: #fde68a;
       --red: #be123c;
-      --red-soft: #ffe4e6;
+      --red-soft: #fff1f2;
       --sky-ink: #0369a1;
-      --sky-soft: #e0f2fe;
+      --sky-soft: #f0f9ff;
       --sky-border: #bae6fd;
 
-      --accent: var(--brand);
-      --accent-glow: var(--brand-soft);
-      --shadow-card: 0 4px 20px -2px rgba(34, 44, 49, 0.06);
-      --shadow-sm: 0 2px 8px rgba(34, 44, 49, 0.05);
+      --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.05);
+      --shadow-sm: 0 1px 4px rgba(15, 23, 42, 0.05);
     }
 
     body {
@@ -57,80 +49,46 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
-    /* Franja superior corporativa (#77082e) */
-    .topbar {
-      background: var(--brand-deep);
-      color: #ffffff;
-      font-size: 0.76rem;
-      font-weight: 500;
-      padding: 0.48rem 2rem;
-    }
-    .topbar-inner {
-      max-width: 1480px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    .topbar-links {
-      display: flex;
-      align-items: center;
-      gap: 1.15rem;
-      flex-wrap: wrap;
-    }
-    .topbar-links a, .topbar-links span {
-      color: rgba(255, 255, 255, 0.92);
-      text-decoration: none;
-      transition: opacity 0.15s ease;
-    }
-    .topbar-links a:hover { opacity: 1; text-decoration: underline; }
-
-    /* Navbar principal blanco translúcido sticky */
+    /* Barra superior única y compacta */
     header {
-      background: rgba(255, 255, 255, 0.96);
-      border-bottom: 1px solid var(--line-soft);
-      padding: 0.75rem 2rem;
+      background: rgba(255, 255, 255, 0.98);
+      border-bottom: 1px solid var(--line);
+      border-top: 3px solid var(--brand);
+      padding: 0.65rem 1.75rem;
       position: sticky;
       top: 0;
       z-index: 100;
       backdrop-filter: blur(8px);
-      box-shadow: 0 2px 12px rgba(34, 44, 49, 0.04);
     }
     .header-inner {
-      max-width: 1480px;
+      max-width: 1440px;
       margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 54px;
       gap: 1rem;
       flex-wrap: wrap;
     }
     .logo {
       display: flex;
       align-items: center;
-      gap: 0.95rem;
+      gap: 0.85rem;
     }
     .logo-brand-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-right: 0.95rem;
+      padding-right: 0.85rem;
       border-right: 1px solid var(--line);
     }
     .logo-brand-wrap img {
-      height: 44px;
+      height: 36px;
       width: auto;
       display: block;
     }
     .logo h1 {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.35rem;
+      font-size: 1.22rem;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -139,10 +97,9 @@
     }
     .logo span {
       display: block;
-      font-size: 0.78rem;
-      color: var(--muted);
+      font-size: 0.72rem;
+      color: var(--text-muted);
       font-weight: 500;
-      margin-top: 0.15rem;
     }
 
     .header-right {
@@ -151,57 +108,72 @@
       gap: 0.5rem;
       flex-wrap: wrap;
     }
+    #auth-form-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    #auth-connected-pill {
+      display: none;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--green);
+      background: var(--green-soft);
+      border: 1px solid var(--green-border);
+      padding: 0.34rem 0.72rem;
+      border-radius: 9999px;
+    }
+    #auth-connected-pill.visible { display: inline-flex; }
+    .btn-link-subtle {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0 0.25rem;
+      text-decoration: underline;
+      box-shadow: none;
+    }
+    .btn-link-subtle:hover {
+      background: transparent;
+      border: none;
+      color: var(--brand);
+      transform: none;
+      box-shadow: none;
+    }
     .token-input {
       background: var(--sheet);
       border: 1px solid var(--line);
       color: var(--ink);
-      padding: 0.45rem 0.75rem;
-      border-radius: 12px;
+      padding: 0.4rem 0.7rem;
+      border-radius: 10px;
       font-family: inherit;
-      font-size: 0.78rem;
-      width: 175px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      font-size: 0.76rem;
+      width: 170px;
     }
     .token-input:focus {
       outline: none;
       border-color: var(--brand);
       box-shadow: 0 0 0 3px rgba(166, 8, 60, 0.12);
     }
-    .status-dot {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.42rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--green);
-      background: var(--green-soft);
-      border: 1px solid var(--green-border);
-      padding: 0.38rem 0.8rem;
-      border-radius: 9999px;
-    }
-    .status-dot::before {
-      content: '';
-      width: 8px; height: 8px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.2); }
+    #last-update {
+      font-size: 0.71rem;
+      color: var(--text-muted);
     }
 
     button {
       background: var(--brand);
       color: #ffffff;
       border: 1px solid var(--brand);
-      padding: 0.52rem 1.05rem;
+      padding: 0.44rem 0.92rem;
       border-radius: 9999px;
       font-family: 'Manrope', sans-serif;
-      font-size: 0.8rem;
+      font-size: 0.77rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.18s ease;
+      transition: all 0.16s ease;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
@@ -209,126 +181,53 @@
     button:hover {
       background: var(--brand-deep);
       border-color: var(--brand-deep);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(166, 8, 60, 0.22);
+      box-shadow: 0 3px 10px rgba(166, 8, 60, 0.18);
     }
-    button:active { transform: translateY(0); }
     button.btn-secondary {
       background: var(--sheet);
       border: 1px solid var(--line);
       color: var(--ink);
+      box-shadow: none;
     }
-    button.btn-secondary:hover {
+    button.btn-secondary:hover, button.btn-secondary.active {
       background: var(--brand-soft);
       border-color: var(--brand);
       color: var(--brand);
       box-shadow: none;
     }
     button.btn-row {
-      border-radius: 10px;
-      padding: 0.42rem 0.82rem;
-      font-size: 0.76rem;
+      border-radius: 9px;
+      padding: 0.34rem 0.68rem;
+      font-size: 0.74rem;
     }
 
     main {
       flex: 1;
       width: 100%;
-      max-width: 1480px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 1.5rem 2rem 2.5rem;
+      padding: 1.15rem 1.75rem 2rem;
     }
 
-    /* Cinta Hero Ejecutiva (Estilo Navy Industrial InterChile) */
-    .hero-strip {
-      background: linear-gradient(125deg, var(--hero-navy) 0%, var(--hero-navy-dark) 100%);
-      color: #ffffff;
-      border-radius: 22px;
-      padding: 1.2rem 1.65rem;
-      margin-bottom: 1.4rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-      border-left: 5px solid var(--brand);
-      box-shadow: var(--shadow-card);
-    }
-    .hero-eyebrow {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent-cyan);
-      margin-bottom: 0.2rem;
-    }
-    .hero-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.55rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      line-height: 1.05;
-    }
-    .hero-sub {
-      font-size: 0.82rem;
-      color: rgba(237, 243, 245, 0.8);
-      margin-top: 0.25rem;
-    }
-    .hero-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-    .hero-chip {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(77, 157, 196, 0.35);
-      color: #edf3f5;
-      padding: 0.38rem 0.85rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    button.hero-chip-btn {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(77, 157, 196, 0.45);
-      color: #edf3f5;
-      padding: 0.38rem 0.9rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      box-shadow: none;
-    }
-    button.hero-chip-btn:hover, button.hero-chip-btn.active {
-      background: var(--hero-sky);
-      border-color: var(--accent-cyan);
-      color: #091520;
-      box-shadow: none;
-    }
-    #last-update {
-      font-size: 0.75rem;
-      color: rgba(237, 243, 245, 0.82);
-    }
-
-    /* Tarjetas KPI Operativas de Negocio (4 columnas simétricas) + Panel Técnico ISO 25010 separado */
+    /* 4 KPIs comerciales compactos */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.9rem;
-      margin-bottom: 1.35rem;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
     }
     .qa-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.9rem;
+      gap: 0.75rem;
     }
     .qa-panel {
       display: none;
-      background: #f8fafc;
-      border: 1px dashed var(--line);
-      border-radius: 20px;
-      padding: 1rem 1.15rem 1.15rem;
-      margin-bottom: 1.35rem;
+      background: var(--sheet);
+      border: 1px dashed var(--sky-border);
+      border-radius: 16px;
+      padding: 0.9rem 1.05rem;
+      margin-bottom: 1rem;
     }
     .qa-panel.visible { display: block; }
     .qa-panel-header {
@@ -336,121 +235,113 @@
       justify-content: space-between;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.75rem;
       flex-wrap: wrap;
     }
     .qa-panel-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--ink);
+      letter-spacing: 0.03em;
     }
     .qa-panel-sub {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
     }
-    @media (max-width: 1100px) {
+
+    @media (max-width: 1024px) {
       .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .stats-grid, .qa-grid { grid-template-columns: 1fr; }
     }
+
     .stat-card {
       background: var(--sheet);
       border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 1.1rem 1.25rem;
+      border-radius: 16px;
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.32rem;
+      gap: 0.2rem;
       box-shadow: var(--shadow-card);
       position: relative;
       overflow: hidden;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      transition: border-color 0.15s ease;
     }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px -4px rgba(34, 44, 49, 0.1);
+    .stat-card[data-action]:hover {
+      border-color: var(--brand-border);
+      cursor: pointer;
     }
     .stat-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 3.5px;
+      height: 3px;
       background: var(--brand);
     }
-    .stat-card.total::before { background: var(--hero-navy); }
+    .stat-card.total::before { background: var(--navy); }
     .stat-card.alta::before { background: var(--brand); }
     .stat-card.humano::before { background: var(--orange); }
-    .stat-card.sla::before { background: var(--brand-deep); }
     .stat-card.normal::before { background: var(--green); }
-    .stat-card.pdf::before { background: var(--hero-sky); }
+    .stat-card.sla::before { background: var(--brand-deep); }
+    .stat-card.pdf::before { background: var(--sky-ink); }
 
     .stat-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
     .stat-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
     }
     .stat-num {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.88rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--brand);
       background: var(--brand-soft);
-      padding: 0.1rem 0.45rem;
+      padding: 0.06rem 0.42rem;
       border-radius: 9999px;
     }
     .stat-value {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2.15rem;
+      font-size: 1.85rem;
       font-weight: 700;
-      line-height: 1.02;
-      letter-spacing: -0.01em;
-      margin-top: 0.1rem;
+      line-height: 1.05;
     }
     .stat-sub {
-      font-size: 0.74rem;
-      font-weight: 500;
-      color: var(--muted);
+      font-size: 0.71rem;
+      color: var(--text-muted);
     }
-    .stat-card.total .stat-value { color: var(--hero-navy); }
+    .stat-card.total .stat-value { color: var(--navy); }
     .stat-card.alta .stat-value { color: var(--brand); }
     .stat-card.humano .stat-value { color: var(--orange); }
     .stat-card.normal .stat-value { color: var(--green); }
     .stat-card.sla .stat-value { color: var(--brand-deep); }
     .stat-card.pdf .stat-value { color: var(--sky-ink); }
 
-    /* Banners operativos sobre fondo claro */
-    #alert-banner, #auth-banner, #toast-banner {
+    /* Banners discretos solo para aviso requerido o feedback de acción */
+    #auth-banner, #toast-banner {
       display: none;
-      border-radius: 16px;
-      padding: 0.85rem 1.25rem;
-      margin-bottom: 1.15rem;
-      font-size: 0.85rem;
-      font-weight: 500;
+      border-radius: 12px;
+      padding: 0.7rem 1rem;
+      margin-bottom: 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
       box-shadow: var(--shadow-sm);
     }
-    #alert-banner.visible, #auth-banner.visible, #toast-banner.visible { display: flex; }
-
-    #alert-banner {
-      background: var(--brand-soft);
-      border: 1px solid var(--brand-border);
-      color: var(--brand-deep);
-    }
+    #auth-banner.visible, #toast-banner.visible { display: flex; }
     #auth-banner {
       background: var(--amber-soft);
       border: 1px solid var(--amber-border);
@@ -472,18 +363,60 @@
       color: #9f1239;
     }
 
-    /* Toolbar y filtros estilo píldora InterChile */
+    /* Pestañas principales (Cero scroll entre Tickets y Agenda) */
+    .main-tabs {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.95rem;
+    }
+    .tab-group {
+      display: inline-flex;
+      background: var(--sheet);
+      border: 1px solid var(--line);
+      border-radius: 9999px;
+      padding: 0.25rem;
+      gap: 0.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+    button.main-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 0.45rem 1.05rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      box-shadow: none;
+    }
+    button.main-tab-btn:hover {
+      background: var(--panel);
+      border-color: transparent;
+      color: var(--ink);
+      box-shadow: none;
+    }
+    button.main-tab-btn.active {
+      background: var(--navy);
+      color: #ffffff;
+      border-color: var(--navy);
+    }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Toolbar de filtros */
     .toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1rem;
-      gap: 1rem;
+      margin-bottom: 0.75rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
     .section-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.18rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--ink);
       text-transform: uppercase;
@@ -491,18 +424,18 @@
     }
     .filters {
       display: flex;
-      gap: 0.45rem;
+      gap: 0.4rem;
       flex-wrap: wrap;
     }
     .filter-btn {
       background: var(--sheet);
       border: 1px solid var(--line);
       color: var(--muted);
-      padding: 0.42rem 0.95rem;
+      padding: 0.34rem 0.78rem;
       border-radius: 9999px;
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       font-weight: 600;
-      cursor: pointer;
+      box-shadow: none;
     }
     .filter-btn:hover {
       background: var(--brand-soft);
@@ -516,27 +449,27 @@
       color: #ffffff;
     }
 
-    /* Tabla en tarjeta blanca limpia */
+    /* Tablas aireadas */
     .table-wrap {
       background: var(--sheet);
       border: 1px solid var(--line);
-      border-radius: 22px;
+      border-radius: 16px;
       overflow-x: auto;
       box-shadow: var(--shadow-card);
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.79rem;
+      font-size: 0.78rem;
     }
     thead {
       background: var(--panel);
       border-bottom: 1px solid var(--line);
     }
     th {
-      padding: 0.78rem 0.65rem;
+      padding: 0.68rem 0.7rem;
       text-align: left;
-      font-size: 0.68rem;
+      font-size: 0.67rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--muted);
@@ -544,20 +477,20 @@
       white-space: nowrap;
     }
     td {
-      padding: 0.75rem 0.65rem;
+      padding: 0.65rem 0.7rem;
       border-bottom: 1px solid var(--line-soft);
       vertical-align: middle;
       color: var(--ink);
     }
     tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: rgba(166, 8, 60, 0.025); }
+    tbody tr:hover td { background: rgba(166, 8, 60, 0.02); }
 
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 0.22rem 0.68rem;
+      padding: 0.18rem 0.58rem;
       border-radius: 9999px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       gap: 0.25rem;
       white-space: nowrap;
@@ -566,13 +499,19 @@
     .badge-normal   { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
     .badge-humano   { background: var(--amber-soft); color: var(--orange); border: 1px solid var(--amber-border); }
     .badge-derivado { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
+    .badge-ingresada { background: var(--amber-soft); color: var(--orange); border: 1px solid var(--amber-border); }
+    .badge-cancelada { background: var(--red-soft); color: var(--red); border: 1px solid #fecdd3; }
+    .badge-origen-wa { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+    .badge-origen-dash { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
+    .badge-mod-online { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
+    .badge-mod-presencial { background: var(--amber-soft); color: var(--orange); border: 1px solid var(--amber-border); }
 
     select.state-select, input.date-input {
       background: var(--sheet);
       border: 1px solid var(--line);
       color: var(--ink);
-      border-radius: 9px;
-      padding: 0.32rem 0.42rem;
+      border-radius: 8px;
+      padding: 0.3rem 0.42rem;
       font-family: inherit;
       font-size: 0.72rem;
       font-weight: 500;
@@ -583,154 +522,149 @@
       box-shadow: 0 0 0 2px rgba(166, 8, 60, 0.12);
     }
 
-    .empty-state {
-      padding: 3.5rem 2rem;
+    .empty-state, #loading {
+      padding: 2.5rem 1.5rem;
       text-align: center;
-      color: var(--muted);
+      color: var(--text-muted);
+      font-size: 0.82rem;
     }
-    #loading {
-      display: none;
-      padding: 3rem;
-      text-align: center;
-      color: var(--muted);
-      font-weight: 500;
-    }
+    #loading { display: none; }
     #loading.visible { display: block; }
 
-    /* Footer corporativo 3 columnas estilo interchileclima.cl */
-    footer {
-      background: var(--panel);
-      border-top: 1px solid var(--line);
-      padding: 1.5rem 2rem;
-      margin-top: auto;
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-    .footer-inner {
-      max-width: 1480px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.25rem;
-      align-items: start;
-    }
-    .footer-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--ink);
-      margin-bottom: 0.35rem;
-    }
-    .footer-inner a {
-      color: var(--brand);
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .footer-inner a:hover { text-decoration: underline; }
-    .footer-copy {
-      max-width: 1480px;
-      margin: 1rem auto 0;
-      padding-top: 0.85rem;
-      border-top: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-
-    /* Agenda de Reuniones con Benjamín Yáñez (HU-23 / AAI-104) */
-    .agenda-section {
-      margin-top: 2.25rem;
-    }
-    .agenda-subtitle {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
+    /* Agenda de Reuniones con Benjamín (Limpia y directa) */
     .agenda-grid {
       display: grid;
-      grid-template-columns: minmax(340px, 430px) 1fr;
-      gap: 1.25rem;
+      grid-template-columns: minmax(320px, 395px) 1fr;
+      gap: 1rem;
       align-items: start;
     }
     .agenda-card {
       background: var(--sheet);
       border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 1.25rem 1.35rem;
+      border-radius: 16px;
+      padding: 1.1rem 1.15rem;
       box-shadow: var(--shadow-card);
     }
     .agenda-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 0.75rem;
-      padding-bottom: 0.85rem;
-      margin-bottom: 1rem;
+      gap: 0.6rem;
+      padding-bottom: 0.7rem;
+      margin-bottom: 0.85rem;
       border-bottom: 1px solid var(--line-soft);
-      flex-wrap: wrap;
     }
     .agenda-card-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      color: var(--ink);
     }
     .agenda-form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
     }
     .agenda-field {
       display: flex;
       flex-direction: column;
-      gap: 0.32rem;
-      margin-bottom: 0.85rem;
+      gap: 0.28rem;
+      margin-bottom: 0.75rem;
     }
     .agenda-form-row .agenda-field { margin-bottom: 0; }
     .agenda-field label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--muted);
     }
-    .agenda-input, .agenda-select {
+    .agenda-input {
       width: 100%;
       background: var(--sheet);
       border: 1px solid var(--line);
       color: var(--ink);
-      border-radius: 10px;
-      padding: 0.5rem 0.68rem;
+      border-radius: 9px;
+      padding: 0.44rem 0.65rem;
       font-family: inherit;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 500;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .agenda-input:focus, .agenda-select:focus {
+    .agenda-input:focus {
       outline: none;
       border-color: var(--brand);
       box-shadow: 0 0 0 3px rgba(166, 8, 60, 0.12);
     }
+
+    .mod-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem;
+      background: var(--panel);
+      padding: 0.2rem;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+    }
+    button.mod-opt {
+      width: 100%;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 0.38rem 0.4rem;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      box-shadow: none;
+    }
+    button.mod-opt:hover {
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--ink);
+      border-color: transparent;
+      box-shadow: none;
+    }
+    button.mod-opt.active {
+      background: var(--sheet);
+      color: var(--brand);
+      border-color: var(--brand-border);
+      box-shadow: var(--shadow-sm);
+    }
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.45rem;
+    }
+    button.btn-chip-inline {
+      background: var(--brand-soft);
+      color: var(--brand);
+      border: 1px solid var(--brand-border);
+      border-radius: 9999px;
+      padding: 0.12rem 0.5rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      box-shadow: none;
+    }
+    button.btn-chip-inline:hover {
+      background: var(--brand);
+      color: #ffffff;
+      border-color: var(--brand);
+      box-shadow: none;
+    }
+
     .slots-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.45rem;
-      margin-top: 0.2rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
     }
     button.slot-btn {
       width: 100%;
       justify-content: center;
-      border-radius: 10px;
-      padding: 0.48rem 0.35rem;
-      font-size: 0.76rem;
+      border-radius: 8px;
+      padding: 0.42rem 0.3rem;
+      font-size: 0.74rem;
       font-weight: 700;
       background: var(--green-soft);
       color: var(--green);
@@ -740,20 +674,12 @@
     button.slot-btn:hover:not(:disabled) {
       background: #d1fae5;
       border-color: var(--green);
-      color: #065f46;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-sm);
+      box-shadow: none;
     }
     button.slot-btn.selected {
       background: var(--brand);
       color: #ffffff;
       border-color: var(--brand);
-      box-shadow: 0 4px 10px rgba(166, 8, 60, 0.22);
-    }
-    button.slot-btn.selected:hover {
-      background: var(--brand-deep);
-      color: #ffffff;
-      border-color: var(--brand-deep);
     }
     button.slot-btn.ocupado {
       background: var(--red-soft);
@@ -762,91 +688,41 @@
       opacity: 0.72;
       text-decoration: line-through;
       cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
     }
+
     .agenda-feedback {
       display: none;
-      border-radius: 12px;
-      padding: 0.68rem 0.85rem;
-      font-size: 0.78rem;
+      border-radius: 10px;
+      padding: 0.58rem 0.78rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.75rem;
       line-height: 1.4;
     }
     .agenda-feedback.visible { display: block; }
-    .agenda-feedback.ok {
-      background: var(--green-soft);
-      color: var(--green);
-      border: 1px solid var(--green-border);
-    }
-    .agenda-feedback.err {
-      background: var(--red-soft);
-      color: var(--red);
-      border: 1px solid #fecdd3;
-    }
-    .sugerencias-wrap {
-      display: flex;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-      margin-top: 0.45rem;
-    }
+    .agenda-feedback.ok { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+    .agenda-feedback.err { background: var(--red-soft); color: var(--red); border: 1px solid #fecdd3; }
+    .sugerencias-wrap { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.4rem; }
     button.btn-sug {
       background: var(--sheet);
       color: var(--brand);
       border: 1px solid var(--brand-border);
       border-radius: 9999px;
-      padding: 0.2rem 0.62rem;
-      font-size: 0.72rem;
+      padding: 0.16rem 0.55rem;
+      font-size: 0.7rem;
       font-weight: 700;
       box-shadow: none;
     }
-    button.btn-sug:hover {
-      background: var(--brand);
-      color: #ffffff;
-      border-color: var(--brand);
-    }
+    button.btn-sug:hover { background: var(--brand); color: #ffffff; box-shadow: none; }
+
     .agenda-table-header {
-      padding: 0.95rem 1.25rem;
+      padding: 0.8rem 1rem;
       border-bottom: 1px solid var(--line-soft);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
       flex-wrap: wrap;
-    }
-    .agenda-check-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.76rem;
-      color: var(--muted);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .badge-ingresada { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-    .badge-cancelada { background: var(--red-soft); color: var(--red); border: 1px solid #fecdd3; }
-    .badge-origen-wa { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
-    .badge-origen-dash { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
-    .badge-mod-online { background: var(--sky-soft); color: var(--sky-ink); border: 1px solid var(--sky-border); }
-    .badge-mod-presencial { background: var(--amber-soft); color: var(--orange); border: 1px solid var(--amber-border); }
-    .modalidad-banner {
-      border-radius: 12px;
-      padding: 0.58rem 0.78rem;
-      font-size: 0.74rem;
-      font-weight: 600;
-      line-height: 1.4;
-      margin-bottom: 0.85rem;
-    }
-    .modalidad-banner.online {
-      background: var(--sky-soft);
-      color: var(--sky-ink);
-      border: 1px solid var(--sky-border);
-    }
-    .modalidad-banner.presencial {
-      background: var(--amber-soft);
-      color: #92400e;
-      border: 1px solid var(--amber-border);
     }
     .modalidad-filter-wrap {
       display: flex;
@@ -859,8 +735,8 @@
       color: var(--muted);
       border: 1px solid var(--line);
       border-radius: 9999px;
-      padding: 0.25rem 0.65rem;
-      font-size: 0.73rem;
+      padding: 0.22rem 0.6rem;
+      font-size: 0.71rem;
       font-weight: 700;
       box-shadow: none;
     }
@@ -870,7 +746,7 @@
       border-color: var(--brand);
     }
     .modalidad-detalle-linea {
-      font-size: 0.73rem;
+      font-size: 0.72rem;
       color: var(--ink);
       margin-top: 3px;
       font-weight: 600;
@@ -879,30 +755,46 @@
       color: var(--sky-ink);
       text-decoration: underline;
     }
+    .agenda-check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.73rem;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
 
-    @media (max-width: 1080px) {
+    footer {
+      border-top: 1px solid var(--line);
+      background: var(--sheet);
+      padding: 0.75rem 1.75rem;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+    }
+    .footer-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .footer-inner a { color: var(--brand); text-decoration: none; font-weight: 600; }
+    .footer-inner a:hover { text-decoration: underline; }
+
+    @media (max-width: 1024px) {
       .agenda-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
-      .topbar, header, main, footer { padding-left: 1rem; padding-right: 1rem; }
+      header, main, footer { padding-left: 1rem; padding-right: 1rem; }
       .token-input { width: 100%; }
       .agenda-form-row { grid-template-columns: 1fr; }
-      .slots-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div class="topbar-inner">
-    <span>Soluciones ambientales. Relación de largo plazo. · InterChile Clima SpA</span>
-    <div class="topbar-links">
-      <a href="https://interchileclima.cl/" target="_blank" rel="noopener">🌐 interchileclima.cl</a>
-      <span>📱 WhatsApp +56 9 9440 2632</span>
-      <a href="mailto:Benjamin@interchileclima.cl">✉️ Benjamin@interchileclima.cl</a>
-    </div>
-  </div>
-</div>
 
 <header>
   <div class="header-inner">
@@ -911,44 +803,29 @@
         <img src="/assets/logo-interchile.png" alt="InterChile Clima SpA" />
       </div>
       <div>
-        <h1>Bot Triage Comercial · InterChile Clima SpA</h1>
-        <span>Panel de Control Operativo, Agendamiento y Métricas SLA — Sprint 3</span>
+        <h1>Bot Triage InterChile</h1>
+        <span>Solicitudes WhatsApp · Cotizaciones PDF · Agenda Benjamín</span>
       </div>
     </div>
     <div class="header-right">
-      <input
-        id="api-token-input"
-        type="password"
-        class="token-input"
-        placeholder="Bearer Token de integración..."
-        autocomplete="off"
-      />
-      <button class="btn-secondary" onclick="guardarTokenYCargar()">🔑 Conectar</button>
-      <div class="status-dot">API Protegida</div>
+      <div id="auth-form-wrap">
+        <input id="api-token-input" type="password" class="token-input" placeholder="Token de acceso..." autocomplete="off" />
+        <button class="btn-secondary" onclick="guardarTokenYCargar()">🔑 Conectar</button>
+      </div>
+      <div id="auth-connected-pill">
+        <span>🔓 Conectado</span>
+        <button type="button" class="btn-link-subtle" onclick="mostrarInputToken()">Cambiar</button>
+      </div>
+      <button type="button" id="btn-toggle-qa" class="btn-secondary" aria-expanded="false" onclick="togglePanelCalidad()">🔬 Auditoría QA (ISO 25010)</button>
       <button id="btn-refresh" onclick="cargarTodo()">↻ Actualizar</button>
+      <span id="last-update"></span>
     </div>
   </div>
 </header>
 
 <main>
-  <section class="hero-strip" aria-label="Resumen operativo">
-    <div>
-      <div class="hero-eyebrow">Climatización Comercial e Industrial · Gestión Comercial</div>
-      <div class="hero-title">Centro Operativo de Triage, Cotizaciones y Agenda</div>
-      <div class="hero-sub">Seguimiento comercial de solicitudes WhatsApp, fichas PDF referenciales y calendario de Benjamín Yáñez.</div>
-    </div>
-    <div class="hero-meta">
-      <button type="button" id="btn-toggle-qa" class="hero-chip-btn" aria-expanded="false" onclick="togglePanelCalidad()">🔬 Auditoría QA (ISO 25010)</button>
-      <span id="last-update">Sincronizando bandeja...</span>
-    </div>
-  </section>
-
   <div id="auth-banner">
-    <span id="auth-msg">🔒 Ingrese el Bearer Token de integración (`TRIAGE_API_TOKEN`) en la barra superior para consultar los casos y métricas.</span>
-  </div>
-
-  <div id="alert-banner">
-    <span>🚨 <strong id="alert-count">0</strong> ticket(s) requieren atención humana urgente</span>
+    <span id="auth-msg">🔒 Ingresa el Bearer Token (`TRIAGE_API_TOKEN`) arriba para consultar los casos y métricas.</span>
   </div>
 
   <div id="toast-banner" role="status" aria-live="polite">
@@ -956,35 +833,35 @@
     <button class="btn-secondary btn-row" onclick="ocultarToast()">✕</button>
   </div>
 
-  <!-- KPIs OPERATIVOS DE GESTIÓN COMERCIAL (Vista Negocio para Gerencia) -->
+  <!-- 4 KPIs de Negocio compactos -->
   <div class="stats-grid" aria-label="Indicadores de gestión comercial">
-    <div class="stat-card total">
+    <div class="stat-card total" data-action="tickets" onclick="cambiarVistaPrincipal('tickets'); filtrar('todos', document.querySelector('.filter-btn'));">
       <div class="stat-top">
-        <span class="stat-label">Solicitudes Ingresadas</span>
+        <span class="stat-label">Solicitudes</span>
         <span class="stat-num">01</span>
       </div>
       <span class="stat-value" id="stat-total">—</span>
       <span class="stat-sub" id="stat-estados">En proceso / Agendados</span>
     </div>
-    <div class="stat-card alta">
+    <div class="stat-card alta" data-action="alta" onclick="cambiarVistaPrincipal('tickets'); filtrar('alta', document.getElementById('flt-alta'));">
       <div class="stat-top">
-        <span class="stat-label">Urgencias / Prioridad Alta</span>
+        <span class="stat-label">Urgencias</span>
         <span class="stat-num">02</span>
       </div>
       <span class="stat-value" id="stat-alta">—</span>
-      <span class="stat-sub">Fallas críticas en curso</span>
+      <span class="stat-sub">Prioridad Alta en curso</span>
     </div>
-    <div class="stat-card humano">
+    <div class="stat-card humano" data-action="humano" onclick="cambiarVistaPrincipal('tickets'); filtrar('humano', document.getElementById('flt-humano'));">
       <div class="stat-top">
-        <span class="stat-label">Requieren Evaluación Humana</span>
+        <span class="stat-label">Evaluación Humana</span>
         <span class="stat-num">03</span>
       </div>
       <span class="stat-value" id="stat-humano">—</span>
-      <span class="stat-sub">Proyectos o datos por confirmar</span>
+      <span class="stat-sub">Proyectos o por confirmar</span>
     </div>
-    <div class="stat-card normal" style="cursor:pointer" onclick="document.getElementById('calendario-reuniones').scrollIntoView({behavior:'smooth'})" title="Ir al calendario de reuniones">
+    <div class="stat-card normal" data-action="agenda" onclick="cambiarVistaPrincipal('agenda')" title="Abrir Agenda de Reuniones">
       <div class="stat-top">
-        <span class="stat-label">Reuniones con Benjamín</span>
+        <span class="stat-label">Reuniones Benjamín</span>
         <span class="stat-num">04</span>
       </div>
       <span class="stat-value" id="stat-reuniones">0</span>
@@ -992,14 +869,14 @@
     </div>
   </div>
 
-  <!-- PANEL SEPARADO: AUDITORÍA TÉCNICA Y CALIDAD DE SOFTWARE (ISO/IEC 25010 · Vista Ingeniería) -->
+  <!-- PANEL COLAPSABLE: AUDITORÍA QA (ISO/IEC 25010) -->
   <section id="panel-calidad-iso" class="qa-panel" aria-label="Auditoría técnica y calidad ISO/IEC 25010">
     <div class="qa-panel-header">
       <div>
-        <div class="qa-panel-title">Observabilidad Técnica y Atributos de Calidad (ISO/IEC 25010)</div>
-        <div class="qa-panel-sub">Panel de verificación de ingeniería separado de la gestión comercial · Eficiencia (&lt; 4.0s), Fiabilidad (Arnés) y Trazabilidad</div>
+        <div class="qa-panel-title">Auditoría Técnica ISO/IEC 25010</div>
+        <div class="qa-panel-sub">Panel de ingeniería separado de la gestión comercial · Eficiencia (&lt; 4.0s), Fiabilidad (Arnés) y PDF</div>
       </div>
-      <button type="button" class="btn-secondary btn-row" onclick="togglePanelCalidad(false)">Ocultar panel técnico</button>
+      <button type="button" class="btn-secondary btn-row" onclick="togglePanelCalidad(false)">Ocultar</button>
     </div>
     <div class="qa-grid">
       <div class="stat-card sla">
@@ -1029,96 +906,88 @@
     </div>
   </section>
 
-  <div class="toolbar">
-    <span class="section-title">Bandeja de Casos de Triage y Cotizaciones Referenciales</span>
-    <div class="filters">
-      <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
-      <button class="filter-btn" onclick="filtrar('en_proceso', this)">⏳ En proceso</button>
-      <button class="filter-btn" onclick="filtrar('derivado', this)">👤 Derivados</button>
-      <button class="filter-btn" onclick="filtrar('alta', this)">🔴 Prioridad Alta</button>
-      <button class="filter-btn" onclick="filtrar('humano', this)">🟡 Requieren Humano</button>
-      <button class="filter-btn" onclick="filtrar('agendado', this)">📅 Agendados</button>
-      <button class="filter-btn" onclick="filtrar('resuelto', this)">✅ Resueltos</button>
+  <!-- Selector principal de 2 vistas limpias -->
+  <div class="main-tabs">
+    <div class="tab-group" role="tablist" aria-label="Vistas principales">
+      <button type="button" id="tab-btn-tickets" class="main-tab-btn active" role="tab" aria-selected="true" onclick="cambiarVistaPrincipal('tickets')">📋 Tickets y Cotizaciones</button>
+      <button type="button" id="tab-btn-agenda" class="main-tab-btn" role="tab" aria-selected="false" onclick="cambiarVistaPrincipal('agenda')">📅 Agenda Benjamín</button>
     </div>
   </div>
 
-  <div class="table-wrap">
-    <div id="loading">Cargando tickets autenticados...</div>
-    <table id="tabla" style="display:none">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Creado</th>
-          <th>Cliente / Teléfono</th>
-          <th>Ubicación</th>
-          <th>Equipo / Motivo</th>
-          <th>Estimación Bot (Ref.)</th>
-          <th>Prioridad</th>
-          <th>Estado y Fecha Visita</th>
-          <th>Ficha PDF</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="empty" class="empty-state" style="display:none">
-      <p id="empty-text">No hay tickets para mostrar.</p>
-    </div>
-  </div>
-
-  <!-- Calendario Interactivo de Reuniones con Benjamín Yáñez (HU-23 / AAI-104) -->
-  <section id="calendario-reuniones" class="agenda-section" aria-label="Agenda de Reuniones con Benjamín Yáñez">
+  <!-- VISTA 1: BANDEJA DE TICKETS -->
+  <section id="seccion-tickets" class="view-section active" aria-label="Bandeja de Casos">
     <div class="toolbar">
-      <div>
-        <span class="section-title">Agenda de Reuniones con Benjamín Yáñez</span>
-        <div class="agenda-subtitle">Sincronizado en vivo · WhatsApp Meta + Panel Comercial (Lun–Vie · Flujo Ingresada → Confirmada → Completada)</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-        <span id="agenda-disp-badge" class="badge badge-normal">9 / 9 bloques libres</span>
-        <label class="agenda-check-label">
-          <input type="checkbox" id="reunion-incluir-canceladas" onchange="cargarReuniones()" />
-          Mostrar canceladas
-        </label>
+      <span class="section-title">Casos de Triage y Cotizaciones</span>
+      <div class="filters">
+        <button class="filter-btn active" onclick="filtrar('todos', this)">Todos</button>
+        <button class="filter-btn" onclick="filtrar('en_proceso', this)">⏳ En proceso</button>
+        <button class="filter-btn" onclick="filtrar('derivado', this)">👤 Derivados</button>
+        <button id="flt-alta" class="filter-btn" onclick="filtrar('alta', this)">🔴 Urgentes</button>
+        <button id="flt-humano" class="filter-btn" onclick="filtrar('humano', this)">🟡 Evaluar</button>
+        <button class="filter-btn" onclick="filtrar('agendado', this)">📅 Agendados</button>
+        <button class="filter-btn" onclick="filtrar('resuelto', this)">✅ Resueltos</button>
       </div>
     </div>
 
+    <div class="table-wrap">
+      <div id="loading">Cargando tickets autenticados...</div>
+      <table id="tabla" style="display:none">
+        <thead>
+          <tr>
+            <th># / Fecha</th>
+            <th>Cliente y Comuna</th>
+            <th>Equipo y Motivo</th>
+            <th>Estimación (Ref. no oficial)</th>
+            <th>Prioridad</th>
+            <th>Estado y Visita</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty-state" style="display:none">
+        <p id="empty-text">No hay tickets para mostrar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- VISTA 2: AGENDA DE REUNIONES CON BENJAMÍN -->
+  <section id="calendario-reuniones" class="agenda-section view-section" aria-label="Agenda de Reuniones con Benjamín Yáñez">
     <div class="agenda-grid">
       <div class="agenda-card" id="agenda-form-card">
         <div class="agenda-card-header">
-          <span class="agenda-card-title">📅 Nueva Reserva de Hora</span>
-          <span id="agenda-hora-seleccionada" class="badge badge-derivado">Selecciona horario</span>
+          <span class="agenda-card-title">📅 Nueva Reunión con Benjamín</span>
+          <span id="agenda-hora-seleccionada" class="badge badge-derivado">Elige hora</span>
         </div>
 
         <div class="agenda-form-row">
           <div class="agenda-field">
-            <label for="reunion-fecha">Fecha de Reunión</label>
+            <label for="reunion-fecha">Fecha (Lun–Vie)</label>
             <input type="date" id="reunion-fecha" class="agenda-input" onchange="cargarReuniones()" />
           </div>
           <div class="agenda-field">
-            <label for="reunion-modalidad">Modalidad</label>
-            <select id="reunion-modalidad" class="agenda-select" onchange="actualizarUISegunModalidad()">
-              <option value="Online">💻 Online (Videollamada)</option>
-              <option value="Presencial">📍 Presencial (Terreno / Oficina)</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="agenda-modalidad-info" class="modalidad-banner online">
-          💻 <strong>Sesión Remota (30–45 min · sin traslado):</strong> Ideal para evaluación comercial o revisar cotizaciones. El enlace se envía al confirmar.
-        </div>
-
-        <div class="agenda-form-row">
-          <div class="agenda-field">
-            <label id="lbl-reunion-subtipo" for="reunion-subtipo">Plataforma</label>
-            <select id="reunion-subtipo" class="agenda-select" onchange="aplicarSubtipoModalidad()"></select>
-          </div>
-          <div class="agenda-field">
-            <label id="lbl-reunion-detalle" for="reunion-detalle-modalidad">Enlace Videollamada (Opcional)</label>
-            <input type="text" id="reunion-detalle-modalidad" class="agenda-input" placeholder="Ej: https://meet.google.com/abc-defg-hij" />
+            <label>Modalidad</label>
+            <input type="hidden" id="reunion-modalidad" value="Online" />
+            <div class="mod-toggle" role="group" aria-label="Modalidad de reunión">
+              <button type="button" id="btn-mod-online" class="mod-opt active" onclick="seleccionarModalidad('Online')">💻 Online</button>
+              <button type="button" id="btn-mod-presencial" class="mod-opt" onclick="seleccionarModalidad('Presencial')">📍 Presencial</button>
+            </div>
           </div>
         </div>
 
         <div class="agenda-field">
-          <label>Bloques Hábiles Lun–Vie (09:00–12:00 · 14:00–18:00)</label>
+          <div class="field-label-row">
+            <label id="lbl-reunion-detalle" for="reunion-detalle-modalidad">Enlace videollamada (opcional)</label>
+            <button type="button" id="btn-oficina-rapida" class="btn-chip-inline" style="display:none" onclick="usarOficinaInterChile()">Usar Oficina InterChile</button>
+          </div>
+          <input type="text" id="reunion-detalle-modalidad" class="agenda-input" placeholder="Por defecto: Google Meet al confirmar" />
+        </div>
+
+        <div class="agenda-field">
+          <div class="field-label-row">
+            <label>Horario (09–12 · 14–18 hrs)</label>
+            <span id="agenda-disp-badge" class="badge badge-normal">9 / 9 libres</span>
+          </div>
           <div id="reunion-slots" class="slots-grid" role="group" aria-label="Horarios disponibles"></div>
         </div>
 
@@ -1128,32 +997,33 @@
             <input type="text" id="reunion-cliente" class="agenda-input" placeholder="Ej: Clínica Las Condes" />
           </div>
           <div class="agenda-field">
-            <label for="reunion-telefono">Teléfono WhatsApp</label>
+            <label for="reunion-telefono">Teléfono (opcional)</label>
             <input type="text" id="reunion-telefono" class="agenda-input" placeholder="Ej: 56912345678" />
           </div>
         </div>
 
         <div class="agenda-field">
-          <label for="reunion-motivo">Motivo / Equipo HVAC</label>
-          <input type="text" id="reunion-motivo" class="agenda-input" placeholder="Ej: Evaluación Chiller / Cotización proyecto" />
+          <label for="reunion-motivo">Motivo (opcional)</label>
+          <input type="text" id="reunion-motivo" class="agenda-input" placeholder="Ej: Revisar cotización / Chiller" />
         </div>
 
         <div id="agenda-feedback" class="agenda-feedback" role="alert"></div>
 
-        <div style="display:flex;gap:0.6rem;align-items:center;justify-content:flex-end;flex-wrap:wrap">
-          <button type="button" class="btn-secondary btn-row" onclick="cargarReuniones()">↻ Verificar Disponibilidad</button>
-          <button type="button" id="btn-reservar-reunion" onclick="crearReservaDashboard()">📅 Reservar Reunión</button>
-        </div>
+        <button type="button" id="btn-reservar-reunion" style="width:100%;justify-content:center" onclick="crearReservaDashboard()">📅 Reservar Reunión</button>
       </div>
 
       <div class="table-wrap" id="tabla-reuniones-wrap">
         <div class="agenda-table-header">
-          <span class="agenda-card-title">Reuniones Programadas (WhatsApp + Dashboard)</span>
+          <span class="agenda-card-title">Reuniones Programadas (WhatsApp + Web)</span>
           <div class="modalidad-filter-wrap">
             <button type="button" class="mod-filter-btn active" onclick="filtrarReunionesPorModalidad('todas', this)">Todas</button>
             <button type="button" class="mod-filter-btn" onclick="filtrarReunionesPorModalidad('Online', this)">💻 Online</button>
             <button type="button" class="mod-filter-btn" onclick="filtrarReunionesPorModalidad('Presencial', this)">📍 Presencial</button>
-            <span id="reunion-total-pill" class="badge badge-derivado">0 registradas</span>
+            <label class="agenda-check-label">
+              <input type="checkbox" id="reunion-incluir-canceladas" onchange="cargarReuniones()" />
+              Canceladas
+            </label>
+            <span id="reunion-total-pill" class="badge badge-derivado">0</span>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -1162,8 +1032,8 @@
               <tr>
                 <th>Folio</th>
                 <th>Fecha / Hora</th>
-                <th>Cliente / Teléfono</th>
-                <th>Modalidad / Motivo</th>
+                <th>Cliente</th>
+                <th>Modalidad y Lugar / Acceso</th>
                 <th>Origen</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -1173,7 +1043,7 @@
           </table>
         </div>
         <div id="reuniones-empty" class="empty-state" style="display:none">
-          <p>No hay reuniones agendadas todavía. Reserva un horario con Benjamín desde este calendario o vía WhatsApp.</p>
+          <p>No hay reuniones para mostrar. Reserva un bloque con Benjamín a la izquierda o desde WhatsApp.</p>
         </div>
       </div>
     </div>
@@ -1182,22 +1052,8 @@
 
 <footer>
   <div class="footer-inner">
-    <div>
-      <div class="footer-title">InterChile Clima SpA</div>
-      <p>Soluciones ambientales integrales en climatización comercial, mantención preventiva y arriendo de equipos.</p>
-    </div>
-    <div>
-      <div class="footer-title">Módulos Activos (Sprint 3)</div>
-      <p>Webhook Meta WhatsApp · Motor Gemini + LangChain · Arnés Kronos · Cotizador Borrador PDF · Monitor SLA &lt; 4.0s.</p>
-    </div>
-    <div>
-      <div class="footer-title">Contacto Comercial Directo</div>
-      <p>Benjamín Yáñez Lasalvia · <a href="mailto:Benjamin@interchileclima.cl">Benjamin@interchileclima.cl</a> · +56 9 9440 2632</p>
-    </div>
-  </div>
-  <div class="footer-copy">
-    <span>© 2026 InterChile Clima SpA · Portal Operativo de Triage Comercial</span>
-    <span><a href="https://interchileclima.cl/" target="_blank" rel="noopener">interchileclima.cl</a></span>
+    <span>InterChile Clima SpA · <a href="https://interchileclima.cl/" target="_blank" rel="noopener">interchileclima.cl</a></span>
+    <span>Ejecutivo comercial: Benjamín Yáñez · <a href="mailto:Benjamin@interchileclima.cl">Benjamin@interchileclima.cl</a> · +56 9 9440 2632</span>
   </div>
 </footer>
 
@@ -1205,9 +1061,37 @@
   let todosLosTickets = [];
   let filtroActual = 'todos';
 
+  function cambiarVistaPrincipal(vista) {
+    const esAgenda = vista === 'agenda';
+    document.getElementById('seccion-tickets')?.classList.toggle('active', !esAgenda);
+    document.getElementById('calendario-reuniones')?.classList.toggle('active', esAgenda);
+    const btnT = document.getElementById('tab-btn-tickets');
+    const btnA = document.getElementById('tab-btn-agenda');
+    if (btnT) {
+      btnT.classList.toggle('active', !esAgenda);
+      btnT.setAttribute('aria-selected', esAgenda ? 'false' : 'true');
+    }
+    if (btnA) {
+      btnA.classList.toggle('active', esAgenda);
+      btnA.setAttribute('aria-selected', esAgenda ? 'true' : 'false');
+    }
+  }
+
+  function actualizarEstadoAuthUI(conectado) {
+    const formWrap = document.getElementById('auth-form-wrap');
+    const pill = document.getElementById('auth-connected-pill');
+    if (formWrap) formWrap.style.display = conectado ? 'none' : 'inline-flex';
+    if (pill) pill.classList.toggle('visible', Boolean(conectado));
+  }
+
+  function mostrarInputToken() {
+    actualizarEstadoAuthUI(false);
+    document.getElementById('api-token-input')?.focus();
+  }
+
   function obtenerToken() {
     const input = document.getElementById('api-token-input');
-    return (input.value || sessionStorage.getItem('triage_operator_token') || '').trim();
+    return (input?.value || sessionStorage.getItem('triage_operator_token') || '').trim();
   }
 
   function guardarTokenYCargar() {
@@ -1237,7 +1121,7 @@
     el.className = 'visible ' + tipo;
     msg.textContent = texto;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(ocultarToast, 6000);
+    toastTimer = setTimeout(ocultarToast, 5500);
   }
   function ocultarToast() {
     document.getElementById('toast-banner').className = '';
@@ -1259,8 +1143,16 @@
   }
 
   function formatearCLP(monto) {
-    if (typeof monto !== 'number') return '<span style="color:var(--text-muted)">Por evaluar / Ref.</span>';
+    if (typeof monto !== 'number') return '<span style="color:var(--text-muted)">Por evaluar</span>';
     return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' CLP';
+  }
+
+  function toggleInputFechaVisita(id) {
+    const sel = document.getElementById(`estado-${id}`);
+    const dateInput = document.getElementById(`fecha-${id}`);
+    if (!sel || !dateInput) return;
+    const mostrar = sel.value === 'agendado' || Boolean(dateInput.value);
+    dateInput.style.display = mostrar ? 'inline-block' : 'none';
   }
 
   async function cargarTodo() {
@@ -1312,9 +1204,7 @@
       }
 
       document.getElementById('stat-arnes').textContent = `${m.arnes?.tasa_intercepcion_pct ?? 100}%`;
-      document.getElementById('stat-arnes-sub').textContent =
-        `${bloqueadas} bloqueadas / ${totalEval} eval.`;
-
+      document.getElementById('stat-arnes-sub').textContent = `${bloqueadas} bloqueadas / ${totalEval} eval.`;
       document.getElementById('stat-pdfs').textContent = String(totalPdfs);
       document.getElementById('stat-pdfs-sub').textContent = `${pdfExitoPct}% tasa de éxito`;
     } catch (_) {}
@@ -1331,6 +1221,7 @@
       const json = await res.json();
 
       if (res.status === 401 || res.status === 503) {
+        actualizarEstadoAuthUI(false);
         authBanner.classList.add('visible');
         document.getElementById('auth-msg').textContent = '🔒 ' + (json.error || 'Token Bearer requerido o inválido.');
         document.getElementById('loading').classList.remove('visible');
@@ -1340,12 +1231,13 @@
       }
 
       authBanner.classList.remove('visible');
+      actualizarEstadoAuthUI(true);
       if (!json.ok) throw new Error(json.error || 'Error obteniendo tickets');
 
       todosLosTickets = json.data || [];
       actualizarEstadisticas(todosLosTickets);
       aplicarFiltroActual();
-      document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
     } catch (err) {
       document.getElementById('loading').classList.remove('visible');
       document.getElementById('empty').style.display = 'block';
@@ -1364,14 +1256,8 @@
     document.getElementById('stat-alta').textContent = alta;
     document.getElementById('stat-humano').textContent = humano;
     document.getElementById('stat-estados').textContent = `${agendados} agendados · ${resueltos} resueltos`;
-
-    const banner = document.getElementById('alert-banner');
-    if (humano > 0) {
-      document.getElementById('alert-count').textContent = humano;
-      banner.classList.add('visible');
-    } else {
-      banner.classList.remove('visible');
-    }
+    const tabT = document.getElementById('tab-btn-tickets');
+    if (tabT) tabT.textContent = `📋 Tickets (${total})`;
   }
 
   function filtrar(tipo, btn) {
@@ -1400,6 +1286,7 @@
     const fechaVal = (!tieneFechaParcial && dateInput.value) ? new Date(dateInput.value).toISOString() : null;
 
     if (estado === 'agendado' && (!fechaVal || tieneFechaParcial)) {
+      dateInput.style.display = 'inline-block';
       mostrarToast(
         tieneFechaParcial
           ? `⚠️ En el Ticket #${id} falta completar la hora exacta (HH:mm) junto a la fecha de visita.`
@@ -1446,12 +1333,11 @@
         return;
       }
 
-      // CA-1: Actualizar fila y contadores superiores de inmediato sin recargar la página
       todosLosTickets = todosLosTickets.map(t => (t.id === id ? json.data : t));
       actualizarEstadisticas(todosLosTickets);
       aplicarFiltroActual();
       cargarMetricas();
-      document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CL');
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' });
 
       const visitaTxt = json.data?.fecha_visita ? ` · Visita: ${formatVisitaLegible(json.data.fecha_visita)}` : '';
       mostrarToast(`✅ Ticket #${id} actualizado a "${json.data.estado}"${visitaTxt}`, 'ok');
@@ -1478,7 +1364,7 @@
       a.remove();
       URL.revokeObjectURL(url);
       cargarMetricas();
-      mostrarToast(`📄 Ficha PDF de Ticket #${id} descargada correctamente.`, 'ok');
+      mostrarToast(`📄 Ficha PDF de Ticket #${id} descargada.`, 'ok');
     } catch (e) {
       mostrarToast('❌ Error de red al descargar PDF: ' + e.message, 'err');
     }
@@ -1501,10 +1387,11 @@
     tickets.forEach(t => {
       const esAlta = (t.prioridad_sugerida || '').toLowerCase().includes('alta');
       const fecha = t.created_at
-        ? new Date(t.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+        ? new Date(t.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
         : '—';
       const fechaVisitaLocal = toDatetimeLocalValue(t.fecha_visita);
       const fechaVisitaLegible = formatVisitaLegible(t.fecha_visita);
+      const mostrarFechaInput = t.estado === 'agendado' || Boolean(fechaVisitaLocal);
 
       const nombre = esc(t.cliente_nombre || t.nombre_completo || 'Sin nombre');
       const tel = esc(t.telefono || '—');
@@ -1515,37 +1402,37 @@
 
       const fila = document.createElement('tr');
       fila.innerHTML = `
-        <td><strong>#${t.id}</strong></td>
-        <td style="font-size:0.76rem;color:var(--text-sub)">${fecha}</td>
         <td>
-          <strong>${nombre}</strong><br/>
-          <span style="font-family:monospace;font-size:0.75rem;color:var(--text-sub)">${tel}</span>
+          <strong>#${t.id}</strong><br/>
+          <span style="font-size:0.71rem;color:var(--text-muted)">${fecha}</span>
         </td>
-        <td style="font-size:0.78rem;color:var(--text-sub)">${ubicacion}</td>
+        <td>
+          <strong>${nombre}</strong> · <span style="font-size:0.73rem;color:var(--muted)">${ubicacion}</span><br/>
+          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted)">${tel}</span>
+        </td>
         <td>
           <div><strong>${equipo}</strong></div>
-          <div style="font-size:0.75rem;color:var(--text-muted)">${sintoma}</div>
+          <div style="font-size:0.73rem;color:var(--text-muted)">${sintoma}</div>
         </td>
         <td>
-          <div><strong>${formatearCLP(t.cotizacion_total)}</strong></div>
-          <div style="font-size:0.7rem;color:var(--text-muted)">Estimación del bot · No oficial</div>
+          <strong>${formatearCLP(t.cotizacion_total)}</strong>
         </td>
         <td>
           <span class="badge ${esAlta ? 'badge-alta' : 'badge-normal'}">${prio}</span>
-          ${t.requiere_humano ? '<br/><span class="badge badge-humano" style="margin-top:4px">Requiere persona</span>' : ''}
+          ${t.requiere_humano ? '<br/><span class="badge badge-humano" style="margin-top:3px">Evaluar</span>' : ''}
         </td>
         <td>
-          <div style="display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap">
-            <select id="estado-${t.id}" class="state-select">
+          <div style="display:flex;gap:0.3rem;align-items:center;flex-wrap:wrap">
+            <select id="estado-${t.id}" class="state-select" onchange="toggleInputFechaVisita(${t.id})">
               <option value="en_proceso" ${t.estado === 'en_proceso' ? 'selected' : ''}>En proceso</option>
               <option value="derivado" ${t.estado === 'derivado' ? 'selected' : ''}>Derivado</option>
               <option value="agendado" ${t.estado === 'agendado' ? 'selected' : ''}>Agendado</option>
               <option value="resuelto" ${t.estado === 'resuelto' ? 'selected' : ''}>Resuelto</option>
             </select>
-            <input id="fecha-${t.id}" type="datetime-local" class="date-input" value="${fechaVisitaLocal}" />
+            <input id="fecha-${t.id}" type="datetime-local" class="date-input" style="display:${mostrarFechaInput ? 'inline-block' : 'none'}" value="${fechaVisitaLocal}" />
             <button class="btn-row" onclick="guardarEstadoTicket(${t.id}, '${esc(t.updated_at || '')}')">Guardar</button>
           </div>
-          ${fechaVisitaLegible ? `<div style="margin-top:4px;font-size:0.73rem;font-weight:600;color:var(--sky-ink)">📅 Visita: ${esc(fechaVisitaLegible)}</div>` : ''}
+          ${fechaVisitaLegible ? `<div style="margin-top:3px;font-size:0.71rem;font-weight:600;color:var(--sky-ink)">📅 ${esc(fechaVisitaLegible)}</div>` : ''}
         </td>
         <td>
           <button class="btn-secondary btn-row" onclick="descargarPdfTicket(${t.id})">📄 PDF</button>
@@ -1560,58 +1447,45 @@
   let todasLasReuniones = [];
   let filtroModalidadReunion = 'todas';
 
-  function actualizarUISegunModalidad() {
-    const mod = document.getElementById('reunion-modalidad')?.value || 'Online';
-    const infoEl = document.getElementById('agenda-modalidad-info');
-    const lblSub = document.getElementById('lbl-reunion-subtipo');
-    const selSub = document.getElementById('reunion-subtipo');
-    const lblDet = document.getElementById('lbl-reunion-detalle');
-    const inpDet = document.getElementById('reunion-detalle-modalidad');
-    if (!infoEl || !selSub || !inpDet) return;
+  function seleccionarModalidad(mod) {
+    const modInput = document.getElementById('reunion-modalidad');
+    if (modInput) modInput.value = mod === 'Presencial' ? 'Presencial' : 'Online';
+    actualizarUISegunModalidad();
+  }
 
-    if (mod === 'Presencial') {
-      infoEl.className = 'modalidad-banner presencial';
-      infoEl.innerHTML = '📍 <strong>Reunión Física (60 min + traslado):</strong> Levantamiento en terreno o reunión en oficina. <strong>Exige dirección exacta.</strong>';
-      lblSub.textContent = 'Tipo Presencial';
-      selSub.innerHTML = `
-        <option value="terreno">En Terreno (Visita al cliente)</option>
-        <option value="oficina">En Oficina InterChile Clima SpA</option>
-      `;
-      lblDet.textContent = 'Dirección / Lugar (Obligatorio)';
-      inpDet.placeholder = 'Ej: Av. Apoquindo 4500, Las Condes';
-      if (inpDet.value.includes('meet.google') || inpDet.value.includes('Google Meet') || inpDet.value.includes('Zoom') || inpDet.value.includes('Teams')) {
-        inpDet.value = '';
-      }
-    } else {
-      infoEl.className = 'modalidad-banner online';
-      infoEl.innerHTML = '💻 <strong>Sesión Remota (30–45 min · sin traslado):</strong> Evaluación comercial rápida o revisión de cotización. Enlace al confirmar.';
-      lblSub.textContent = 'Plataforma';
-      selSub.innerHTML = `
-        <option value="Google Meet">Google Meet</option>
-        <option value="Zoom">Zoom</option>
-        <option value="Microsoft Teams">Microsoft Teams</option>
-        <option value="WhatsApp Video">Videollamada WhatsApp</option>
-      `;
-      lblDet.textContent = 'Enlace Videollamada (Opcional)';
-      inpDet.placeholder = 'Ej: https://meet.google.com/abc-defg-hij (o se envía al confirmar)';
-      if (inpDet.value === 'Oficina InterChile Clima SpA (Santiago)') {
-        inpDet.value = '';
-      }
+  function usarOficinaInterChile() {
+    const inpDet = document.getElementById('reunion-detalle-modalidad');
+    if (inpDet) {
+      inpDet.value = 'Oficina InterChile Clima SpA (Santiago)';
+      inpDet.focus();
     }
   }
 
-  function aplicarSubtipoModalidad() {
+  function actualizarUISegunModalidad() {
     const mod = document.getElementById('reunion-modalidad')?.value || 'Online';
-    const sub = document.getElementById('reunion-subtipo')?.value || '';
+    const btnOn = document.getElementById('btn-mod-online');
+    const btnPres = document.getElementById('btn-mod-presencial');
+    const lblDet = document.getElementById('lbl-reunion-detalle');
     const inpDet = document.getElementById('reunion-detalle-modalidad');
-    if (!inpDet) return;
+    const btnOfi = document.getElementById('btn-oficina-rapida');
+    if (!lblDet || !inpDet) return;
 
-    if (mod === 'Presencial') {
-      if (sub === 'oficina') {
-        inpDet.value = 'Oficina InterChile Clima SpA (Santiago)';
-      } else if (inpDet.value === 'Oficina InterChile Clima SpA (Santiago)') {
+    const esPresencial = mod === 'Presencial';
+    if (btnOn) btnOn.classList.toggle('active', !esPresencial);
+    if (btnPres) btnPres.classList.toggle('active', esPresencial);
+    if (btnOfi) btnOfi.style.display = esPresencial ? 'inline-flex' : 'none';
+
+    if (esPresencial) {
+      lblDet.textContent = 'Dirección o Sede (obligatorio)';
+      inpDet.placeholder = 'Ej: Av. Apoquindo 4500, Las Condes';
+      if (inpDet.value.includes('meet.google') || inpDet.value.includes('Google Meet')) {
         inpDet.value = '';
-        inpDet.focus();
+      }
+    } else {
+      lblDet.textContent = 'Enlace videollamada (opcional)';
+      inpDet.placeholder = 'Por defecto: Google Meet al confirmar';
+      if (inpDet.value === 'Oficina InterChile Clima SpA (Santiago)') {
+        inpDet.value = '';
       }
     }
   }
@@ -1628,7 +1502,7 @@
     if (reunion.modalidad === 'Presencial') {
       const texto = raw || 'Por confirmar ubicación (Terreno / Oficina InterChile)';
       const esOficina = texto.toLowerCase().includes('oficina interchile');
-      return `<div class="modalidad-detalle-linea">📌 ${esc(texto)} <span style="color:var(--text-muted);font-weight:500">(${esOficina ? 'Sede InterChile' : 'Terreno · requiere traslado'})</span></div>`;
+      return `<div class="modalidad-detalle-linea">📌 ${esc(texto)} <span style="color:var(--text-muted);font-weight:500">(${esOficina ? 'Sede InterChile' : 'Terreno · traslado'})</span></div>`;
     }
     const acceso = raw || 'Google Meet (enlace se envía al confirmar)';
     if (/^https?:\/\//i.test(acceso)) {
@@ -1659,7 +1533,7 @@
       const btns = sugerencias.map(h =>
         `<button type="button" class="btn-sug" onclick="seleccionarBloqueHorario('${esc(h)}')">Usar ${esc(h)}</button>`
       ).join('');
-      html += `<div class="sugerencias-wrap"><span style="font-size:0.73rem">Horarios libres sugeridos:</span>${btns}</div>`;
+      html += `<div class="sugerencias-wrap"><span style="font-size:0.72rem">Sugeridos:</span>${btns}</div>`;
     }
     box.innerHTML = html;
   }
@@ -1668,7 +1542,7 @@
     horaSeleccionadaReunion = hora || '';
     const pill = document.getElementById('agenda-hora-seleccionada');
     if (pill) {
-      pill.textContent = horaSeleccionadaReunion ? `🕒 ${horaSeleccionadaReunion} hrs` : 'Selecciona horario';
+      pill.textContent = horaSeleccionadaReunion ? `🕒 ${horaSeleccionadaReunion} hrs` : 'Elige hora';
     }
     document.querySelectorAll('#reunion-slots .slot-btn').forEach(btn => {
       btn.classList.toggle('selected', btn.dataset.hora === horaSeleccionadaReunion);
@@ -1688,7 +1562,7 @@
 
     const dispBadge = document.getElementById('agenda-disp-badge');
     if (dispBadge) {
-      dispBadge.textContent = `${libresCount} / ${totales.length} bloques libres`;
+      dispBadge.textContent = `${libresCount} / ${totales.length} libres`;
       dispBadge.className = 'badge ' + (libresCount > 0 ? 'badge-normal' : 'badge-alta');
     }
     const statReuSub = document.getElementById('stat-reuniones-sub');
@@ -1707,9 +1581,8 @@
       btn.type = 'button';
       btn.dataset.hora = hora;
       btn.className = 'slot-btn' + (ocupado ? ' ocupado' : '') + (!ocupado && hora === horaSeleccionadaReunion ? ' selected' : '');
-      btn.textContent = ocupado ? `${hora} (Ocupado)` : hora;
+      btn.textContent = ocupado ? `${hora} Ocup.` : hora;
       btn.disabled = ocupado;
-      btn.title = ocupado ? `Bloque ${hora} ya reservado` : `Seleccionar ${hora} hrs`;
       if (!ocupado) {
         btn.onclick = () => seleccionarBloqueHorario(hora);
       }
@@ -1730,9 +1603,11 @@
       : todasLasReuniones.filter(r => r.modalidad === filtroModalidadReunion);
 
     const activas = todasLasReuniones.filter(r => r.estado !== 'cancelada').length;
-    if (pillEl) pillEl.textContent = `${activas} activa(s) · ${todasLasReuniones.length} total`;
+    if (pillEl) pillEl.textContent = `${activas} activa(s)`;
     const statReu = document.getElementById('stat-reuniones');
     if (statReu) statReu.textContent = String(activas);
+    const tabA = document.getElementById('tab-btn-agenda');
+    if (tabA) tabA.textContent = `📅 Agenda Benjamín (${activas})`;
 
     tbody.innerHTML = '';
     if (!listaFiltrada.length) {
@@ -1762,23 +1637,23 @@
         <td><strong>#R-${esc(idNum)}</strong></td>
         <td>
           <strong>${esc(r.fecha_reunion)}</strong><br/>
-          <span style="font-size:0.75rem;font-weight:700;color:var(--brand)">🕒 ${esc(r.hora_reunion)} hrs</span>
+          <span style="font-size:0.73rem;font-weight:700;color:var(--brand)">🕒 ${esc(r.hora_reunion)} hrs</span>
         </td>
         <td>
           <strong>${esc(r.cliente_nombre || 'Cliente InterChile')}</strong><br/>
-          <span style="font-family:monospace;font-size:0.74rem;color:var(--text-sub)">${esc(r.telefono || '—')}</span>
+          <span style="font-family:monospace;font-size:0.72rem;color:var(--text-muted)">${esc(r.telefono || '—')}</span>
         </td>
         <td>
           <span class="badge ${esPresencial ? 'badge-mod-presencial' : 'badge-mod-online'}">${esPresencial ? '📍 Presencial' : '💻 Online'}</span>
           ${formatearDetalleModalidadHTML(r)}
-          <div style="font-size:0.73rem;color:var(--text-muted);margin-top:2px">${esc(r.motivo || 'Evaluación comercial')}</div>
+          <div style="font-size:0.71rem;color:var(--text-muted);margin-top:2px">${esc(r.motivo || 'Evaluación comercial')}</div>
         </td>
         <td>
-          <span class="badge ${esWa ? 'badge-origen-wa' : 'badge-origen-dash'}">${esWa ? '📱 WhatsApp' : '🖥️ Dashboard'}</span>
+          <span class="badge ${esWa ? 'badge-origen-wa' : 'badge-origen-dash'}">${esWa ? '📱 WhatsApp' : '🖥️ Web'}</span>
         </td>
         <td><span class="badge ${estadoClass}">${esc(estadoLabel)}</span></td>
         <td>
-          <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center">
             ${r.estado === 'ingresada'
               ? `<button type="button" class="btn-row" onclick="cambiarEstadoReunion(${idNum}, 'confirmada')">✓ Confirmar</button>`
               : ''}
@@ -1789,10 +1664,10 @@
               ? `<button type="button" class="btn-secondary btn-row" onclick="cambiarEstadoReunion(${idNum}, 'cancelada')">Cancelar</button>`
               : ''}
             ${r.estado === 'completada'
-              ? '<span style="font-size:0.73rem;font-weight:700;color:var(--green)">✔ Realizada</span>'
+              ? '<span style="font-size:0.71rem;font-weight:700;color:var(--green)">✔ Lista</span>'
               : ''}
             ${r.estado === 'cancelada'
-              ? '<span style="font-size:0.73rem;color:var(--text-muted)">Cancelada</span>'
+              ? '<span style="font-size:0.71rem;color:var(--text-muted)">Cancelada</span>'
               : ''}
           </div>
         </td>
@@ -1864,7 +1739,6 @@
   async function crearReservaDashboard() {
     const fecha = (document.getElementById('reunion-fecha')?.value || '').trim();
     const modalidad = document.getElementById('reunion-modalidad')?.value || 'Online';
-    const subtipo = document.getElementById('reunion-subtipo')?.value || 'Google Meet';
     const detalleInput = (document.getElementById('reunion-detalle-modalidad')?.value || '').trim();
     const cliente_nombre = (document.getElementById('reunion-cliente')?.value || '').trim();
     const telefono = (document.getElementById('reunion-telefono')?.value || '').trim();
@@ -1885,16 +1759,13 @@
 
     let detalle_modalidad = detalleInput;
     if (modalidad === 'Presencial') {
-      if (!detalle_modalidad && subtipo === 'oficina') {
-        detalle_modalidad = 'Oficina InterChile Clima SpA (Santiago)';
-      }
       if (!detalle_modalidad || detalle_modalidad.length < 4) {
-        mostrarFeedbackAgenda('⚠️ Para una reunión Presencial debes indicar la dirección exacta en terreno o seleccionar Oficina InterChile.', 'err');
+        mostrarFeedbackAgenda('⚠️ Para reunión Presencial indica dirección o pulsa "Usar Oficina InterChile".', 'err');
         document.getElementById('reunion-detalle-modalidad')?.focus();
         return;
       }
     } else if (!detalle_modalidad) {
-      detalle_modalidad = `${subtipo} (enlace se envía al confirmar)`;
+      detalle_modalidad = 'Google Meet (enlace se envía al confirmar)';
     }
 
     try {
@@ -1926,9 +1797,9 @@
 
       const r = json.data;
       const detalleTxt = r.modalidad === 'Presencial'
-        ? `📍 Lugar: ${r.detalle_modalidad}`
-        : `💻 Canal: ${r.detalle_modalidad}`;
-      mostrarFeedbackAgenda(`✅ Solicitud #R-${r.id} ingresada para el ${r.fecha_reunion} a las ${r.hora_reunion} (${r.modalidad} · ${detalleTxt}) — pendiente de confirmar asistencia.`, 'ok');
+        ? `📍 ${r.detalle_modalidad}`
+        : `💻 ${r.detalle_modalidad}`;
+      mostrarFeedbackAgenda(`✅ Solicitud #R-${r.id} ingresada para el ${r.fecha_reunion} a las ${r.hora_reunion} (${detalleTxt}).`, 'ok');
       mostrarToast(`✅ Reunión #R-${r.id} ${r.modalidad} ingresada (${r.fecha_reunion} ${r.hora_reunion})`, 'ok');
       document.getElementById('reunion-cliente').value = '';
       document.getElementById('reunion-telefono').value = '';
