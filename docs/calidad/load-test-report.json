@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-11-26T01:40:58.745Z",
+  "commit": "1212829",
+  "tool": "node_http_load_harness (src/server.js)",
+  "config": {
+    "virtual_users_concurrent": 50,
+    "rounds": 10,
+    "total_requests": 500,
+    "security_probe_requests": 20
+  },
+  "efficiency_results": {
+    "total_duration_ms": 1697.21,
+    "throughput_rps": 294.6,
+    "http_2xx": 500,
+    "errors": 0,
+    "error_rate_pct": 0,
+    "latency_ms": {
+      "min": 19.93,
+      "avg": 70.87,
+      "p50": 33.76,
+      "p95": 169.06,
+      "p99": 239.87,
+      "max": 242.04
+    },
+    "rnf01_meta_p95_ms": 2000,
+    "rnf01_meta_error_pct": 1,
+    "rnf01_cumple": true,
+    "by_endpoint": {
+      "GET /api/reuniones": {
+        "requests": 125,
+        "ok": 125,
+        "p50_ms": 30.3,
+        "p95_ms": 123.05,
+        "max_ms": 124.77
+      },
+      "GET /api/tickets": {
+        "requests": 125,
+        "ok": 125,
+        "p50_ms": 30.38,
+        "p95_ms": 122.86,
+        "max_ms": 124.88
+      },
+      "GET /api/tickets/94/pdf": {
+        "requests": 125,
+        "ok": 125,
+        "p50_ms": 30.19,
+        "p95_ms": 122.67,
+        "max_ms": 124.66
+      },
+      "POST /webhooks/meta": {
+        "requests": 125,
+        "ok": 125,
+        "p50_ms": 154.73,
+        "p95_ms": 239.65,
+        "max_ms": 242.04
+      }
+    }
+  },
+  "security_probe_results": {
+    "total_attempts": 20,
+    "properly_denied": 20,
+    "denial_rate_pct": 100,
+    "rnf02_cumple": true
+  },
+  "known_limitation": "Ejecutado en instancia HTTP Express loopback simulando proveedores externos (Gemini API, Meta Graph y pool Supabase) para aislar latencia del servidor, serialización %PDF-1.4, middleware HMAC/Bearer y evitar cuotas externas."
+}
