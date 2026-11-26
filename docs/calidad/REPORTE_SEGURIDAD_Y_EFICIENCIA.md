@@ -25,7 +25,7 @@
 ### 2.1 Evolución Antes y Después de Remediación
 1. **Escaneo inicial detectado (`2026-11-25`):** `8` vulnerabilidades (`1` crítica en `proxy-addr`, `5` altas en `body-parser`, `zod`, `brace-expansion`, `browserslist`, `js-yaml`, y `2` moderadas en `qs`, `baseline-browser-mapping`).
    En dependencias de producción (`--omit=dev`): `1` crítica (`proxy-addr`), `2` altas (`body-parser`, `zod`), `1` moderada (`qs`).
-2. **Acción ejecutada (`npm audit fix`):** Actualización no disruptiva en `package-lock.json` (`zod 4.6.5 -> 4.6.7`, `body-parser 1.20.5 -> 1.20.9`, `proxy-addr 2.0.7 -> 2.0.8`, `qs 6.15.2 -> 6.15.4`, `js-yaml`, `brace-expansion`, `browserslist`), seguida de re-ejecución completa de la suite Jest (**`86/86 PASS`** sin regresiones).
+2. **Acción ejecutada (`npm audit fix`):** Actualización no disruptiva en `package-lock.json` (`zod 4.6.5 -> 4.6.7`, `body-parser 1.20.5 -> 1.20.9`, `proxy-addr 2.0.7 -> 2.0.8`, `qs 6.15.2 -> 6.15.4`, `js-yaml`, `brace-expansion`, `browserslist`), seguida de re-ejecución completa de la suite Jest (**`87/87 PASS`** sin regresiones).
 3. **Escaneo final verificado ([`npm-audit-hito3.json`](./npm-audit-hito3.json)):**
    - **Críticas:** `0`
    - **Altas:** `0`

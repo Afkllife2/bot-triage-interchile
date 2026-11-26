@@ -20,7 +20,7 @@
   5. `test/sprint3.test.js` — Cotizador CLP, generador PDF, paginación `KRON2-152`, catálogo remoto Kronos, estrés `N=20` e integración completa `S1+S2+S3`.
   6. `test/hu22-metricas-sla.test.js` — Unitarias e integración de `metricsStore.js`, alertas SLA `> 4000 ms`, conteo de PDFs y panel técnico separado en Dashboard.
   7. `test/hu23-reuniones-agenda.test.js` — Unitarias de `src/agenda.js`, detección automática de reuniones en WhatsApp, API `/api/reuniones*` con colisiones `409` y controles del calendario en `/dashboard`.
-* **Resultado Consolidado:** **`86 passed, 86 total (100% PASS)`** — `0 failed`, `0 skipped` (tiempo total de ejecución: `~7.2 s`).
+* **Resultado Consolidado:** **`87 passed, 87 total (100% PASS)`** — `0 failed`, `0 skipped` (tiempo total de ejecución: `~7.5 s`).
 * **Evidencia Visual Principal:** [`Evidencia_AAI_99_Concurrencia_N20_Jest.png`](./evidencias_png/Evidencia_AAI_99_Concurrencia_N20_Jest.png).
 
 ![Evidencia Ejecución Suite Jest Completa y Cobertura Sprint 3](./evidencias_png/Evidencia_AAI_99_Concurrencia_N20_Jest.png)
@@ -29,16 +29,16 @@
 
 | Archivo (`src/`) | % Stmts | % Branch | % Funcs | % Lines | Rol en Calidad ISO/IEC 25010 |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **`agenda.js`** | **99.07%** | 80.41% | **100%** | **100%** | Reglas hábiles (Lun–Vie), estados (`ingresada`$\rightarrow$`confirmada`$\rightarrow$`completada`) y anti-topones (`HU-23`) |
+| **`agenda.js`** | **99.23%** | 81.03% | **100%** | **100%** | Reglas hábiles (Lun–Vie), `Online` vs `Presencial`, estados (`ingresada`$\rightarrow$`confirmada`$\rightarrow$`completada`) y anti-topones (`HU-23`) |
 | **`arneses.js`** | **96.92%** | 88.37% | **100%** | **96.92%** | Fiabilidad · Interceptación anti-alucinación |
 | **`brain.js`** | 85.48% | 51.61% | 85.71% | 86.66% | Orquestación LangChain + Gemini + Zod |
 | **`cotizador.js`** | **100%** | 97.33% | **100%** | **100%** | Cálculo determinista CLP + IVA 19% fuera del LLM |
-| **`db.js`** | 76.79% | 65.92% | 68.18% | 78.64% | Transacciones PG, cursor keyset (`US`), choques `409` y locks `FOR UPDATE` |
+| **`db.js`** | 77.17% | 66.56% | 68.18% | 79.02% | Transacciones PG, cursor keyset (`US`), choques `409` y locks `FOR UPDATE` |
 | **`kronos.js`** | 92.55% | 79.67% | 95.65% | 92.85% | Integración `GET /api/kronos/catalogo` con timeout `5 s` |
 | **`metricsStore.js`** | **100%** | 92.3% | **100%** | **100%** | Eficiencia · Ventana móvil SLA (`< 4000 ms`) |
 | **`pdfGenerator.js`** | **98.05%** | 77.95% | **100%** | **98.46%** | Trazabilidad · Ensamblador nativo `%PDF-1.4` |
-| **`server.js`** | **91.94%** | 77.32% | 84.21% | **93.20%** | API REST Bearer, Webhook HMAC y rutas `/api/reuniones` |
-| **TOTAL PROYECTO (`All files`)** | **90.35%** | **76.18%** | **89.83%** | **91.37%** | **Cobertura global automatizada > 90%** |
+| **`server.js`** | **91.98%** | 77.32% | 84.21% | **93.23%** | API REST Bearer, Webhook HMAC y rutas `/api/reuniones` |
+| **TOTAL PROYECTO (`All files`)** | **90.59%** | **76.53%** | **90.08%** | **91.58%** | **Cobertura global automatizada > 90%** |
 
 ### 1.2 Separación Formal: Verificación (Pruebas Unitarias) vs. Validación y Calidad (Integración ISO/IEC 25010)
 
@@ -46,7 +46,7 @@ En cumplimiento de la retroalimentación metodológica de Sprint Review (Profeso
 
 | Dimensión | Propósito de Ingeniería | Nivel de Prueba | Métrica / Indicador Formal | Valor Medido |
 | :--- | :--- | :--- | :--- | :---: |
-| **Verificación** (*"¿Construimos el producto correctamente según especificación?"*) | Comprobar que cada función determinista (cálculo CLP + IVA 19%, reglas horarias Lun–Vie, normalización de estados, PDF `%PDF-1.4`, arnés) ejecuta todas sus ramas lógicas sin defectos internos. | **Pruebas Unitarias aisladas** (`jest` con mocks de red/BD) | **Cobertura de Código Automatizada** (`% Lines` / `% Statements` en Jest) | **`91.37%` Líneas** (`90.35%` Stmts; `100%` en `cotizador.js`, `metricsStore.js` y `agenda.js`) |
+| **Verificación** (*"¿Construimos el producto correctamente según especificación?"*) | Comprobar que cada función determinista (cálculo CLP + IVA 19%, reglas horarias Lun–Vie, normalización de estados, PDF `%PDF-1.4`, arnés) ejecuta todas sus ramas lógicas sin defectos internos. | **Pruebas Unitarias aisladas** (`jest` con mocks de red/BD) | **Cobertura de Código Automatizada** (`% Lines` / `% Statements` en Jest) | **`91.58%` Líneas** (`90.59%` Stmts; `100%` en `cotizador.js`, `metricsStore.js` y `agenda.js`) |
 | **Validación y Calidad** (*"¿Construimos el sistema correcto para la operación del cliente?"*) | Demostrar que los módulos integrados satisfacen los requerimientos del negocio y atributos de calidad **ISO/IEC 25010** bajo tráfico real y concurrente. | **Pruebas Funcionales, Integración E2E y Estrés** (`Supertest` + Supabase + Render) | **1. Eficiencia (Latencia SLA):** $< 4.0\text{ s}$<br>**2. Fiabilidad (Arnés Kronos):** $100\%$ alucinaciones interceptadas<br>**3. Concurrencia ($N=20$):** $> 99\%$ éxito y `0` topones (`HTTP 409`)<br>**4. Trazabilidad PDF:** $100\%$ descarga válida | **`2.67 s` prom. (`100%` SLA)**<br>**`100%` interceptado**<br>**`20/20` (`100%`, `0` colisiones)**<br>**`100%` (`%PDF-1.4`)** |
 
 ---

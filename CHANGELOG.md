@@ -16,7 +16,9 @@ Todos los cambios relevantes del proyecto **Agente Autónomo de Triage Comercial
   - [`docs/arquitectura/`](./docs/arquitectura/README.md) (`A7`): Declaración **Camino A (UML)** y `ADR-01` a `ADR-04` con matrices de decisión ponderadas (`100%`).
   - [`docs/riesgos.md`](./docs/riesgos.md) (`A9`): Cierre de riesgos `R-01..R-19` e inventario priorizado de Deuda Técnica `DT-01..DT-04`.
 ### Seguridad
-- Remediación de dependencias mediante `npm audit fix` (`zod 4.6.7`, `body-parser 1.20.9`, `proxy-addr 2.0.8`, `qs 6.15.4/6.16.2`, `js-yaml`), eliminando el **100% de vulnerabilidades críticas (`0`) y altas (`0`)** (`86/86` tests Jest PASS sin regresiones).
+- Remediación de dependencias mediante `npm audit fix` (`zod 4.6.7`, `body-parser 1.20.9`, `proxy-addr 2.0.8`, `qs 6.15.4/6.16.2`, `js-yaml`), eliminando el **100% de vulnerabilidades críticas (`0`) y altas (`0`)** (`87/87` tests Jest PASS sin regresiones).
+### Mejorado (`AAI-102` · Diferenciación Online vs Presencial)
+- Diferenciación operativa completa entre reuniones **`Online` (Videollamada)** (sin traslado, selector plataforma + enlace opcional Meet/Zoom/Teams) y **`Presencial` (Terreno / Oficina)** (exige dirección física o sede Oficina InterChile con código `400 LUGAR_PRESENCIAL_REQUERIDO`, columna `detalle_modalidad` en `public.reuniones`, filtro UI y mensajes diferenciados en WhatsApp).
 
 ---
 
@@ -25,7 +27,7 @@ Todos los cambios relevantes del proyecto **Agente Autónomo de Triage Comercial
 - **`AAI-102` (`INT-HU-23` · `1212829`):** Ciclo de 3 estados en reuniones (`ingresada -> confirmada -> completada`), validación determinista de reglas horarias Lunes–Viernes (`09:00–12:00` y `14:00–18:00`, bloqueando `04:00 AM`, colación y fines de semana), orden de sugerencias cercanas por distancia y prevención de choque en visitas técnicas (`409 horario_visita_ocupado`).
 - **`AAI-94` (`INT-HU-22` · `9ea54db`):** Separación visual entre **4 KPIs Comerciales** arriba y panel colapsable **`Auditoría QA (ISO/IEC 25010)`** (`#btn-toggle-qa`).
 - **Corrección de defectos en vivo (`c7167be`, `92eb4ff`):** Eliminado enum vacío `''` en `reunion_modalidad` (`Gemini 400`) y cierre transaccional de casos `en_proceso` al ejecutar `/reset` en WhatsApp limpiando cotizaciones obsoletas a `null`.
-- **`AAI-98` (`INT-TSK-03` · `3a117fc`, `7abbfa4`):** Suite global consolidada (`7/7` suites, `86/86` tests PASS, `91,37%` cobertura líneas), diagrama E2E e [`INFORME_DE_PRUEBAS_SPRINT_3.md`](./docs/INFORME_DE_PRUEBAS_SPRINT_3.md).
+- **`AAI-98` (`INT-TSK-03` · `3a117fc`, `7abbfa4`):** Suite global consolidada (`7/7` suites, `87/87` tests PASS, `91,58%` cobertura líneas), diagrama E2E e [`INFORME_DE_PRUEBAS_SPRINT_3.md`](./docs/INFORME_DE_PRUEBAS_SPRINT_3.md).
 
 ---
 

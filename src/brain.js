@@ -87,6 +87,11 @@ const FichaTriage = z.object({
     .optional()
     .default('No especificada')
     .describe("Modalidad de la reunión ('Presencial' u 'Online'). Usar 'No especificada' si aún no se especifica."),
+  reunion_detalle: z
+    .string()
+    .optional()
+    .default('')
+    .describe("Para modalidad Presencial: dirección exacta/comuna en terreno o 'Oficina InterChile'. Para Online: plataforma o enlace si el cliente lo menciona; si no, dejar vacío."),
 
   respuesta_cliente: z
     .string()
@@ -119,10 +124,13 @@ REGLAS IMPORTANTES:
   * Una vez que el cliente haya proporcionado los datos completos de su solicitud (o si el cliente insiste explícitamente en hablar con un ejecutivo de inmediato sin dar más detalles), marca requiere_derivacion: true, confirma que su solicitud quedó ingresada y despídete indicándole expresamente que puede contactar a Benjamín al correo Benjamin@interchileclima.cl o al WhatsApp +569 9440 2632.
 - AGENDAMIENTO AUTOMÁTICO DE REUNIONES CON BENJAMÍN (HU-23):
   * HORARIO OFICIAL DE BENJAMÍN YÁÑEZ: Exclusivamente días hábiles (Lunes a Viernes), en bloques cerrados de 1 hora de 09:00 a 12:00 hrs y de 14:00 a 18:00 hrs (09:00, 10:00, 11:00, 12:00, 14:00, 15:00, 16:00, 17:00, 18:00). NO se agendan fines de semana (sábado/domingo), fechas pasadas, madrugadas (ej. 04:00 AM), noches ni el bloque de colación (13:00 hrs).
-  * Si el cliente solicita agendar o reservar una reunión con Benjamín (presencial, online o de evaluación comercial), marca solicita_reunion: true y mantén requiere_derivacion: false mientras se coordina el bloque horario.
-  * Extrae siempre reunion_fecha en formato YYYY-MM-DD, reunion_hora en formato 24h HH:mm (ej. "10:00" o "04:00" si pidió madrugada) y reunion_modalidad ("Presencial" u "Online", por defecto "Online" si dice virtual/videollamada o no especifica modalidad).
+  * DIFERENCIACIÓN OPERATIVA OBLIGATORIA ENTRE MODALIDADES:
+    1) Online (Videollamada): Sesión remota de 30–45 min sin traslado, ideal para dudas rápidas o revisar cotización. Solo requiere día hábil + bloque horario; el enlace de Google Meet/Zoom se envía al confirmar. NO exijas dirección física si pide Online.
+    2) Presencial (Terreno / Oficina): Reunión física para levantamiento técnico en sitio, instalaciones grandes o reunión en Oficina InterChile (considera traslado). Si el cliente pide reunión Presencial y NO indicó dirección/comuna ni aclaró si va a Oficina InterChile, mantén solicita_reunion: false por un turno y pregúntale: "¿La reunión presencial sería en nuestra Oficina InterChile o en tu dirección en terreno (me indicas dirección y comuna)?". Una vez conocida la dirección u oficina, márcala en reunion_detalle y pon solicita_reunion: true.
+  * Si el cliente solicita reunión con Benjamín pero NO indicó si prefiere Online o Presencial ni dio fecha/hora concreta, pregúntale qué modalidad prefiere explicando brevemente (Online por videollamada rápida sin traslados, o Presencial en terreno/oficina con dirección) junto al día hábil y bloque horario.
+  * Si ya definió modalidad (con dirección/oficina si es Presencial), fecha y hora, marca solicita_reunion: true y mantén requiere_derivacion: false.
+  * Extrae siempre reunion_fecha en formato YYYY-MM-DD, reunion_hora en formato 24h HH:mm (ej. "10:00" o "04:00" si pidió madrugada), reunion_modalidad ("Presencial" u "Online") y reunion_detalle (dirección en terreno / "Oficina InterChile" para Presencial, o plataforma/enlace si lo indica para Online).
   * Si el cliente pide un horario fuera de regla (fin de semana, madrugada, noche, 13:00 o pasado), igual extrae reunion_fecha y reunion_hora tal cual los pidió para que el validador determinista de agenda devuelva los bloques reales sugeridos, y en respuesta_cliente NUNCA afirmes que esa hora inválida quedó confirmada.
-  * Si el cliente pidió reunión con Benjamín pero falta la fecha o la hora concreta, pídele cordialmente qué día hábil (lunes a viernes) y en qué bloque (09:00–12:00 o 14:00–18:00 hrs) prefiere reunirse y si desea modalidad Presencial u Online.
 - ESTILO CONVERSACIONAL NATURAL (SIN MENÚS RÍGIDOS DE CALL-CENTER):
   * Responde con lenguaje natural, directo y empático, permitiendo siempre que el cliente exprese todo libremente en texto abierto sin sentirse en un menú telefónico ("presiona 1, presiona 2").
   * Mantén opciones_botones vacío [] en la gran mayoría de los turnos; incluye opciones cortas ÚNICAMENTE ante una ambigüedad total donde el cliente no haya indicado motivo alguno.

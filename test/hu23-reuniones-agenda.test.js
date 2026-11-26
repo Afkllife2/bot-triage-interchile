@@ -132,6 +132,47 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
     expect(agenda.normalizarModalidad('Carta', { estricto: false, defecto: 'Online' })).toBe('Online');
   });
 
+  test('construirDetalleModalidad y validarDetalleModalidad diferencian Online (canal/link) vs Presencial (lugar obligatorio)', () => {
+    expect(agenda.construirDetalleModalidad({ modalidad: 'Online' })).toBe(agenda.DETALLE_ONLINE_DEFECTO);
+    expect(agenda.construirDetalleModalidad({ modalidad: 'Online', detalle_modalidad: 'https://meet.google.com/abc-xyz' }))
+      .toBe('https://meet.google.com/abc-xyz');
+
+    expect(agenda.construirDetalleModalidad({
+      modalidad: 'Presencial',
+      direccion: 'Av. Apoquindo 4500',
+      comuna: 'Las Condes',
+    })).toBe('Av. Apoquindo 4500, Las Condes');
+
+    const failPresencial = agenda.validarDetalleModalidad({
+      modalidad: 'Presencial',
+      detalle_modalidad: '',
+      origen: 'dashboard',
+    });
+    expect(failPresencial.ok).toBe(false);
+    expect(failPresencial.status).toBe(400);
+    expect(failPresencial.codigo).toBe('LUGAR_PRESENCIAL_REQUERIDO');
+
+    const okPresencial = agenda.validarDetalleModalidad({
+      modalidad: 'Presencial',
+      detalle_modalidad: 'Oficina InterChile Clima SpA (Santiago)',
+      origen: 'dashboard',
+    });
+    expect(okPresencial).toEqual({
+      ok: true,
+      detalle_modalidad: 'Oficina InterChile Clima SpA (Santiago)',
+    });
+
+    const okOnlineSinLink = agenda.validarDetalleModalidad({
+      modalidad: 'Online',
+      detalle_modalidad: '',
+      origen: 'dashboard',
+    });
+    expect(okOnlineSinLink).toEqual({
+      ok: true,
+      detalle_modalidad: agenda.DETALLE_ONLINE_DEFECTO,
+    });
+  });
+
   test('calcularDisponibilidadDia y sugerirHorariosCercanos excluyen bloques ocupados y ordenan por cercanía', () => {
     const disp = agenda.calcularDisponibilidadDia('2026-12-01', ['10:00', '14:00']);
     expect(disp.ocupados).toEqual(['10:00', '14:00']);
@@ -202,6 +243,7 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
         fecha_reunion: '2026-12-01',
         hora_reunion: '10:00',
         modalidad: 'Presencial',
+        detalle_modalidad: 'Av. Providencia 2200, Providencia',
         estado: 'ingresada',
       },
     });
@@ -209,7 +251,23 @@ describe('[INT-HU-23] (AAI-102) — Pruebas Unitarias de src/agenda.js', () => {
     expect(okMsg).toContain('Ingresada');
     expect(okMsg).toContain('2026-12-01 a las 10:00 hrs');
     expect(okMsg).toContain('Presencial');
+    expect(okMsg).toContain('Av. Providencia 2200, Providencia');
     expect(okMsg).toContain('Benjamin@interchileclima.cl');
+
+    const okOnlineMsg = agenda.construirMensajeReunionWhatsApp('Listo.', {
+      ok: true,
+      data: {
+        id: 8,
+        fecha_reunion: '2026-12-01',
+        hora_reunion: '11:00',
+        modalidad: 'Online',
+        detalle_modalidad: 'https://meet.google.com/demo-123',
+        estado: 'ingresada',
+      },
+    });
+    expect(okOnlineMsg).toContain('Online (Videollamada)');
+    expect(okOnlineMsg).toContain('https://meet.google.com/demo-123');
+    expect(okOnlineMsg).toContain('Sesión remota sin traslado');
 
     const regla400Msg = agenda.construirMensajeReunionWhatsApp('Quedó agendada a las 4 AM', {
       ok: false,
@@ -495,6 +553,11 @@ describe('[INT-HU-23] (AAI-102) — Integración WhatsApp + API /api/reuniones +
     expect(res.text).toContain('id="reunion-fecha"');
     expect(res.text).toContain('id="reunion-slots"');
     expect(res.text).toContain('id="reunion-modalidad"');
+    expect(res.text).toContain('id="agenda-modalidad-info"');
+    expect(res.text).toContain('id="reunion-subtipo"');
+    expect(res.text).toContain('id="reunion-detalle-modalidad"');
+    expect(res.text).toContain('actualizarUISegunModalidad');
+    expect(res.text).toContain('filtrarReunionesPorModalidad');
     expect(res.text).toContain('id="tabla-reuniones"');
     expect(res.text).toContain('id="tbody-reuniones"');
     expect(res.text).toContain('/api/reuniones');

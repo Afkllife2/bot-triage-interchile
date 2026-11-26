@@ -14,6 +14,7 @@ const {
 } = require('./metricsStore'); // HU-22
 const {
   construirMensajeReunionWhatsApp,
+  construirDetalleModalidad,
   normalizarModalidad,
 } = require('./agenda'); // HU-23
 require('dotenv').config();
@@ -186,12 +187,20 @@ app.post('/webhooks/meta', async (req, res) => {
             typeof db.crearReservaReunion === 'function'
           ) {
             const modalidadRes = normalizarModalidad(fichaEstructurada.reunion_modalidad, { defecto: 'Online' });
+            const detalleModalidadRes = construirDetalleModalidad({
+              modalidad: modalidadRes,
+              detalle_modalidad: fichaEstructurada.reunion_detalle,
+              direccion: fichaEstructurada.sucursal_direccion,
+              comuna: fichaEstructurada.sucursal_comuna,
+              usarDefectoPresencial: true,
+            });
             resultadoReunion = await db.crearReservaReunion({
               cliente_nombre: fichaEstructurada.cliente_nombre || `Cliente ${telefonoCliente}`,
               telefono: telefonoCliente,
               fecha_reunion: fichaEstructurada.reunion_fecha,
               hora_reunion: fichaEstructurada.reunion_hora,
               modalidad: modalidadRes,
+              detalle_modalidad: detalleModalidadRes,
               motivo: fichaEstructurada.sintoma_observacion || 'Reunión comercial con Benjamín Yáñez',
               origen: 'whatsapp',
             });
